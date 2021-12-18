@@ -1,11 +1,7 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 import (
 	"fmt"
-	"github.com/gotranspile/cxgo/runtime/libc"
 	"github.com/veandco/go-sdl2/sdl"
 	"unsafe"
 )
@@ -13,12 +9,6 @@ import (
 const (
 	WIDTH  = 640
 	HEIGHT = 480
-)
-
-var (
-	Red   = vec4{1.0, 0.0, 0.0, 0.0}
-	Green = vec4{0.0, 1.0, 0.0, 0.0}
-	Blue  = vec4{0.0, 0.0, 1.0, 0.0}
 )
 
 var (
@@ -32,18 +22,26 @@ var bbufpix = (*u32)(nil)
 var the_Context glContext
 
 type My_Uniforms struct {
-	mvp_mat mat4
+	mvp_map mat4
 	v_color vec4
 }
 
 func main() {
 	setup_context()
 
-	var points = []float32{
-		-0.5, -0.5, 0,
-		0.5, -0.5, 0,
-		0, 0.5, 0,
+	var smooth = [4]GLenum{SMOOTH, SMOOTH, SMOOTH, SMOOTH}
+
+	var points_n_colors = []float32{
+		-0.5, -0.5, 0.0,
+		1.0, 0.0, 0.0,
+
+		0.5, -0.5, 0.0,
+		0.0, 1.0, 0.0,
+
+		0.0, 0.5, 0.0,
+		0.0, 0.0, 1.0,
 	}
+
 	var the_uniforms My_Uniforms
 	identity := mat4{
 		1, 0, 0, 0,
@@ -55,18 +53,20 @@ func main() {
 	var triangle GLuint
 	glGenBuffers(1, &triangle)
 	glBindBuffer(GL_ARRAY_BUFFER, triangle)
-	glBufferData(GL_ARRAY_BUFFER, GLsizei(unsafe.Sizeof(GLfloat(0))*9), unsafe.Pointer(&points[0]), GL_STATIC_DRAW)
+	glBufferData(GL_ARRAY_BUFFER, GLsizei(unsafe.Sizeof(float32(0)))*GLsizei(len(points_n_colors)), unsafe.Pointer(&points_n_colors[0]), GL_STATIC_DRAW)
 	glEnableVertexAttribArray(0)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0)
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, GLsizei(unsafe.Sizeof(float32(0))*6), 0)
+	glEnableVertexAttribArray(4)
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, GLsizei(unsafe.Sizeof(float32(0))*6), GLsizei(unsafe.Sizeof(float32(0))*3))
 
-	var myshader = pglCreateProgram(normal_vs, normal_fs, 0, nil, GL_FALSE)
+	var myshader = pglCreateProgram(smooth_vs, smooth_fs, 4, &smooth[0], GL_FALSE)
 	glUseProgram(myshader)
 
 	pglSetUniform(unsafe.Pointer(&the_uniforms))
 
-	the_uniforms.v_color = Red
+	the_uniforms.mvp_map = identity
 
-	libc.MemCpy(unsafe.Pointer(&the_uniforms.mvp_mat), unsafe.Pointer(&identity), int(unsafe.Sizeof(mat4{})))
+	glClearColor(0, 0, 0, 1)
 
 	var (
 		e    sdl.Event
@@ -95,7 +95,6 @@ func main() {
 				quit = 1
 			}
 		}
-
 		new_time = sdl.GetTicks()
 		frame_time = float32(new_time-last_frame) / 1000.0
 		last_frame = new_time
@@ -107,7 +106,6 @@ func main() {
 			counter = 0
 		}
 
-		glClearColor(0, 0, 0, 1)
 		glClear(GL_COLOR_BUFFER_BIT)
 		glDrawArrays(GL_TRIANGLES, 0, 3)
 
@@ -120,12 +118,15 @@ func main() {
 	cleanup()
 }
 
-func normal_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_Position = mult_mat4_vec4(*(*mat4)(uniforms), *(*vec4)(vertex_attribs))
+func smooth_fs(input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
+	builtins.Gl_FragColor = *(*vec4)(unsafe.Pointer(input))
 }
 
-func normal_fs(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_FragColor = (*My_Uniforms)(uniforms).v_color
+func smooth_vs(output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
+	var v_attribs = unsafe.Slice((*vec4)(vertex_attribs), 5)
+	*(*vec4)(unsafe.Pointer(output)) = v_attribs[4] // color
+
+	builtins.Gl_Position = mult_mat4_vec4(*(*mat4)(uniforms), v_attribs[0])
 }
 
 func setup_context() {
@@ -134,7 +135,7 @@ func setup_context() {
 		panic(err)
 	}
 	var err error
-	window, err = sdl.CreateWindow("c_ex1", 100, 100, WIDTH, HEIGHT, sdl.WINDOW_SHOWN)
+	window, err = sdl.CreateWindow("c_ex2", 100, 100, WIDTH, HEIGHT, sdl.WINDOW_SHOWN)
 	if err != nil {
 		sdl.Quit()
 		panic(err)

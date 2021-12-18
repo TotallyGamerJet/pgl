@@ -480,97 +480,97 @@ func z_mat4(m mat4) vec4 {
 func w_mat4(m mat4) vec4 {
 	return make_vec4(m[3], m[7], m[11], m[15])
 }
-func setc1_mat4v3(m mat4, v vec3) {
+func setc1_mat4v3(m *mat4, v vec3) {
 	m[0] = v.X
 	m[1] = v.Y
 	m[2] = v.Z
 	m[3] = 0
 }
-func setc2_mat4v3(m mat4, v vec3) {
+func setc2_mat4v3(m *mat4, v vec3) {
 	m[4] = v.X
 	m[5] = v.Y
 	m[6] = v.Z
 	m[7] = 0
 }
-func setc3_mat4v3(m mat4, v vec3) {
+func setc3_mat4v3(m *mat4, v vec3) {
 	m[8] = v.X
 	m[9] = v.Y
 	m[10] = v.Z
 	m[11] = 0
 }
-func setc4_mat4v3(m mat4, v vec3) {
+func setc4_mat4v3(m *mat4, v vec3) {
 	m[12] = v.X
 	m[13] = v.Y
 	m[14] = v.Z
 	m[15] = 1
 }
-func setc1_mat4v4(m mat4, v vec4) {
+func setc1_mat4v4(m *mat4, v vec4) {
 	m[0] = v.X
 	m[1] = v.Y
 	m[2] = v.Z
 	m[3] = v.W
 }
-func setc2_mat4v4(m mat4, v vec4) {
+func setc2_mat4v4(m *mat4, v vec4) {
 	m[4] = v.X
 	m[5] = v.Y
 	m[6] = v.Z
 	m[7] = v.W
 }
-func setc3_mat4v4(m mat4, v vec4) {
+func setc3_mat4v4(m *mat4, v vec4) {
 	m[8] = v.X
 	m[9] = v.Y
 	m[10] = v.Z
 	m[11] = v.W
 }
-func setc4_mat4v4(m mat4, v vec4) {
+func setc4_mat4v4(m *mat4, v vec4) {
 	m[12] = v.X
 	m[13] = v.Y
 	m[14] = v.Z
 	m[15] = v.W
 }
-func setx_mat4v3(m mat4, v vec3) {
+func setx_mat4v3(m *mat4, v vec3) {
 	m[0] = v.X
 	m[4] = v.Y
 	m[8] = v.Z
 	m[12] = 0
 }
-func sety_mat4v3(m mat4, v vec3) {
+func sety_mat4v3(m *mat4, v vec3) {
 	m[1] = v.X
 	m[5] = v.Y
 	m[9] = v.Z
 	m[13] = 0
 }
-func setz_mat4v3(m mat4, v vec3) {
+func setz_mat4v3(m *mat4, v vec3) {
 	m[2] = v.X
 	m[6] = v.Y
 	m[10] = v.Z
 	m[14] = 0
 }
-func setw_mat4v3(m mat4, v vec3) {
+func setw_mat4v3(m *mat4, v vec3) {
 	m[3] = v.X
 	m[7] = v.Y
 	m[11] = v.Z
 	m[15] = 1
 }
-func setx_mat4v4(m mat4, v vec4) {
+func setx_mat4v4(m *mat4, v vec4) {
 	m[0] = v.X
 	m[4] = v.Y
 	m[8] = v.Z
 	m[12] = v.W
 }
-func sety_mat4v4(m mat4, v vec4) {
+func sety_mat4v4(m *mat4, v vec4) {
 	m[1] = v.X
 	m[5] = v.Y
 	m[9] = v.Z
 	m[13] = v.W
 }
-func setz_mat4v4(m mat4, v vec4) {
+func setz_mat4v4(m *mat4, v vec4) {
 	m[2] = v.X
 	m[6] = v.Y
 	m[10] = v.Z
 	m[14] = v.W
 }
-func setw_mat4v4(m mat4, v vec4) {
+func setw_mat4v4(m *mat4, v vec4) {
 	m[3] = v.X
 	m[7] = v.Y
 	m[11] = v.Z
@@ -626,7 +626,7 @@ func scale_mat3(m mat3, x float32, y float32, z float32) {
 	m[5] = 0
 	m[8] = z
 }
-func scale_mat4(m mat4, x float32, y float32, z float32) {
+func scale_mat4(m *mat4, x float32, y float32, z float32) {
 	m[0] = x
 	m[4] = 0
 	m[8] = 0
@@ -644,7 +644,7 @@ func scale_mat4(m mat4, x float32, y float32, z float32) {
 	m[11] = 0
 	m[15] = 1
 }
-func translation_mat4(m mat4, x float32, y float32, z float32) {
+func translation_mat4(m *mat4, x float32, y float32, z float32) {
 	m[0] = 1
 	m[4] = 0
 	m[8] = 0
@@ -1468,7 +1468,7 @@ func mult_mat4_mat4(c mat4, a mat4, b mat4) {
 	c[11] = a[3]*b[8] + a[7]*b[9] + a[11]*b[10] + a[15]*b[11]
 	c[15] = a[3]*b[12] + a[7]*b[13] + a[11]*b[14] + a[15]*b[15]
 }
-func load_rotation_mat4(mat mat4, v vec3, angle float32) {
+func load_rotation_mat4(mat *mat4, v vec3, angle float32) {
 	var (
 		s     float32
 		c     float32
@@ -1513,7 +1513,7 @@ func load_rotation_mat4(mat mat4, v vec3, angle float32) {
 	mat[11] = 0.0
 	mat[15] = 1.0
 }
-func make_viewport_matrix(mat mat4, x int64, y int64, width uint64, height uint64, opengl int64) {
+func make_viewport_matrix(mat *mat4, x int64, y int64, width uint64, height uint64, opengl int64) {
 	var (
 		w float32
 		h float32
@@ -1570,7 +1570,7 @@ func make_viewport_matrix(mat mat4, x int64, y int64, width uint64, height uint6
 		mat[15] = 1
 	}
 }
-func make_pers_matrix(mat mat4, z_near float32, z_far float32) {
+func make_pers_matrix(mat *mat4, z_near float32, z_far float32) {
 	mat[0] = z_near
 	mat[4] = 0
 	mat[8] = 0
@@ -1588,7 +1588,7 @@ func make_pers_matrix(mat mat4, z_near float32, z_far float32) {
 	mat[11] = float32(-1)
 	mat[15] = 0
 }
-func make_perspective_matrix(mat mat4, fov float32, aspect float32, n float32, f float32) {
+func make_perspective_matrix(mat *mat4, fov float32, aspect float32, n float32, f float32) {
 	var (
 		t float32 = n * math32.Tan(float32(float64(fov)*0.5))
 		b float32 = -t
@@ -1597,7 +1597,7 @@ func make_perspective_matrix(mat mat4, fov float32, aspect float32, n float32, f
 	)
 	make_perspective_proj_matrix(mat, l, r, b, t, n, f)
 }
-func make_perspective_proj_matrix(mat mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
+func make_perspective_proj_matrix(mat *mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
 	mat[0] = float32((float64(n) * 2.0) / float64(r-l))
 	mat[4] = 0.0
 	mat[8] = (r + l) / (r - l)
@@ -1615,7 +1615,7 @@ func make_perspective_proj_matrix(mat mat4, l float32, r float32, b float32, t f
 	mat[11] = -1.0
 	mat[15] = 0.0
 }
-func make_orthographic_matrix(mat mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
+func make_orthographic_matrix(mat *mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
 	mat[0] = float32(2.0 / float64(r-l))
 	mat[4] = 0
 	mat[8] = 0
@@ -1633,7 +1633,7 @@ func make_orthographic_matrix(mat mat4, l float32, r float32, b float32, t float
 	mat[11] = 0
 	mat[15] = 1
 }
-func lookAt(mat mat4, eye vec3, center vec3, up vec3) {
+func lookAt(mat *mat4, eye vec3, center vec3, up vec3) {
 	for {
 		libc.MemSet(unsafe.Pointer(&mat[0]), 0, int(unsafe.Sizeof(float32(0))*16))
 		mat[0] = func() float32 {
@@ -5565,7 +5565,7 @@ func init_glContext(context *glContext, back **u32, w int64, h int64, bitdepth i
 	context.Clear_depth = GLfloat(1.0)
 	context.Depth_range_near = GLfloat(0.0)
 	context.Depth_range_far = GLfloat(1.0)
-	make_viewport_matrix(context.Vp_mat, 0, 0, uint64(w), uint64(h), 1)
+	make_viewport_matrix(&context.Vp_mat, 0, 0, uint64(w), uint64(h), 1)
 	context.Provoking_vert = GLenum(GL_LAST_VERTEX_CONVENTION)
 	context.Cull_mode = GLenum(GL_BACK)
 	context.Cull_face = GL_FALSE
@@ -6588,7 +6588,7 @@ func glViewport(x int64, y int64, width GLsizei, height GLsizei) {
 		}
 		return
 	}
-	make_viewport_matrix(c.Vp_mat, x, y, uint64(width), uint64(height), 1)
+	make_viewport_matrix(&c.Vp_mat, x, y, uint64(width), uint64(height), 1)
 	c.X_min = x
 	c.Y_min = y
 	c.X_max = uint64(x + int64(width))
