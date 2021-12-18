@@ -1,4 +1,4 @@
-package main
+package pgl
 
 import (
 	"fmt"
@@ -10,10 +10,10 @@ import (
 	"unsafe"
 )
 
-const RM_PI = 0
-const RM_2PI = 0
-const PI_DIV_180 = 0
-const INV_PI_DIV_180 = 0
+const RM_PI = 3.14159265358979323846
+const RM_2PI = 2.0 * RM_PI
+const PI_DIV_180 = 0.017453292519943296
+const INV_PI_DIV_180 = 57.2957795130823229
 const GL_FALSE = 0
 const GL_TRUE = 1
 const MAX_VERTICES = 500000
@@ -24,7 +24,7 @@ const CLIP_EPSILON = 0
 
 type u8 uint8
 type u16 uint16
-type u32 uint32
+type U32 uint32
 type u64 uint64
 type i8 int8
 type i16 int16
@@ -39,12 +39,12 @@ type vec2 struct {
 	X float32
 	Y float32
 }
-type vec3 struct {
+type Vec3 struct {
 	X float32
 	Y float32
 	Z float32
 }
-type vec4 struct {
+type Vec4 struct {
 	X float32
 	Y float32
 	Z float32
@@ -55,53 +55,53 @@ func make_vec2(x float32, y float32) vec2 {
 	var v vec2 = vec2{X: x, Y: y}
 	return v
 }
-func make_vec3(x float32, y float32, z float32) vec3 {
-	var v vec3 = vec3{X: x, Y: y, Z: z}
+func make_vec3(x float32, y float32, z float32) Vec3 {
+	var v Vec3 = Vec3{X: x, Y: y, Z: z}
 	return v
 }
-func make_vec4(x float32, y float32, z float32, w float32) vec4 {
-	var v vec4 = vec4{X: x, Y: y, Z: z, W: w}
+func make_vec4(x float32, y float32, z float32, w float32) Vec4 {
+	var v Vec4 = Vec4{X: x, Y: y, Z: z, W: w}
 	return v
 }
 func negate_vec2(v vec2) vec2 {
 	var r vec2 = vec2{X: -v.X, Y: -v.Y}
 	return r
 }
-func negate_vec3(v vec3) vec3 {
-	var r vec3 = vec3{X: -v.X, Y: -v.Y, Z: -v.Z}
+func negate_vec3(v Vec3) Vec3 {
+	var r Vec3 = Vec3{X: -v.X, Y: -v.Y, Z: -v.Z}
 	return r
 }
-func negate_vec4(v vec4) vec4 {
-	var r vec4 = vec4{X: -v.X, Y: -v.Y, Z: -v.Z, W: -v.W}
+func negate_vec4(v Vec4) Vec4 {
+	var r Vec4 = Vec4{X: -v.X, Y: -v.Y, Z: -v.Z, W: -v.W}
 	return r
 }
 func fprint_vec2(f *stdio.File, v vec2, append *byte) {
 	stdio.Fprintf(f, "(%f, %f)%s", v.X, v.Y, append)
 }
-func fprint_vec3(f *stdio.File, v vec3, append *byte) {
+func fprint_vec3(f *stdio.File, v Vec3, append *byte) {
 	stdio.Fprintf(f, "(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
 }
-func fprint_vec4(f *stdio.File, v vec4, append *byte) {
+func fprint_vec4(f *stdio.File, v Vec4, append *byte) {
 	stdio.Fprintf(f, "(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
 }
 func print_vec2(v vec2, append *byte) {
 	stdio.Printf("(%f, %f)%s", v.X, v.Y, append)
 }
-func print_vec3(v vec3, append *byte) {
+func print_vec3(v Vec3, append *byte) {
 	stdio.Printf("(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
 }
-func print_vec4(v vec4, append *byte) {
+func print_vec4(v Vec4, append *byte) {
 	stdio.Printf("(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
 }
 func fread_vec2(f *stdio.File, v *vec2) int64 {
 	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f)", &v.X, &v.Y))
 	return int64(libc.BoolToInt(tmp == 2))
 }
-func fread_vec3(f *stdio.File, v *vec3) int64 {
+func fread_vec3(f *stdio.File, v *Vec3) int64 {
 	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f, %f)", &v.X, &v.Y, &v.Z))
 	return int64(libc.BoolToInt(tmp == 3))
 }
-func fread_vec4(f *stdio.File, v *vec4) int64 {
+func fread_vec4(f *stdio.File, v *Vec4) int64 {
 	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f, %f, %f)", &v.X, &v.Y, &v.Z, &v.W))
 	return int64(libc.BoolToInt(tmp == 4))
 }
@@ -234,7 +234,7 @@ func fread_uvec4(f *stdio.File, v *uvec4) int64 {
 func length_vec2(a vec2) float32 {
 	return float32(math.Sqrt(float64(a.X*a.X + a.Y*a.Y)))
 }
-func length_vec3(a vec3) float32 {
+func length_vec3(a Vec3) float32 {
 	return float32(math.Sqrt(float64(a.X*a.X + a.Y*a.Y + a.Z*a.Z)))
 }
 func norm_vec2(a vec2) vec2 {
@@ -244,10 +244,10 @@ func norm_vec2(a vec2) vec2 {
 	)
 	return c
 }
-func norm_vec3(a vec3) vec3 {
+func norm_vec3(a Vec3) Vec3 {
 	var (
 		l float32 = length_vec3(a)
-		c vec3    = vec3{X: a.X / l, Y: a.Y / l, Z: a.Z / l}
+		c Vec3    = Vec3{X: a.X / l, Y: a.Y / l, Z: a.Z / l}
 	)
 	return c
 }
@@ -256,7 +256,7 @@ func normalize_vec2(a *vec2) {
 	a.X /= l
 	a.Y /= l
 }
-func normalize_vec3(a *vec3) {
+func normalize_vec3(a *Vec3) {
 	var l float32 = length_vec3(*a)
 	a.X /= l
 	a.Y /= l
@@ -266,119 +266,119 @@ func add_vec2s(a vec2, b vec2) vec2 {
 	var c vec2 = vec2{X: a.X + b.X, Y: a.Y + b.Y}
 	return c
 }
-func add_vec3s(a vec3, b vec3) vec3 {
-	var c vec3 = vec3{X: a.X + b.X, Y: a.Y + b.Y, Z: a.Z + b.Z}
+func add_vec3s(a Vec3, b Vec3) Vec3 {
+	var c Vec3 = Vec3{X: a.X + b.X, Y: a.Y + b.Y, Z: a.Z + b.Z}
 	return c
 }
-func add_vec4s(a vec4, b vec4) vec4 {
-	var c vec4 = vec4{X: a.X + b.X, Y: a.Y + b.Y, Z: a.Z + b.Z, W: a.W + b.W}
+func add_vec4s(a Vec4, b Vec4) Vec4 {
+	var c Vec4 = Vec4{X: a.X + b.X, Y: a.Y + b.Y, Z: a.Z + b.Z, W: a.W + b.W}
 	return c
 }
 func sub_vec2s(a vec2, b vec2) vec2 {
 	var c vec2 = vec2{X: a.X - b.X, Y: a.Y - b.Y}
 	return c
 }
-func sub_vec3s(a vec3, b vec3) vec3 {
-	var c vec3 = vec3{X: a.X - b.X, Y: a.Y - b.Y, Z: a.Z - b.Z}
+func sub_vec3s(a Vec3, b Vec3) Vec3 {
+	var c Vec3 = Vec3{X: a.X - b.X, Y: a.Y - b.Y, Z: a.Z - b.Z}
 	return c
 }
-func sub_vec4s(a vec4, b vec4) vec4 {
-	var c vec4 = vec4{X: a.X - b.X, Y: a.Y - b.Y, Z: a.Z - b.Z, W: a.W - b.W}
+func sub_vec4s(a Vec4, b Vec4) Vec4 {
+	var c Vec4 = Vec4{X: a.X - b.X, Y: a.Y - b.Y, Z: a.Z - b.Z, W: a.W - b.W}
 	return c
 }
 func mult_vec2s(a vec2, b vec2) vec2 {
 	var c vec2 = vec2{X: a.X * b.X, Y: a.Y * b.Y}
 	return c
 }
-func mult_vec3s(a vec3, b vec3) vec3 {
-	var c vec3 = vec3{X: a.X * b.X, Y: a.Y * b.Y, Z: a.Z * b.Z}
+func mult_vec3s(a Vec3, b Vec3) Vec3 {
+	var c Vec3 = Vec3{X: a.X * b.X, Y: a.Y * b.Y, Z: a.Z * b.Z}
 	return c
 }
-func mult_vec4s(a vec4, b vec4) vec4 {
-	var c vec4 = vec4{X: a.X * b.X, Y: a.Y * b.Y, Z: a.Z * b.Z, W: a.W * b.W}
+func mult_vec4s(a Vec4, b Vec4) Vec4 {
+	var c Vec4 = Vec4{X: a.X * b.X, Y: a.Y * b.Y, Z: a.Z * b.Z, W: a.W * b.W}
 	return c
 }
 func div_vec2s(a vec2, b vec2) vec2 {
 	var c vec2 = vec2{X: a.X / b.X, Y: a.Y / b.Y}
 	return c
 }
-func div_vec3s(a vec3, b vec3) vec3 {
-	var c vec3 = vec3{X: a.X / b.X, Y: a.Y / b.Y, Z: a.Z / b.Z}
+func div_vec3s(a Vec3, b Vec3) Vec3 {
+	var c Vec3 = Vec3{X: a.X / b.X, Y: a.Y / b.Y, Z: a.Z / b.Z}
 	return c
 }
-func div_vec4s(a vec4, b vec4) vec4 {
-	var c vec4 = vec4{X: a.X / b.X, Y: a.Y / b.Y, Z: a.Z / b.Z, W: a.W / b.W}
+func div_vec4s(a Vec4, b Vec4) Vec4 {
+	var c Vec4 = Vec4{X: a.X / b.X, Y: a.Y / b.Y, Z: a.Z / b.Z, W: a.W / b.W}
 	return c
 }
 func dot_vec2s(a vec2, b vec2) float32 {
 	return a.X*b.X + a.Y*b.Y
 }
-func dot_vec3s(a vec3, b vec3) float32 {
+func dot_vec3s(a Vec3, b Vec3) float32 {
 	return a.X*b.X + a.Y*b.Y + a.Z*b.Z
 }
-func dot_vec4s(a vec4, b vec4) float32 {
+func dot_vec4s(a Vec4, b Vec4) float32 {
 	return a.X*b.X + a.Y*b.Y + a.Z*b.Z + a.W*b.W
 }
 func scale_vec2(a vec2, s float32) vec2 {
 	var b vec2 = vec2{X: a.X * s, Y: a.Y * s}
 	return b
 }
-func scale_vec3(a vec3, s float32) vec3 {
-	var b vec3 = vec3{X: a.X * s, Y: a.Y * s, Z: a.Z * s}
+func scale_vec3(a Vec3, s float32) Vec3 {
+	var b Vec3 = Vec3{X: a.X * s, Y: a.Y * s, Z: a.Z * s}
 	return b
 }
-func scale_vec4(a vec4, s float32) vec4 {
-	var b vec4 = vec4{X: a.X * s, Y: a.Y * s, Z: a.Z * s, W: a.W * s}
+func scale_vec4(a Vec4, s float32) Vec4 {
+	var b Vec4 = Vec4{X: a.X * s, Y: a.Y * s, Z: a.Z * s, W: a.W * s}
 	return b
 }
 func equal_vec2s(a vec2, b vec2) int64 {
 	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y))
 }
-func equal_vec3s(a vec3, b vec3) int64 {
+func equal_vec3s(a Vec3, b Vec3) int64 {
 	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z))
 }
-func equal_vec4s(a vec4, b vec4) int64 {
+func equal_vec4s(a Vec4, b Vec4) int64 {
 	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z && a.W == b.W))
 }
 func equal_epsilon_vec2s(a vec2, b vec2, epsilon float32) int64 {
 	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon)))
 }
-func equal_epsilon_vec3s(a vec3, b vec3, epsilon float32) int64 {
+func equal_epsilon_vec3s(a Vec3, b Vec3, epsilon float32) int64 {
 	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon)))
 }
-func equal_epsilon_vec4s(a vec4, b vec4, epsilon float32) int64 {
+func equal_epsilon_vec4s(a Vec4, b Vec4, epsilon float32) int64 {
 	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon) && math.Abs(float64(a.W-b.W)) < float64(epsilon)))
 }
-func vec4_to_vec2(a vec4) vec2 {
+func vec4_to_vec2(a Vec4) vec2 {
 	var v vec2 = vec2{X: a.X, Y: a.Y}
 	return v
 }
-func vec4_to_vec3(a vec4) vec3 {
-	var v vec3 = vec3{X: a.X, Y: a.Y, Z: a.Z}
+func vec4_to_vec3(a Vec4) Vec3 {
+	var v Vec3 = Vec3{X: a.X, Y: a.Y, Z: a.Z}
 	return v
 }
-func vec4_to_vec2h(a vec4) vec2 {
+func vec4_to_vec2h(a Vec4) vec2 {
 	var v vec2 = vec2{X: a.X / a.W, Y: a.Y / a.W}
 	return v
 }
-func vec4_to_vec3h(a vec4) vec3 {
-	var v vec3 = vec3{X: a.X / a.W, Y: a.Y / a.W, Z: a.Z / a.W}
+func vec4_to_vec3h(a Vec4) Vec3 {
+	var v Vec3 = Vec3{X: a.X / a.W, Y: a.Y / a.W, Z: a.Z / a.W}
 	return v
 }
-func cross_product(u vec3, v vec3) vec3 {
-	var result vec3
+func cross_product(u Vec3, v Vec3) Vec3 {
+	var result Vec3
 	result.X = u.Y*v.Z - v.Y*u.Z
 	result.Y = -u.X*v.Z + v.X*u.Z
 	result.Z = u.X*v.Y - v.X*u.Y
 	return result
 }
-func angle_between_vec3(u vec3, v vec3) float32 {
+func angle_between_vec3(u Vec3, v Vec3) float32 {
 	return float32(math.Acos(float64(dot_vec3s(u, v))))
 }
 
 type mat2 [4]float32
 type mat3 [9]float32
-type mat4 [16]float32
+type Mat4 [16]float32
 
 func x_mat2(m mat2) vec2 {
 	return make_vec2(m[0], m[2])
@@ -408,169 +408,169 @@ func sety_mat2(m mat2, v vec2) {
 	m[1] = v.X
 	m[3] = v.Y
 }
-func x_mat3(m mat3) vec3 {
+func x_mat3(m mat3) Vec3 {
 	return make_vec3(m[0], m[3], m[6])
 }
-func y_mat3(m mat3) vec3 {
+func y_mat3(m mat3) Vec3 {
 	return make_vec3(m[1], m[4], m[7])
 }
-func z_mat3(m mat3) vec3 {
+func z_mat3(m mat3) Vec3 {
 	return make_vec3(m[2], m[5], m[8])
 }
-func c1_mat3(m mat3) vec3 {
+func c1_mat3(m mat3) Vec3 {
 	return make_vec3(m[0], m[1], m[2])
 }
-func c2_mat3(m mat3) vec3 {
+func c2_mat3(m mat3) Vec3 {
 	return make_vec3(m[3], m[4], m[5])
 }
-func c3_mat3(m mat3) vec3 {
+func c3_mat3(m mat3) Vec3 {
 	return make_vec3(m[6], m[7], m[8])
 }
-func setc1_mat3(m mat3, v vec3) {
+func setc1_mat3(m *mat3, v Vec3) {
 	m[0] = v.X
 	m[1] = v.Y
 	m[2] = v.Z
 }
-func setc2_mat3(m mat3, v vec3) {
+func setc2_mat3(m *mat3, v Vec3) {
 	m[3] = v.X
 	m[4] = v.Y
 	m[5] = v.Z
 }
-func setc3_mat3(m mat3, v vec3) {
+func setc3_mat3(m *mat3, v Vec3) {
 	m[6] = v.X
 	m[7] = v.Y
 	m[8] = v.Z
 }
-func setx_mat3(m mat3, v vec3) {
+func setx_mat3(m *mat3, v Vec3) {
 	m[0] = v.X
 	m[3] = v.Y
 	m[6] = v.Z
 }
-func sety_mat3(m mat3, v vec3) {
+func sety_mat3(m *mat3, v Vec3) {
 	m[1] = v.X
 	m[4] = v.Y
 	m[7] = v.Z
 }
-func setz_mat3(m mat3, v vec3) {
+func setz_mat3(m *mat3, v Vec3) {
 	m[2] = v.X
 	m[5] = v.Y
 	m[8] = v.Z
 }
-func c1_mat4(m mat4) vec4 {
+func c1_mat4(m Mat4) Vec4 {
 	return make_vec4(m[0], m[1], m[2], m[3])
 }
-func c2_mat4(m mat4) vec4 {
+func c2_mat4(m Mat4) Vec4 {
 	return make_vec4(m[4], m[5], m[6], m[7])
 }
-func c3_mat4(m mat4) vec4 {
+func c3_mat4(m Mat4) Vec4 {
 	return make_vec4(m[8], m[9], m[10], m[11])
 }
-func c4_mat4(m mat4) vec4 {
+func c4_mat4(m Mat4) Vec4 {
 	return make_vec4(m[12], m[13], m[14], m[15])
 }
-func x_mat4(m mat4) vec4 {
+func x_mat4(m Mat4) Vec4 {
 	return make_vec4(m[0], m[4], m[8], m[12])
 }
-func y_mat4(m mat4) vec4 {
+func y_mat4(m Mat4) Vec4 {
 	return make_vec4(m[1], m[5], m[9], m[13])
 }
-func z_mat4(m mat4) vec4 {
+func z_mat4(m Mat4) Vec4 {
 	return make_vec4(m[2], m[6], m[10], m[14])
 }
-func w_mat4(m mat4) vec4 {
+func w_mat4(m Mat4) Vec4 {
 	return make_vec4(m[3], m[7], m[11], m[15])
 }
-func setc1_mat4v3(m *mat4, v vec3) {
+func setc1_mat4v3(m *Mat4, v Vec3) {
 	m[0] = v.X
 	m[1] = v.Y
 	m[2] = v.Z
 	m[3] = 0
 }
-func setc2_mat4v3(m *mat4, v vec3) {
+func setc2_mat4v3(m *Mat4, v Vec3) {
 	m[4] = v.X
 	m[5] = v.Y
 	m[6] = v.Z
 	m[7] = 0
 }
-func setc3_mat4v3(m *mat4, v vec3) {
+func setc3_mat4v3(m *Mat4, v Vec3) {
 	m[8] = v.X
 	m[9] = v.Y
 	m[10] = v.Z
 	m[11] = 0
 }
-func setc4_mat4v3(m *mat4, v vec3) {
+func setc4_mat4v3(m *Mat4, v Vec3) {
 	m[12] = v.X
 	m[13] = v.Y
 	m[14] = v.Z
 	m[15] = 1
 }
-func setc1_mat4v4(m *mat4, v vec4) {
+func setc1_mat4v4(m *Mat4, v Vec4) {
 	m[0] = v.X
 	m[1] = v.Y
 	m[2] = v.Z
 	m[3] = v.W
 }
-func setc2_mat4v4(m *mat4, v vec4) {
+func setc2_mat4v4(m *Mat4, v Vec4) {
 	m[4] = v.X
 	m[5] = v.Y
 	m[6] = v.Z
 	m[7] = v.W
 }
-func setc3_mat4v4(m *mat4, v vec4) {
+func setc3_mat4v4(m *Mat4, v Vec4) {
 	m[8] = v.X
 	m[9] = v.Y
 	m[10] = v.Z
 	m[11] = v.W
 }
-func setc4_mat4v4(m *mat4, v vec4) {
+func setc4_mat4v4(m *Mat4, v Vec4) {
 	m[12] = v.X
 	m[13] = v.Y
 	m[14] = v.Z
 	m[15] = v.W
 }
-func setx_mat4v3(m *mat4, v vec3) {
+func setx_mat4v3(m *Mat4, v Vec3) {
 	m[0] = v.X
 	m[4] = v.Y
 	m[8] = v.Z
 	m[12] = 0
 }
-func sety_mat4v3(m *mat4, v vec3) {
+func sety_mat4v3(m *Mat4, v Vec3) {
 	m[1] = v.X
 	m[5] = v.Y
 	m[9] = v.Z
 	m[13] = 0
 }
-func setz_mat4v3(m *mat4, v vec3) {
+func setz_mat4v3(m *Mat4, v Vec3) {
 	m[2] = v.X
 	m[6] = v.Y
 	m[10] = v.Z
 	m[14] = 0
 }
-func setw_mat4v3(m *mat4, v vec3) {
+func setw_mat4v3(m *Mat4, v Vec3) {
 	m[3] = v.X
 	m[7] = v.Y
 	m[11] = v.Z
 	m[15] = 1
 }
-func setx_mat4v4(m *mat4, v vec4) {
+func setx_mat4v4(m *Mat4, v Vec4) {
 	m[0] = v.X
 	m[4] = v.Y
 	m[8] = v.Z
 	m[12] = v.W
 }
-func sety_mat4v4(m *mat4, v vec4) {
+func sety_mat4v4(m *Mat4, v Vec4) {
 	m[1] = v.X
 	m[5] = v.Y
 	m[9] = v.Z
 	m[13] = v.W
 }
-func setz_mat4v4(m *mat4, v vec4) {
+func setz_mat4v4(m *Mat4, v Vec4) {
 	m[2] = v.X
 	m[6] = v.Y
 	m[10] = v.Z
 	m[14] = v.W
 }
-func setw_mat4v4(m *mat4, v vec4) {
+func setw_mat4v4(m *Mat4, v Vec4) {
 	m[3] = v.X
 	m[7] = v.Y
 	m[11] = v.Z
@@ -582,7 +582,7 @@ func fprint_mat2(f *stdio.File, m mat2, append *byte) {
 func fprint_mat3(f *stdio.File, m mat3, append *byte) {
 	stdio.Fprintf(f, "[(%f, %f, %f)\n (%f, %f, %f)\n (%f, %f, %f)]%s", m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8], append)
 }
-func fprint_mat4(f *stdio.File, m mat4, append *byte) {
+func fprint_mat4(f *stdio.File, m Mat4, append *byte) {
 	stdio.Fprintf(f, "[(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)]%s", m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15], append)
 }
 func print_mat2(m mat2, append *byte) {
@@ -591,7 +591,7 @@ func print_mat2(m mat2, append *byte) {
 func print_mat3(m mat3, append *byte) {
 	fprint_mat3(stdio.Stdout(), m, append)
 }
-func print_mat4(m mat4, append *byte) {
+func print_mat4(m Mat4, append *byte) {
 	fprint_mat4(stdio.Stdout(), m, append)
 }
 func mult_mat2_vec2(m mat2, v vec2) vec2 {
@@ -600,22 +600,22 @@ func mult_mat2_vec2(m mat2, v vec2) vec2 {
 	r.Y = m[1]*v.X + m[3]*v.Y
 	return r
 }
-func mult_mat3_vec3(m mat3, v vec3) vec3 {
-	var r vec3
+func mult_mat3_vec3(m mat3, v Vec3) Vec3 {
+	var r Vec3
 	r.X = m[0]*v.X + m[3]*v.Y + m[6]*v.Z
 	r.Y = m[1]*v.X + m[4]*v.Y + m[7]*v.Z
 	r.Z = m[2]*v.X + m[5]*v.Y + m[8]*v.Z
 	return r
 }
-func mult_mat4_vec4(m mat4, v vec4) vec4 {
-	var r vec4
+func Mult_mat4_vec4(m Mat4, v Vec4) Vec4 {
+	var r Vec4
 	r.X = m[0]*v.X + m[4]*v.Y + m[8]*v.Z + m[12]*v.W
 	r.Y = m[1]*v.X + m[5]*v.Y + m[9]*v.Z + m[13]*v.W
 	r.Z = m[2]*v.X + m[6]*v.Y + m[10]*v.Z + m[14]*v.W
 	r.W = m[3]*v.X + m[7]*v.Y + m[11]*v.Z + m[15]*v.W
 	return r
 }
-func scale_mat3(m mat3, x float32, y float32, z float32) {
+func scale_mat3(m *mat3, x float32, y float32, z float32) {
 	m[0] = x
 	m[3] = 0
 	m[6] = 0
@@ -626,7 +626,7 @@ func scale_mat3(m mat3, x float32, y float32, z float32) {
 	m[5] = 0
 	m[8] = z
 }
-func scale_mat4(m *mat4, x float32, y float32, z float32) {
+func scale_mat4(m *Mat4, x float32, y float32, z float32) {
 	m[0] = x
 	m[4] = 0
 	m[8] = 0
@@ -644,7 +644,7 @@ func scale_mat4(m *mat4, x float32, y float32, z float32) {
 	m[11] = 0
 	m[15] = 1
 }
-func translation_mat4(m *mat4, x float32, y float32, z float32) {
+func Translation_mat4(m *Mat4, x float32, y float32, z float32) {
 	m[0] = 1
 	m[4] = 0
 	m[8] = 0
@@ -662,8 +662,8 @@ func translation_mat4(m *mat4, x float32, y float32, z float32) {
 	m[11] = 0
 	m[15] = 1
 }
-func extract_rotation_mat4(dst mat3, src mat4, normalize int64) {
-	var tmp vec3
+func extract_rotation_mat4(dst *mat3, src Mat4, normalize int64) {
+	var tmp Vec3
 	if normalize != 0 {
 		tmp.X = src[0*4+0]
 		tmp.Y = src[0*4+1]
@@ -719,19 +719,19 @@ func clamp(x float32, minVal float32, maxVal float32) float32 {
 func clamp_vec2(x vec2, minVal float32, maxVal float32) vec2 {
 	return make_vec2(clamp(x.X, minVal, maxVal), clamp(x.Y, minVal, maxVal))
 }
-func clamp_vec3(x vec3, minVal float32, maxVal float32) vec3 {
+func clamp_vec3(x Vec3, minVal float32, maxVal float32) Vec3 {
 	return make_vec3(clamp(x.X, minVal, maxVal), clamp(x.Y, minVal, maxVal), clamp(x.Z, minVal, maxVal))
 }
-func clamp_vec4(x vec4, minVal float32, maxVal float32) vec4 {
+func clamp_vec4(x Vec4, minVal float32, maxVal float32) Vec4 {
 	return make_vec4(clamp(x.X, minVal, maxVal), clamp(x.Y, minVal, maxVal), clamp(x.Z, minVal, maxVal), clamp(x.W, minVal, maxVal))
 }
 func distance_vec2(a vec2, b vec2) float32 {
 	return length_vec2(sub_vec2s(a, b))
 }
-func distance_vec3(a vec3, b vec3) float32 {
+func distance_vec3(a Vec3, b Vec3) float32 {
 	return length_vec3(sub_vec3s(a, b))
 }
-func reflect_vec3(i vec3, n vec3) vec3 {
+func reflect_vec3(i Vec3, n Vec3) Vec3 {
 	return sub_vec3s(i, scale_vec3(n, dot_vec3s(i, n)*2))
 }
 func smoothstep(edge0 float32, edge1 float32, x float32) float32 {
@@ -744,118 +744,118 @@ func mix(x float32, y float32, a float32) float32 {
 func mix_vec2s(x vec2, y vec2, a float32) vec2 {
 	return add_vec2s(scale_vec2(x, 1-a), scale_vec2(y, a))
 }
-func mix_vec3s(x vec3, y vec3, a float32) vec3 {
+func mix_vec3s(x Vec3, y Vec3, a float32) Vec3 {
 	return add_vec3s(scale_vec3(x, 1-a), scale_vec3(y, a))
 }
-func mix_vec4s(x vec4, y vec4, a float32) vec4 {
+func mix_vec4s(x Vec4, y Vec4, a float32) Vec4 {
 	return add_vec4s(scale_vec4(x, 1-a), scale_vec4(y, a))
 }
 func fabsf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Abs(v.X), math32.Abs(v.Y))
 }
-func fabsf_vec3(v vec3) vec3 {
+func fabsf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Abs(v.X), math32.Abs(v.Y), math32.Abs(v.Z))
 }
-func fabsf_vec4(v vec4) vec4 {
+func fabsf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Abs(v.X), math32.Abs(v.Y), math32.Abs(v.Z), math32.Abs(v.W))
 }
 func floorf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Floor(v.X), math32.Floor(v.Y))
 }
-func floorf_vec3(v vec3) vec3 {
+func floorf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Floor(v.X), math32.Floor(v.Y), math32.Floor(v.Z))
 }
-func floorf_vec4(v vec4) vec4 {
+func floorf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Floor(v.X), math32.Floor(v.Y), math32.Floor(v.Z), math32.Floor(v.W))
 }
 func ceilf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Ceil(v.X), math32.Ceil(v.Y))
 }
-func ceilf_vec3(v vec3) vec3 {
+func ceilf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Ceil(v.X), math32.Ceil(v.Y), math32.Ceil(v.Z))
 }
-func ceilf_vec4(v vec4) vec4 {
+func ceilf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Ceil(v.X), math32.Ceil(v.Y), math32.Ceil(v.Z), math32.Ceil(v.W))
 }
 func sinf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Sin(v.X), math32.Sin(v.Y))
 }
-func sinf_vec3(v vec3) vec3 {
+func sinf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Sin(v.X), math32.Sin(v.Y), math32.Sin(v.Z))
 }
-func sinf_vec4(v vec4) vec4 {
+func sinf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Sin(v.X), math32.Sin(v.Y), math32.Sin(v.Z), math32.Sin(v.W))
 }
 func cosf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Cos(v.X), math32.Cos(v.Y))
 }
-func cosf_vec3(v vec3) vec3 {
+func cosf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Cos(v.X), math32.Cos(v.Y), math32.Cos(v.Z))
 }
-func cosf_vec4(v vec4) vec4 {
+func cosf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Cos(v.X), math32.Cos(v.Y), math32.Cos(v.Z), math32.Cos(v.W))
 }
 func tanf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Tan(v.X), math32.Tan(v.Y))
 }
-func tanf_vec3(v vec3) vec3 {
+func tanf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Tan(v.X), math32.Tan(v.Y), math32.Tan(v.Z))
 }
-func tanf_vec4(v vec4) vec4 {
+func tanf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Tan(v.X), math32.Tan(v.Y), math32.Tan(v.Z), math32.Tan(v.W))
 }
 func asinf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Asin(v.X), math32.Asin(v.Y))
 }
-func asinf_vec3(v vec3) vec3 {
+func asinf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Asin(v.X), math32.Asin(v.Y), math32.Asin(v.Z))
 }
-func asinf_vec4(v vec4) vec4 {
+func asinf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Asin(v.X), math32.Asin(v.Y), math32.Asin(v.Z), math32.Asin(v.W))
 }
 func acosf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Acos(v.X), math32.Acos(v.Y))
 }
-func acosf_vec3(v vec3) vec3 {
+func acosf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Acos(v.X), math32.Acos(v.Y), math32.Acos(v.Z))
 }
-func acosf_vec4(v vec4) vec4 {
+func acosf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Acos(v.X), math32.Acos(v.Y), math32.Acos(v.Z), math32.Acos(v.W))
 }
 func atanf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Atan(v.X), math32.Atan(v.Y))
 }
-func atanf_vec3(v vec3) vec3 {
+func atanf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Atan(v.X), math32.Atan(v.Y), math32.Atan(v.Z))
 }
-func atanf_vec4(v vec4) vec4 {
+func atanf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Atan(v.X), math32.Atan(v.Y), math32.Atan(v.Z), math32.Atan(v.W))
 }
 func sinhf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Sinh(v.X), math32.Sinh(v.Y))
 }
-func sinhf_vec3(v vec3) vec3 {
+func sinhf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Sinh(v.X), math32.Sinh(v.Y), math32.Sinh(v.Z))
 }
-func sinhf_vec4(v vec4) vec4 {
+func sinhf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Sinh(v.X), math32.Sinh(v.Y), math32.Sinh(v.Z), math32.Sinh(v.W))
 }
 func coshf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Cosh(v.X), math32.Cosh(v.Y))
 }
-func coshf_vec3(v vec3) vec3 {
+func coshf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Cosh(v.X), math32.Cosh(v.Y), math32.Cosh(v.Z))
 }
-func coshf_vec4(v vec4) vec4 {
+func coshf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Cosh(v.X), math32.Cosh(v.Y), math32.Cosh(v.Z), math32.Cosh(v.W))
 }
 func tanhf_vec2(v vec2) vec2 {
 	return make_vec2(math32.Tanh(v.X), math32.Tanh(v.Y))
 }
-func tanhf_vec3(v vec3) vec3 {
+func tanhf_vec3(v Vec3) Vec3 {
 	return make_vec3(math32.Tanh(v.X), math32.Tanh(v.Y), math32.Tanh(v.Z))
 }
-func tanhf_vec4(v vec4) vec4 {
+func tanhf_vec4(v Vec4) Vec4 {
 	return make_vec4(math32.Tanh(v.X), math32.Tanh(v.Y), math32.Tanh(v.Z), math32.Tanh(v.W))
 }
 func radians(degrees float32) float32 {
@@ -870,28 +870,28 @@ func fract(x float32) float32 {
 func radians_vec2(v vec2) vec2 {
 	return make_vec2(radians(v.X), radians(v.Y))
 }
-func radians_vec3(v vec3) vec3 {
+func radians_vec3(v Vec3) Vec3 {
 	return make_vec3(radians(v.X), radians(v.Y), radians(v.Z))
 }
-func radians_vec4(v vec4) vec4 {
+func radians_vec4(v Vec4) Vec4 {
 	return make_vec4(radians(v.X), radians(v.Y), radians(v.Z), radians(v.W))
 }
 func degrees_vec2(v vec2) vec2 {
 	return make_vec2(degrees(v.X), degrees(v.Y))
 }
-func degrees_vec3(v vec3) vec3 {
+func degrees_vec3(v Vec3) Vec3 {
 	return make_vec3(degrees(v.X), degrees(v.Y), degrees(v.Z))
 }
-func degrees_vec4(v vec4) vec4 {
+func degrees_vec4(v Vec4) Vec4 {
 	return make_vec4(degrees(v.X), degrees(v.Y), degrees(v.Z), degrees(v.W))
 }
 func fract_vec2(v vec2) vec2 {
 	return make_vec2(fract(v.X), fract(v.Y))
 }
-func fract_vec3(v vec3) vec3 {
+func fract_vec3(v Vec3) Vec3 {
 	return make_vec3(fract(v.X), fract(v.Y), fract(v.Z))
 }
-func fract_vec4(v vec4) vec4 {
+func fract_vec4(v Vec4) Vec4 {
 	return make_vec4(fract(v.X), fract(v.Y), fract(v.Z), fract(v.W))
 }
 
@@ -909,7 +909,7 @@ func make_Color(red u8, green u8, blue u8, alpha u8) Color {
 func print_Color(c Color, append *byte) {
 	stdio.Printf("(%d, %d, %d, %d)%s", c.R, c.G, c.B, c.A, append)
 }
-func vec4_to_Color(v vec4) Color {
+func vec4_to_Color(v Vec4) Color {
 	var c Color
 	c.R = u8(v.X * math.MaxUint8)
 	c.G = u8(v.Y * math.MaxUint8)
@@ -917,8 +917,8 @@ func vec4_to_Color(v vec4) Color {
 	c.A = u8(v.W * math.MaxUint8)
 	return c
 }
-func Color_to_vec4(c Color) vec4 {
-	var v vec4 = vec4{X: float32(float64(float32(c.R)) / 255.0), Y: float32(float64(float32(c.G)) / 255.0), Z: float32(float64(float32(c.B)) / 255.0), W: float32(float64(float32(c.A)) / 255.0)}
+func Color_to_vec4(c Color) Vec4 {
+	var v Vec4 = Vec4{X: float32(float64(float32(c.R)) / 255.0), Y: float32(float64(float32(c.G)) / 255.0), Z: float32(float64(float32(c.B)) / 255.0), W: float32(float64(float32(c.A)) / 255.0)}
 	return v
 }
 
@@ -946,7 +946,7 @@ func line_findx(line *Line, y float32) float32 {
 }
 
 type Plane struct {
-	N vec3
+	N Vec3
 	D float32
 }
 type cvector_float struct {
@@ -1215,17 +1215,17 @@ const (
 )
 
 type PerVertex struct {
-	Gl_Position     vec4
+	Gl_Position     Vec4
 	Gl_PointSize    float32
 	Gl_ClipDistance [6]float32
 }
 type Shader_Builtins struct {
-	Gl_Position    vec4
+	Gl_Position    Vec4
 	Gl_InstanceID  GLint
 	Gl_PointCoord  vec2
 	Gl_FrontFacing GLboolean
-	Gl_FragCoord   vec4
-	Gl_FragColor   vec4
+	Gl_FragCoord   Vec4
+	Gl_FragColor   Vec4
 	Gl_FragDepth   float32
 	Discard        GLboolean
 }
@@ -1279,8 +1279,8 @@ type glTexture struct {
 	Data       *u8
 }
 type glVertex struct {
-	Clip_space   vec4
-	Screen_space vec4
+	Clip_space   Vec4
+	Screen_space Vec4
 	Clip_code    int64
 	Edge_flag    int64
 	Vs_out       *float32
@@ -1322,8 +1322,8 @@ type cvector_glVertex struct {
 	Size     uint64
 	Capacity uint64
 }
-type glContext struct {
-	Vp_mat                 mat4
+type GlContext struct {
+	Vp_mat                 Mat4
 	X_min                  int64
 	Y_min                  int64
 	X_max                  uint64
@@ -1339,7 +1339,7 @@ type glContext struct {
 	Cur_program            GLuint
 	Error                  GLenum
 	Uniform                unsafe.Pointer
-	Vertex_attribs_vs      [16]vec4
+	Vertex_attribs_vs      [16]Vec4
 	Builtins               Shader_Builtins
 	Vs_output              Vertex_Shader_output
 	Fs_input               [64]float32
@@ -1389,7 +1389,7 @@ type glContext struct {
 	Pack_alignment         GLint
 	Clear_stencil          GLint
 	Clear_color            Color
-	Blend_color            vec4
+	Blend_color            Vec4
 	Point_size             GLfloat
 	Clear_depth            GLfloat
 	Depth_range_near       GLfloat
@@ -1401,10 +1401,10 @@ type glContext struct {
 	Stencil_buf            glFramebuffer
 	User_alloced_backbuf   int64
 	Bitdepth               int64
-	Rmask                  u32
-	Gmask                  u32
-	Bmask                  u32
-	Amask                  u32
+	Rmask                  U32
+	Gmask                  U32
+	Bmask                  U32
+	Amask                  U32
 	Rshift                 int64
 	Gshift                 int64
 	Bshift                 int64
@@ -1412,7 +1412,7 @@ type glContext struct {
 	Glverts                cvector_glVertex
 }
 
-func load_rotation_mat3(mat mat3, v vec3, angle float32) {
+func load_rotation_mat3(mat *mat3, v Vec3, angle float32) {
 	var (
 		s     float32
 		c     float32
@@ -1450,7 +1450,7 @@ func load_rotation_mat3(mat mat3, v vec3, angle float32) {
 	mat[5] = (one_c * yz) + xs
 	mat[8] = (one_c * zz) + c
 }
-func mult_mat4_mat4(c mat4, a mat4, b mat4) {
+func Mult_mat4_mat4(c *Mat4, a, b Mat4) {
 	c[0] = a[0]*b[0] + a[4]*b[1] + a[8]*b[2] + a[12]*b[3]
 	c[4] = a[0]*b[4] + a[4]*b[5] + a[8]*b[6] + a[12]*b[7]
 	c[8] = a[0]*b[8] + a[4]*b[9] + a[8]*b[10] + a[12]*b[11]
@@ -1468,7 +1468,7 @@ func mult_mat4_mat4(c mat4, a mat4, b mat4) {
 	c[11] = a[3]*b[8] + a[7]*b[9] + a[11]*b[10] + a[15]*b[11]
 	c[15] = a[3]*b[12] + a[7]*b[13] + a[11]*b[14] + a[15]*b[15]
 }
-func load_rotation_mat4(mat *mat4, v vec3, angle float32) {
+func Load_rotation_mat4(mat *Mat4, v Vec3, angle float32) {
 	var (
 		s     float32
 		c     float32
@@ -1513,7 +1513,7 @@ func load_rotation_mat4(mat *mat4, v vec3, angle float32) {
 	mat[11] = 0.0
 	mat[15] = 1.0
 }
-func make_viewport_matrix(mat *mat4, x int64, y int64, width uint64, height uint64, opengl int64) {
+func make_viewport_matrix(mat *Mat4, x int64, y int64, width uint64, height uint64, opengl int64) {
 	var (
 		w float32
 		h float32
@@ -1570,7 +1570,7 @@ func make_viewport_matrix(mat *mat4, x int64, y int64, width uint64, height uint
 		mat[15] = 1
 	}
 }
-func make_pers_matrix(mat *mat4, z_near float32, z_far float32) {
+func make_pers_matrix(mat *Mat4, z_near float32, z_far float32) {
 	mat[0] = z_near
 	mat[4] = 0
 	mat[8] = 0
@@ -1588,16 +1588,16 @@ func make_pers_matrix(mat *mat4, z_near float32, z_far float32) {
 	mat[11] = float32(-1)
 	mat[15] = 0
 }
-func make_perspective_matrix(mat *mat4, fov float32, aspect float32, n float32, f float32) {
+func Make_perspective_matrix(mat *Mat4, fov float32, aspect float32, n float32, f float32) {
 	var (
-		t float32 = n * math32.Tan(float32(float64(fov)*0.5))
+		t float32 = n * float32(math.Tan(float64(fov)*0.5))
 		b float32 = -t
 		l float32 = b * aspect
 		r float32 = -l
 	)
 	make_perspective_proj_matrix(mat, l, r, b, t, n, f)
 }
-func make_perspective_proj_matrix(mat *mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
+func make_perspective_proj_matrix(mat *Mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
 	mat[0] = float32((float64(n) * 2.0) / float64(r-l))
 	mat[4] = 0.0
 	mat[8] = (r + l) / (r - l)
@@ -1615,7 +1615,7 @@ func make_perspective_proj_matrix(mat *mat4, l float32, r float32, b float32, t 
 	mat[11] = -1.0
 	mat[15] = 0.0
 }
-func make_orthographic_matrix(mat *mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
+func make_orthographic_matrix(mat *Mat4, l float32, r float32, b float32, t float32, n float32, f float32) {
 	mat[0] = float32(2.0 / float64(r-l))
 	mat[4] = 0
 	mat[8] = 0
@@ -1633,7 +1633,7 @@ func make_orthographic_matrix(mat *mat4, l float32, r float32, b float32, t floa
 	mat[11] = 0
 	mat[15] = 1
 }
-func lookAt(mat *mat4, eye vec3, center vec3, up vec3) {
+func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 	for {
 		libc.MemSet(unsafe.Pointer(&mat[0]), 0, int(unsafe.Sizeof(float32(0))*16))
 		mat[0] = func() float32 {
@@ -1653,9 +1653,9 @@ func lookAt(mat *mat4, eye vec3, center vec3, up vec3) {
 			break
 		}
 	}
-	var f vec3 = norm_vec3(sub_vec3s(center, eye))
-	var s vec3 = norm_vec3(cross_product(f, up))
-	var u vec3 = cross_product(s, f)
+	var f Vec3 = norm_vec3(sub_vec3s(center, eye))
+	var s Vec3 = norm_vec3(cross_product(f, up))
+	var u Vec3 = cross_product(s, f)
 	setx_mat4v3(mat, s)
 	sety_mat4v3(mat, u)
 	setz_mat4v3(mat, negate_vec3(f))
@@ -3444,20 +3444,20 @@ func cvec_free_float(vec unsafe.Pointer) {
 	tmp.Capacity = 0
 }
 
-var c *glContext
+var c *GlContext
 
-func gl_clipcode(pt vec4) int64 {
+func gl_clipcode(pt Vec4) int64 {
 	var w float32
 	w = float32(float64(pt.W) * (1.0 + 1e-05))
 	return ((int64(libc.BoolToInt(pt.Z < -w)) | int64(libc.BoolToInt(pt.Z > w))<<1) & (int64(libc.BoolToInt(c.Depth_clamp == 0)) | int64(libc.BoolToInt(c.Depth_clamp == 0))<<1)) | int64(libc.BoolToInt(pt.X < -w))<<2 | int64(libc.BoolToInt(pt.X > w))<<3 | int64(libc.BoolToInt(pt.Y < -w))<<4 | int64(libc.BoolToInt(pt.Y > w))<<5
 }
 func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 	var (
-		normal  vec3
-		tmpvec3 vec3 = vec3{X: 0, Y: 0, Z: 1}
-		p0      vec3 = vec4_to_vec3h(v0.Screen_space)
-		p1      vec3 = vec4_to_vec3h(v1.Screen_space)
-		p2      vec3 = vec4_to_vec3h(v2.Screen_space)
+		normal  Vec3
+		tmpvec3 Vec3 = Vec3{X: 0, Y: 0, Z: 1}
+		p0      Vec3 = vec4_to_vec3h(v0.Screen_space)
+		p1      Vec3 = vec4_to_vec3h(v1.Screen_space)
+		p2      Vec3 = vec4_to_vec3h(v2.Screen_space)
 	)
 	normal = cross_product(sub_vec3s(p1, p0), sub_vec3s(p2, p0))
 	if c.Front_face == GLenum(GL_CW) {
@@ -3472,7 +3472,7 @@ func do_vertex(v *glVertex_Attrib, enabled *int64, num_enabled uint64, i uint64,
 	var (
 		buf     GLuint
 		buf_pos *u8
-		tmpvec4 vec4
+		tmpvec4 Vec4
 	)
 	for j := int64(0); uint64(j) < num_enabled; j++ {
 		buf = GLuint((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j))))))).Buf)
@@ -3502,7 +3502,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		j           uint64
 		vert        uint64
 		num_enabled uint64
-		tmpvec4     vec4
+		tmpvec4     Vec4
 		buf_pos     *u8
 		vec4_init   [4]float32 = [4]float32{0.0, 0.0, 0.0, 1.0}
 		enabled     [16]int64
@@ -3517,7 +3517,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 			return j
 		}()
 	}(); i < GL_MAX_VERTEX_ATTRIBS; i++ {
-		libc.MemCpy(unsafe.Pointer(&c.Vertex_attribs_vs[i]), unsafe.Pointer(&vec4_init[0]), int(unsafe.Sizeof(vec4{})))
+		libc.MemCpy(unsafe.Pointer(&c.Vertex_attribs_vs[i]), unsafe.Pointer(&vec4_init[0]), int(unsafe.Sizeof(Vec4{})))
 		if (*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(i)))).Enabled != 0 {
 			if (*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(i)))).Divisor == 0 {
 				enabled[func() uint64 {
@@ -3626,7 +3626,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 func draw_point(vert *glVertex) {
 	var (
 		fs_input [64]float32
-		point    vec3 = vec4_to_vec3h(vert.Screen_space)
+		point    Vec3 = vec4_to_vec3h(vert.Screen_space)
 	)
 	point.Z = float32((float64(point.Z)-(-1.0))/(1.0-(-1.0))*float64(c.Depth_range_far-c.Depth_range_near) + float64(c.Depth_range_near))
 	if c.Depth_clamp != 0 {
@@ -3701,7 +3701,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			if (*(*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert)))).Clip_code != 0 {
 				continue
 			}
-			(*(*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert)))).Screen_space = mult_mat4_vec4(c.Vp_mat, (*(*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert)))).Clip_space)
+			(*(*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert)))).Screen_space = Mult_mat4_vec4(c.Vp_mat, (*(*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert)))).Clip_space)
 			draw_point((*glVertex)(unsafe.Add(unsafe.Pointer(c.Glverts.A), unsafe.Sizeof(glVertex{})*uintptr(vert))))
 		}
 	} else if mode == GLenum(GL_LINES) {
@@ -3883,11 +3883,11 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 	var (
 		cc1  int64
 		cc2  int64
-		d    vec4
-		p1   vec4
-		p2   vec4
-		t1   vec4
-		t2   vec4
+		d    Vec4
+		p1   Vec4
+		p2   Vec4
+		t1   Vec4
+		t2   Vec4
 		tmin float32
 		tmax float32
 	)
@@ -3906,8 +3906,8 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 	if cc1&cc2 != 0 {
 		return
 	} else if (cc1 | cc2) == 0 {
-		t1 = mult_mat4_vec4(c.Vp_mat, p1)
-		t2 = mult_mat4_vec4(c.Vp_mat, p2)
+		t1 = Mult_mat4_vec4(c.Vp_mat, p1)
+		t2 = Mult_mat4_vec4(c.Vp_mat, p2)
 		if c.Line_smooth == 0 {
 			draw_line_shader(t1, t2, v1.Vs_out, v2.Vs_out, provoke)
 		} else {
@@ -3920,8 +3920,8 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 		if clip_line(d.X+d.W, -p1.X-p1.W, &tmin, &tmax) != 0 && clip_line(-d.X+d.W, p1.X-p1.W, &tmin, &tmax) != 0 && clip_line(d.Y+d.W, -p1.Y-p1.W, &tmin, &tmax) != 0 && clip_line(-d.Y+d.W, p1.Y-p1.W, &tmin, &tmax) != 0 && clip_line(d.Z+d.W, -p1.Z-p1.W, &tmin, &tmax) != 0 && clip_line(-d.Z+d.W, p1.Z-p1.W, &tmin, &tmax) != 0 {
 			t1 = add_vec4s(p1, scale_vec4(d, tmin))
 			t2 = add_vec4s(p1, scale_vec4(d, tmax))
-			t1 = mult_mat4_vec4(c.Vp_mat, t1)
-			t2 = mult_mat4_vec4(c.Vp_mat, t2)
+			t1 = Mult_mat4_vec4(c.Vp_mat, t1)
+			t2 = Mult_mat4_vec4(c.Vp_mat, t2)
 			interpolate_clipped_line(v1, v2, &v1_out[0], &v2_out[0], tmin, tmax)
 			if c.Line_smooth == 0 {
 				draw_line_shader(t1, t2, &v1_out[0], &v2_out[0], provoke)
@@ -3931,12 +3931,12 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 		}
 	}
 }
-func draw_line_shader(v1 vec4, v2 vec4, v1_out *float32, v2_out *float32, provoke uint64) {
+func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provoke uint64) {
 	var (
 		tmp     float32
 		tmp_ptr *float32
-		hp1     vec3    = vec4_to_vec3h(v1)
-		hp2     vec3    = vec4_to_vec3h(v2)
+		hp1     Vec3    = vec4_to_vec3h(v1)
+		hp2     Vec3    = vec4_to_vec3h(v2)
 		w1      float32 = v1.W
 		w2      float32 = v2.W
 		x1      float32 = hp1.X
@@ -4141,15 +4141,15 @@ func draw_line_shader(v1 vec4, v2 vec4, v1_out *float32, v2_out *float32, provok
 		}
 	}
 }
-func draw_line_smooth_shader(v1 vec4, v2 vec4, v1_out *float32, v2_out *float32, provoke uint64) {
+func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provoke uint64) {
 	var (
 		tmp                  float32
 		tmp_ptr              *float32
 		fragment_shader      frag_func      = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragment_shader
 		uniform              unsafe.Pointer = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform
 		fragdepth_or_discard int64          = int64((*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragdepth_or_discard)
-		hp1                  vec3           = vec4_to_vec3h(v1)
-		hp2                  vec3           = vec4_to_vec3h(v2)
+		hp1                  Vec3           = vec4_to_vec3h(v1)
+		hp2                  Vec3           = vec4_to_vec3h(v2)
 		x1                   float32        = hp1.X
 		x2                   float32        = hp2.X
 		y1                   float32        = hp1.Y
@@ -4464,9 +4464,9 @@ func draw_triangle(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 }
 func draw_triangle_final(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 	var front_facing int64
-	v0.Screen_space = mult_mat4_vec4(c.Vp_mat, v0.Clip_space)
-	v1.Screen_space = mult_mat4_vec4(c.Vp_mat, v1.Clip_space)
-	v2.Screen_space = mult_mat4_vec4(c.Vp_mat, v2.Clip_space)
+	v0.Screen_space = Mult_mat4_vec4(c.Vp_mat, v0.Clip_space)
+	v1.Screen_space = Mult_mat4_vec4(c.Vp_mat, v1.Clip_space)
+	v2.Screen_space = Mult_mat4_vec4(c.Vp_mat, v2.Clip_space)
 	front_facing = is_front_facing(v0, v1, v2)
 	if c.Cull_face != 0 {
 		if c.Cull_mode == GLenum(GL_FRONT_AND_BACK) {
@@ -4486,7 +4486,7 @@ func draw_triangle_final(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 		c.Draw_triangle_back(v0, v1, v2, provoke)
 	}
 }
-func clip_xmin(c *vec4, a *vec4, b *vec4) float32 {
+func clip_xmin(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4511,7 +4511,7 @@ func clip_xmin(c *vec4, a *vec4, b *vec4) float32 {
 	c.X = -c.W
 	return t
 }
-func clip_xmax(c *vec4, a *vec4, b *vec4) float32 {
+func clip_xmax(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4536,7 +4536,7 @@ func clip_xmax(c *vec4, a *vec4, b *vec4) float32 {
 	c.X = +c.W
 	return t
 }
-func clip_ymin(c *vec4, a *vec4, b *vec4) float32 {
+func clip_ymin(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4561,7 +4561,7 @@ func clip_ymin(c *vec4, a *vec4, b *vec4) float32 {
 	c.Y = -c.W
 	return t
 }
-func clip_ymax(c *vec4, a *vec4, b *vec4) float32 {
+func clip_ymax(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4586,7 +4586,7 @@ func clip_ymax(c *vec4, a *vec4, b *vec4) float32 {
 	c.Y = +c.W
 	return t
 }
-func clip_zmin(c *vec4, a *vec4, b *vec4) float32 {
+func clip_zmin(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4611,7 +4611,7 @@ func clip_zmin(c *vec4, a *vec4, b *vec4) float32 {
 	c.Z = -c.W
 	return t
 }
-func clip_zmax(c *vec4, a *vec4, b *vec4) float32 {
+func clip_zmax(c *Vec4, a *Vec4, b *Vec4) float32 {
 	var (
 		t   float32
 		dx  float32
@@ -4637,7 +4637,7 @@ func clip_zmax(c *vec4, a *vec4, b *vec4) float32 {
 	return t
 }
 
-var clip_proc [6]*func(*vec4, *vec4, *vec4) float32 = [6]*func(*vec4, *vec4, *vec4) float32{(*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmin))), (*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmax))), (*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmin))), (*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmax))), (*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymin))), (*func(*vec4, *vec4, *vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymax)))}
+var clip_proc [6]*func(*Vec4, *Vec4, *Vec4) float32 = [6]*func(*Vec4, *Vec4, *Vec4) float32{(*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmax))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmax))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymax)))}
 
 func update_clip_pt(q *glVertex, v0 *glVertex, v1 *glVertex, t float32) {
 	for i := int64(0); i < c.Vs_output.Size; i++ {
@@ -4699,9 +4699,9 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 				q[1] = v0
 				q[2] = v1
 			}
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*vec4, *vec4, *vec4) float32)(nil)).(func(*vec4, *vec4, *vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
+			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
 			update_clip_pt(&tmp1, q[0], q[1], tt)
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*vec4, *vec4, *vec4) float32)(nil)).(func(*vec4, *vec4, *vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
+			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
 			update_clip_pt(&tmp2, q[0], q[2], tt)
 			tmp1.Edge_flag = q[0].Edge_flag
 			edge_flag_tmp = q[2].Edge_flag
@@ -4725,9 +4725,9 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 				q[1] = v0
 				q[2] = v1
 			}
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*vec4, *vec4, *vec4) float32)(nil)).(func(*vec4, *vec4, *vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
+			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
 			update_clip_pt(&tmp1, q[0], q[1], tt)
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*vec4, *vec4, *vec4) float32)(nil)).(func(*vec4, *vec4, *vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
+			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
 			update_clip_pt(&tmp2, q[0], q[2], tt)
 			tmp1.Edge_flag = 1
 			tmp2.Edge_flag = q[2].Edge_flag
@@ -4738,7 +4738,7 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 	var (
 		fs_input [64]float32
-		point    vec3
+		point    Vec3
 		vert     [3]*glVertex = [3]*glVertex{v0, v1, v2}
 	)
 	for i := int64(0); i < 3; i++ {
@@ -4777,12 +4777,12 @@ func draw_triangle_line(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 }
 func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 	var (
-		p0              vec4    = v0.Screen_space
-		p1              vec4    = v1.Screen_space
-		p2              vec4    = v2.Screen_space
-		hp0             vec3    = vec4_to_vec3h(p0)
-		hp1             vec3    = vec4_to_vec3h(p1)
-		hp2             vec3    = vec4_to_vec3h(p2)
+		p0              Vec4    = v0.Screen_space
+		p1              Vec4    = v1.Screen_space
+		p2              Vec4    = v2.Screen_space
+		hp0             Vec3    = vec4_to_vec3h(p0)
+		hp1             Vec3    = vec4_to_vec3h(p1)
+		hp2             Vec3    = vec4_to_vec3h(p2)
 		max_depth_slope float32 = 0
 		poly_offset     float32 = 0
 	)
@@ -4910,9 +4910,9 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 		}
 	}
 }
-func blend_pixel(src vec4, dst vec4) Color {
+func blend_pixel(src Vec4, dst Vec4) Color {
 	var (
-		cnst *vec4 = &c.Blend_color
+		cnst *Vec4 = &c.Blend_color
 		i    float32
 	)
 	if src.W < (1 - dst.W) {
@@ -4920,8 +4920,8 @@ func blend_pixel(src vec4, dst vec4) Color {
 	} else {
 		i = 1 - dst.W
 	}
-	var Cs vec4
-	var Cd vec4
+	var Cs Vec4
+	var Cd Vec4
 	switch c.Blend_sfactor {
 	case GL_ZERO:
 		for {
@@ -5182,7 +5182,7 @@ func blend_pixel(src vec4, dst vec4) Color {
 	default:
 		stdio.Printf("error unrecognized blend_dfactor!\n")
 	}
-	var result vec4
+	var result Vec4
 	switch c.Blend_equation {
 	case GL_FUNC_ADD:
 		result = add_vec4s(mult_vec4s(Cs, src), mult_vec4s(Cd, dst))
@@ -5371,10 +5371,10 @@ func stencil_op(stencil int64, depth int64, dest *u8) {
 	}
 	*dest = u8(int8(int64(val) & mask))
 }
-func draw_pixel_vec2(cf vec4, pos vec2) {
+func draw_pixel_vec2(cf Vec4, pos vec2) {
 	draw_pixel(cf, int64(pos.X), int64(pos.Y))
 }
-func draw_pixel(cf vec4, x int64, y int64) {
+func draw_pixel(cf Vec4, x int64, y int64) {
 	if c.Scissor_test != 0 {
 		if x < int64(c.Scissor_lx) || y < int64(c.Scissor_ly) || x >= int64(c.Scissor_ux) || y >= int64(c.Scissor_uy) {
 			return
@@ -5405,7 +5405,7 @@ func draw_pixel(cf vec4, x int64, y int64) {
 	}
 	var dest_color Color
 	var src_color Color
-	var dest *u32 = (*u32)(unsafe.Add(unsafe.Pointer((*u32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(u32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
+	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
 	dest_color = make_Color(u8(int8(int64(*dest&c.Rmask)>>c.Rshift)), u8(int8(int64(*dest&c.Gmask)>>c.Gshift)), u8(int8(int64(*dest&c.Bmask)>>c.Bshift)), u8(int8(int64(*dest&c.Amask)>>c.Ashift)))
 	if c.Blend != 0 {
 		src_color = blend_pixel(cf, Color_to_vec4(dest_color))
@@ -5419,7 +5419,7 @@ func draw_pixel(cf vec4, x int64, y int64) {
 	if c.Logic_ops != 0 {
 		src_color = logic_ops_pixel(src_color, dest_color)
 	}
-	*dest = u32(int32(int64(src_color.A)<<c.Ashift | int64(src_color.R)<<c.Rshift | int64(src_color.G)<<c.Gshift | int64(src_color.B)<<c.Bshift))
+	*dest = U32(int32(int64(src_color.A)<<c.Ashift | int64(src_color.R)<<c.Rshift | int64(src_color.G)<<c.Gshift | int64(src_color.B)<<c.Bshift))
 }
 func is_valid(target GLenum, error GLenum, n int64, _rest ...interface{}) int64 {
 	var argptr libc.ArgList
@@ -5436,10 +5436,10 @@ func is_valid(target GLenum, error GLenum, n int64, _rest ...interface{}) int64 
 	return 0
 }
 func default_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_Position = *(*vec4)(unsafe.Add(unsafe.Pointer((*vec4)(vertex_attribs)), unsafe.Sizeof(vec4{})*0))
+	builtins.Gl_Position = *(*Vec4)(unsafe.Add(unsafe.Pointer((*Vec4)(vertex_attribs)), unsafe.Sizeof(Vec4{})*0))
 }
 func default_fs(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-	var fragcolor *vec4 = &builtins.Gl_FragColor
+	var fragcolor *Vec4 = &builtins.Gl_FragColor
 	fragcolor.X = 1.0
 	fragcolor.Y = 0.0
 	fragcolor.Z = 0.0
@@ -5456,14 +5456,14 @@ func init_glVertex_Attrib(v *glVertex_Attrib) {
 	v.Enabled = 0
 	v.Divisor = 0
 }
-func init_glContext(context *glContext, back **u32, w int64, h int64, bitdepth int64, Rmask u32, Gmask u32, Bmask u32, Amask u32) int64 {
+func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth int64, Rmask U32, Gmask U32, Bmask U32, Amask U32) int64 {
 	if bitdepth > 32 || back == nil {
 		return 0
 	}
 	context.User_alloced_backbuf = int64(libc.BoolToInt(*back != nil))
 	if *back == nil {
 		var bytes_per_pixel int64 = (bitdepth + 8 - 1) / 8
-		*back = (*u32)(libc.Malloc(int(w * h * bytes_per_pixel)))
+		*back = (*U32)(libc.Malloc(int(w * h * bytes_per_pixel)))
 		if *back == nil {
 			return 0
 		}
@@ -5498,7 +5498,7 @@ func init_glContext(context *glContext, back **u32, w int64, h int64, bitdepth i
 	context.Back_buffer.W = uint64(w)
 	context.Back_buffer.H = uint64(h)
 	context.Back_buffer.Buf = (*u8)(unsafe.Pointer(*back))
-	context.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(context.Back_buffer.Buf), (h-1)*w*int64(unsafe.Sizeof(u32(0)))))
+	context.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(context.Back_buffer.Buf), (h-1)*w*int64(unsafe.Sizeof(U32(0)))))
 	context.Bitdepth = bitdepth
 	context.Rmask = Rmask
 	context.Gmask = Gmask
@@ -5648,7 +5648,7 @@ func init_glContext(context *glContext, back **u32, w int64, h int64, bitdepth i
 	cvec_push_glTexture(&context.Textures, tmp_tex)
 	return 1
 }
-func free_glContext(context *glContext) {
+func Free_glContext(context *GlContext) {
 	var i int64
 	libc.Free(unsafe.Pointer(context.Zbuf.Buf))
 	libc.Free(unsafe.Pointer(context.Stencil_buf.Buf))
@@ -5674,7 +5674,7 @@ func free_glContext(context *glContext) {
 	cvec_free_glVertex(unsafe.Pointer(&context.Glverts))
 	cvec_free_float(unsafe.Pointer(&context.Vs_output.Output_buf))
 }
-func set_glContext(context *glContext) {
+func Set_glContext(context *GlContext) {
 	c = context
 }
 func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
@@ -5690,7 +5690,7 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Zbuf.W = w
 	c.Zbuf.H = h
 	c.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(c.Zbuf.Buf), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
-	tmp = (*u8)(libc.Realloc(unsafe.Pointer(c.Back_buffer.Buf), int(w*h*uint64(unsafe.Sizeof(u32(0))))))
+	tmp = (*u8)(libc.Realloc(unsafe.Pointer(c.Back_buffer.Buf), int(w*h*uint64(unsafe.Sizeof(U32(0))))))
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -5700,7 +5700,7 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Back_buffer.Buf = tmp
 	c.Back_buffer.W = w
 	c.Back_buffer.H = h
-	c.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(c.Back_buffer.Buf), (h-1)*w*uint64(unsafe.Sizeof(u32(0)))))
+	c.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(c.Back_buffer.Buf), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
 	return unsafe.Pointer(tmp)
 }
 func glGetString(name GLenum) *GLubyte {
@@ -5780,7 +5780,7 @@ func glDeleteVertexArrays(n GLsizei, arrays *GLuint) {
 		(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Deleted = GL_TRUE
 	}
 }
-func glGenBuffers(n GLsizei, buffers *GLuint) {
+func GlGenBuffers(n GLsizei, buffers *GLuint) {
 	var tmp glBuffer
 	tmp.User_owned = GL_TRUE
 	tmp.Data = nil
@@ -5874,7 +5874,7 @@ func glBindVertexArray(array GLuint) {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
 }
-func glBindBuffer(target GLenum, buffer GLuint) {
+func GlBindBuffer(target GLenum, buffer GLuint) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5889,7 +5889,7 @@ func glBindBuffer(target GLenum, buffer GLuint) {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
 }
-func glBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
+func GlBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6099,9 +6099,9 @@ func glTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsize
 		}
 		return
 	}
-	var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 	if data != nil {
-		libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*0))), data, int(uintptr(width)*unsafe.Sizeof(u32(0))))
+		libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*0))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
 	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
 }
@@ -6273,13 +6273,13 @@ func glTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsize
 		}
 		return
 	}
-	var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 	if data != nil {
 		if padding_needed == 0 {
-			libc.MemCpy(unsafe.Pointer(texdata), data, int(uintptr(width*height*depth)*unsafe.Sizeof(u32(0))))
+			libc.MemCpy(unsafe.Pointer(texdata), data, int(uintptr(width*height*depth)*unsafe.Sizeof(U32(0))))
 		} else {
 			for i := int64(0); i < int64(height*depth); i++ {
-				libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*uintptr(i*byte_width)))), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+				libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(i*byte_width)))), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
 			}
 		}
 	}
@@ -6311,8 +6311,8 @@ func glTexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, f
 		}
 		return
 	}
-	var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-	libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(u32(0))))
+	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 }
 func glTexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
@@ -6334,10 +6334,10 @@ func glTexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, w
 		return
 	}
 	var cur_tex int64
-	var d *u32 = (*u32)(data)
+	var d *U32 = (*U32)(data)
 	if target == GLenum(GL_TEXTURE_2D) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+		var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 		if xoffset < 0 || uint64(xoffset+GLint(width)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
@@ -6346,16 +6346,16 @@ func glTexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, w
 		}
 		var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(u32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(u32(0))))
+			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
 		}
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+		var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 		var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = w * w
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*uintptr(p*int64(target)+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(u32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(u32(0))))
+			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(p*int64(target)+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
 		}
 	}
 }
@@ -6388,15 +6388,15 @@ func glTexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, z
 	var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
 	var h int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H)
 	var p int64 = w * h
-	var d *u32 = (*u32)(data)
-	var texdata *u32 = (*u32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var d *U32 = (*U32)(data)
+	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 	for j := int64(0); j < int64(depth); j++ {
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(u32(0))*uintptr((int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*u32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(u32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(u32(0))))
+			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
 		}
 	}
 }
-func glVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLboolean, stride GLsizei, offset GLsizei) {
+func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLboolean, stride GLsizei, offset GLsizei) {
 	if index >= GL_MAX_VERTEX_ATTRIBS || size < 1 || size > 4 || c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER] == 0 && offset != 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_OPERATION)
@@ -6421,7 +6421,7 @@ func glVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GL
 	v.Normalized = normalized
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
-func glEnableVertexAttribArray(index GLuint) {
+func GlEnableVertexAttribArray(index GLuint) {
 	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Enabled = GL_TRUE
 }
 func glDisableVertexAttribArray(index GLuint) {
@@ -6436,15 +6436,15 @@ func glVertexAttribDivisor(index GLuint, divisor GLuint) {
 	}
 	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Divisor = divisor
 }
-func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) vec4 {
+func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	var (
 		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(v.Buf)))).Data), v.Offset))), v.Stride*i))
-		tmpvec4 vec4
+		tmpvec4 Vec4
 	)
 	libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v.Size)*unsafe.Sizeof(float32(0))))
 	return tmpvec4
 }
-func glDrawArrays(mode GLenum, first GLint, count GLsizei) {
+func GlDrawArrays(mode GLenum, first GLint, count GLsizei) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6594,12 +6594,12 @@ func glViewport(x int64, y int64, width GLsizei, height GLsizei) {
 	c.X_max = uint64(x + int64(width))
 	c.Y_max = uint64(y + int64(height))
 }
-func glClearColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
+func GlClearColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 	red = GLclampf(clampf_01(float32(red)))
 	green = GLclampf(clampf_01(float32(green)))
 	blue = GLclampf(clampf_01(float32(blue)))
 	alpha = GLclampf(clampf_01(float32(alpha)))
-	var tmp vec4 = vec4{X: float32(red), Y: float32(green), Z: float32(blue), W: float32(alpha)}
+	var tmp Vec4 = Vec4{X: float32(red), Y: float32(green), Z: float32(blue), W: float32(alpha)}
 	c.Clear_color = vec4_to_Color(tmp)
 }
 func glClearDepth(depth GLclampf) {
@@ -6621,7 +6621,7 @@ func glDepthRange(nearVal GLclampf, farVal GLclampf) {
 func glDepthMask(flag GLboolean) {
 	c.Depth_mask = flag
 }
-func glClear(mask GLbitfield) {
+func GlClear(mask GLbitfield) {
 	if (mask & GLbitfield(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)) == 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6633,12 +6633,12 @@ func glClear(mask GLbitfield) {
 	if mask&GLbitfield(GL_COLOR_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Back_buffer.W*c.Back_buffer.H; i++ {
-				*(*u32)(unsafe.Add(unsafe.Pointer((*u32)(unsafe.Pointer(c.Back_buffer.Buf))), unsafe.Sizeof(u32(0))*uintptr(i))) = u32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Buf))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
 			}
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
 				for x := int64(int64(c.Scissor_lx)); x < int64(c.Scissor_ux); x++ {
-					*(*u32)(unsafe.Add(unsafe.Pointer((*u32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(u32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = u32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+					*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
 				}
 			}
 		}
@@ -6998,7 +6998,7 @@ func glProvokingVertex(provokeMode GLenum) {
 	}
 	c.Provoking_vert = provokeMode
 }
-func pglCreateProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, interpolation *GLenum, fragdepth_or_discard GLboolean) GLuint {
+func PglCreateProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, interpolation *GLenum, fragdepth_or_discard GLboolean) GLuint {
 	if vertex_shader == nil || fragment_shader == nil {
 		return 0
 	}
@@ -7031,7 +7031,7 @@ func glDeleteProgram(program GLuint) {
 	}
 	(*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(program)))).Deleted = GL_TRUE
 }
-func glUseProgram(program GLuint) {
+func GlUseProgram(program GLuint) {
 	if uint64(program) >= c.Programs.Size {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -7044,7 +7044,7 @@ func glUseProgram(program GLuint) {
 	c.Fragdepth_or_discard = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(program)))).Fragdepth_or_discard
 	c.Cur_program = program
 }
-func pglSetUniform(uniform unsafe.Pointer) {
+func PglSetUniform(uniform unsafe.Pointer) {
 	(*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform = uniform
 }
 func glBlendFunc(sfactor GLenum, dfactor GLenum) {
@@ -7424,7 +7424,7 @@ func wrap(i int64, size int64, mode GLenum) int64 {
 		return 0
 	}
 }
-func texture1D(tex GLuint, x float32) vec4 {
+func texture1D(tex GLuint, x float32) Vec4 {
 	var (
 		i0      int64
 		i1      int64
@@ -7444,15 +7444,15 @@ func texture1D(tex GLuint, x float32) vec4 {
 		if alpha < 0 {
 			alpha++
 		}
-		var ci vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(i0))))
-		var ci1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(i1))))
+		var ci Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(i0))))
+		var ci1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(i1))))
 		ci = scale_vec4(ci, float32(1-alpha))
 		ci1 = scale_vec4(ci1, float32(alpha))
 		ci = add_vec4s(ci, ci1)
 		return ci
 	}
 }
-func texture2D(tex GLuint, x float32, y float32) vec4 {
+func texture2D(tex GLuint, x float32, y float32) Vec4 {
 	var (
 		i0      int64
 		j0      int64
@@ -7485,10 +7485,10 @@ func texture2D(tex GLuint, x float32, y float32) vec4 {
 		if beta < 0 {
 			beta++
 		}
-		var cij vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
-		var ci1j vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i1))))
-		var cij1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i0))))
-		var ci1j1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i1))))
+		var cij Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
+		var ci1j Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i1))))
+		var cij1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i0))))
+		var ci1j1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i1))))
 		cij = scale_vec4(cij, float32((1-alpha)*(1-beta)))
 		ci1j = scale_vec4(ci1j, float32(alpha*(1-beta)))
 		cij1 = scale_vec4(cij1, float32((1-alpha)*beta))
@@ -7499,7 +7499,7 @@ func texture2D(tex GLuint, x float32, y float32) vec4 {
 		return cij
 	}
 }
-func texture3D(tex GLuint, x float32, y float32, z float32) vec4 {
+func texture3D(tex GLuint, x float32, y float32, z float32) Vec4 {
 	var (
 		i0      int64
 		j0      int64
@@ -7545,14 +7545,14 @@ func texture3D(tex GLuint, x float32, y float32, z float32) vec4 {
 		if gamma < 0 {
 			gamma++
 		}
-		var cijk vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j0*w+i0))))
-		var ci1jk vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j0*w+i1))))
-		var cij1k vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j1*w+i0))))
-		var ci1j1k vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j1*w+i1))))
-		var cijk1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j0*w+i0))))
-		var ci1jk1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j0*w+i1))))
-		var cij1k1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j1*w+i0))))
-		var ci1j1k1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j1*w+i1))))
+		var cijk Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j0*w+i0))))
+		var ci1jk Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j0*w+i1))))
+		var cij1k Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j1*w+i0))))
+		var ci1j1k Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k0*plane+j1*w+i1))))
+		var cijk1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j0*w+i0))))
+		var ci1jk1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j0*w+i1))))
+		var cij1k1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j1*w+i0))))
+		var ci1j1k1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(k1*plane+j1*w+i1))))
 		cijk = scale_vec4(cijk, float32((1-alpha)*(1-beta)*(1-gamma)))
 		ci1jk = scale_vec4(ci1jk, float32(alpha*(1-beta)*(1-gamma)))
 		cij1k = scale_vec4(cij1k, float32((1-alpha)*beta*(1-gamma)))
@@ -7571,7 +7571,7 @@ func texture3D(tex GLuint, x float32, y float32, z float32) vec4 {
 		return cijk
 	}
 }
-func texture2DArray(tex GLuint, x float32, y float32, z int64) vec4 {
+func texture2DArray(tex GLuint, x float32, y float32, z int64) Vec4 {
 	var (
 		i0      int64
 		j0      int64
@@ -7605,10 +7605,10 @@ func texture2DArray(tex GLuint, x float32, y float32, z int64) vec4 {
 		if beta < 0 {
 			beta++
 		}
-		var cij vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j0*w+i0))))
-		var ci1j vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j0*w+i1))))
-		var cij1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j1*w+i0))))
-		var ci1j1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j1*w+i1))))
+		var cij Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j0*w+i0))))
+		var ci1j Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j0*w+i1))))
+		var cij1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j1*w+i0))))
+		var ci1j1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j1*w+i1))))
 		cij = scale_vec4(cij, float32((1-alpha)*(1-beta)))
 		ci1j = scale_vec4(ci1j, float32(alpha*(1-beta)))
 		cij1 = scale_vec4(cij1, float32((1-alpha)*beta))
@@ -7619,7 +7619,7 @@ func texture2DArray(tex GLuint, x float32, y float32, z int64) vec4 {
 		return cij
 	}
 }
-func texture_rect(tex GLuint, x float32, y float32) vec4 {
+func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 	var (
 		i0      int64
 		j0      int64
@@ -7650,10 +7650,10 @@ func texture_rect(tex GLuint, x float32, y float32) vec4 {
 		if beta < 0 {
 			beta++
 		}
-		var cij vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
-		var ci1j vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i1))))
-		var cij1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i0))))
-		var ci1j1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i1))))
+		var cij Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
+		var ci1j Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i1))))
+		var cij1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i0))))
+		var ci1j1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j1*w+i1))))
 		cij = scale_vec4(cij, float32((1-alpha)*(1-beta)))
 		ci1j = scale_vec4(ci1j, float32(alpha*(1-beta)))
 		cij1 = scale_vec4(cij1, float32((1-alpha)*beta))
@@ -7664,7 +7664,7 @@ func texture_rect(tex GLuint, x float32, y float32) vec4 {
 		return cij
 	}
 }
-func texture_cubemap(texture GLuint, x float32, y float32, z float32) vec4 {
+func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 	var (
 		tex     *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))
 		texdata *Color     = (*Color)(unsafe.Pointer(tex.Data))
@@ -7752,7 +7752,7 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) vec4 {
 	if tex.Mag_filter == GLenum(GL_NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, tex.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, tex.Wrap_t)
-		var tmpvec4 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i0))))
+		var tmpvec4 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i0))))
 		return tmpvec4
 	} else {
 		i0 = wrap(int64(math.Floor(xw-0.5)), int64(tex.W), tex.Wrap_s)
@@ -7768,10 +7768,10 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) vec4 {
 		if beta < 0 {
 			beta++
 		}
-		var cij vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i0))))
-		var ci1j vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i1))))
-		var cij1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j1*w+i0))))
-		var ci1j1 vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j1*w+i1))))
+		var cij Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i0))))
+		var ci1j Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i1))))
+		var cij1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j1*w+i0))))
+		var ci1j1 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j1*w+i1))))
 		cij = scale_vec4(cij, float32((1-alpha)*(1-beta)))
 		ci1j = scale_vec4(ci1j, float32(alpha*(1-beta)))
 		cij1 = scale_vec4(cij1, float32((1-alpha)*beta))
@@ -8011,9 +8011,9 @@ func pglGetTextureData(texture GLuint, data *unsafe.Pointer) {
 	}
 }
 func put_pixel(color Color, x int64, y int64) {
-	var dest *u32 = (*u32)(unsafe.Add(unsafe.Pointer((*u32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(u32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
+	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
 	_ = dest
-	*dest = u32(int32(int64(color.A)<<c.Ashift | int64(color.R)<<c.Rshift | int64(color.G)<<c.Gshift | int64(color.B)<<c.Bshift))
+	*dest = U32(int32(int64(color.A)<<c.Ashift | int64(color.R)<<c.Rshift | int64(color.G)<<c.Gshift | int64(color.B)<<c.Bshift))
 }
 func put_line(the_color Color, x1 float32, y1 float32, x2 float32, y2 float32) {
 	var tmp float32

@@ -1,12 +1,10 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 import (
 	"fmt"
 	"github.com/gotranspile/cxgo/runtime/libc"
 	"github.com/veandco/go-sdl2/sdl"
+	"pgl"
 	"unsafe"
 )
 
@@ -16,9 +14,9 @@ const (
 )
 
 var (
-	Red   = vec4{1.0, 0.0, 0.0, 0.0}
-	Green = vec4{0.0, 1.0, 0.0, 0.0}
-	Blue  = vec4{0.0, 0.0, 1.0, 0.0}
+	Red   = pgl.Vec4{1.0, 0.0, 0.0, 0.0}
+	Green = pgl.Vec4{0.0, 1.0, 0.0, 0.0}
+	Blue  = pgl.Vec4{0.0, 0.0, 1.0, 0.0}
 )
 
 var (
@@ -27,13 +25,13 @@ var (
 	tex    *sdl.Texture
 )
 
-var bbufpix = (*u32)(nil)
+var bbufpix = (*pgl.U32)(nil)
 
-var the_Context glContext
+var the_Context pgl.GlContext
 
 type My_Uniforms struct {
-	mvp_mat mat4
-	v_color vec4
+	mvp_mat pgl.Mat4
+	v_color pgl.Vec4
 }
 
 func main() {
@@ -45,28 +43,28 @@ func main() {
 		0, 0.5, 0,
 	}
 	var the_uniforms My_Uniforms
-	identity := mat4{
+	identity := pgl.Mat4{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1,
 	}
 
-	var triangle GLuint
-	glGenBuffers(1, &triangle)
-	glBindBuffer(GL_ARRAY_BUFFER, triangle)
-	glBufferData(GL_ARRAY_BUFFER, GLsizei(unsafe.Sizeof(GLfloat(0))*9), unsafe.Pointer(&points[0]), GL_STATIC_DRAW)
-	glEnableVertexAttribArray(0)
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0)
+	var triangle pgl.GLuint
+	pgl.GlGenBuffers(1, &triangle)
+	pgl.GlBindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
+	pgl.GlBufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(pgl.GLfloat(0))*9), unsafe.Pointer(&points[0]), pgl.GL_STATIC_DRAW)
+	pgl.GlEnableVertexAttribArray(0)
+	pgl.GlVertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
 
-	var myshader = pglCreateProgram(normal_vs, normal_fs, 0, nil, GL_FALSE)
-	glUseProgram(myshader)
+	var myshader = pgl.PglCreateProgram(normal_vs, normal_fs, 0, nil, pgl.GL_FALSE)
+	pgl.GlUseProgram(myshader)
 
-	pglSetUniform(unsafe.Pointer(&the_uniforms))
+	pgl.PglSetUniform(unsafe.Pointer(&the_uniforms))
 
 	the_uniforms.v_color = Red
 
-	libc.MemCpy(unsafe.Pointer(&the_uniforms.mvp_mat), unsafe.Pointer(&identity), int(unsafe.Sizeof(mat4{})))
+	libc.MemCpy(unsafe.Pointer(&the_uniforms.mvp_mat), unsafe.Pointer(&identity), int(unsafe.Sizeof(pgl.Mat4{})))
 
 	var (
 		e    sdl.Event
@@ -107,11 +105,11 @@ func main() {
 			counter = 0
 		}
 
-		glClearColor(0, 0, 0, 1)
-		glClear(GL_COLOR_BUFFER_BIT)
-		glDrawArrays(GL_TRIANGLES, 0, 3)
+		pgl.GlClearColor(0, 0, 0, 1)
+		pgl.GlClear(pgl.GL_COLOR_BUFFER_BIT)
+		pgl.GlDrawArrays(pgl.GL_TRIANGLES, 0, 3)
 
-		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(bbufpix)), int(HEIGHT*WIDTH*unsafe.Sizeof(u32(0)))), int(WIDTH*unsafe.Sizeof(u32(0))))
+		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(bbufpix)), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene
 		ren.Copy(tex, nil, nil)
 		ren.Present()
@@ -120,11 +118,11 @@ func main() {
 	cleanup()
 }
 
-func normal_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_Position = mult_mat4_vec4(*(*mat4)(uniforms), *(*vec4)(vertex_attribs))
+func normal_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
+	builtins.Gl_Position = pgl.Mult_mat4_vec4(*(*pgl.Mat4)(uniforms), *(*pgl.Vec4)(vertex_attribs))
 }
 
-func normal_fs(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
+func normal_fs(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
 	builtins.Gl_FragColor = (*My_Uniforms)(uniforms).v_color
 }
 
@@ -144,15 +142,15 @@ func setup_context() {
 	tex, _ = ren.CreateTexture(sdl.PIXELFORMAT_ARGB8888, sdl.TEXTUREACCESS_STREAMING, WIDTH, HEIGHT)
 
 	bbufpix = nil
-	if init_glContext(&the_Context, &bbufpix, WIDTH, HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000) == 0 {
+	if pgl.Init_glContext(&the_Context, &bbufpix, WIDTH, HEIGHT, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000) == 0 {
 		panic("failed to init context")
 	}
 
-	set_glContext(&the_Context)
+	pgl.Set_glContext(&the_Context)
 }
 
 func cleanup() {
-	free_glContext(&the_Context)
+	pgl.Free_glContext(&the_Context)
 	tex.Destroy()
 	ren.Destroy()
 	window.Destroy()
