@@ -85,7 +85,7 @@ func main() {
 	var myshader = pgl.PglCreateProgram(smooth_vs, smooth_fs, 4, &smooth[0], pgl.GL_FALSE)
 	pgl.GlUseProgram(myshader)
 
-	pgl.PglSetUniform(unsafe.Pointer(&the_uniforms))
+	pgl.PglSetUniform(&the_uniforms)
 
 	the_uniforms.v_color = Red
 
@@ -110,9 +110,11 @@ func main() {
 			if e.GetType() == sdl.QUIT {
 				quit = 1
 			}
-			/*if e.GetType() == sdl.KEYDOWN &&{
-				quit = 1
-			}*/
+			if e.GetType() == sdl.KEYDOWN {
+				if e.(*sdl.KeyboardEvent).Keysym.Scancode == sdl.K_ESCAPE {
+					quit = 1
+				}
+			}
 			if e.GetType() == sdl.MOUSEBUTTONDOWN {
 				quit = 1
 			}
@@ -148,15 +150,17 @@ func main() {
 	cleanup()
 }
 
-func smooth_fs(input *float32, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
+func smooth_fs(input *float32, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 	builtins.Gl_FragColor = *(*pgl.Vec4)(unsafe.Pointer(input))
 }
 
-func smooth_vs(output *float32, attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
+func smooth_vs(output *float32, attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 	var v_attribs = unsafe.Slice((*pgl.Vec4)(attribs), 5)
 	*(*pgl.Vec4)(unsafe.Pointer(output)) = v_attribs[4] // color
-
-	builtins.Gl_Position = pgl.Mult_mat4_vec4(*(*pgl.Mat4)(uniforms), v_attribs[0])
+	if v_attribs[4].W == 0 {
+		fmt.Println("")
+	}
+	builtins.Gl_Position = pgl.Mult_mat4_vec4(uniforms.(*My_Uniforms).mvp_mat, v_attribs[0])
 }
 
 func setup_context() {

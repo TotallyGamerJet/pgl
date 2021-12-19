@@ -244,7 +244,7 @@ func norm_vec2(a vec2) vec2 {
 	)
 	return c
 }
-func norm_vec3(a Vec3) Vec3 {
+func Norm_vec3(a Vec3) Vec3 {
 	var (
 		l float32 = length_vec3(a)
 		c Vec3    = Vec3{X: a.X / l, Y: a.Y / l, Z: a.Z / l}
@@ -313,7 +313,7 @@ func div_vec4s(a Vec4, b Vec4) Vec4 {
 func dot_vec2s(a vec2, b vec2) float32 {
 	return a.X*b.X + a.Y*b.Y
 }
-func dot_vec3s(a Vec3, b Vec3) float32 {
+func Dot_vec3s(a Vec3, b Vec3) float32 {
 	return a.X*b.X + a.Y*b.Y + a.Z*b.Z
 }
 func dot_vec4s(a Vec4, b Vec4) float32 {
@@ -323,7 +323,7 @@ func scale_vec2(a vec2, s float32) vec2 {
 	var b vec2 = vec2{X: a.X * s, Y: a.Y * s}
 	return b
 }
-func scale_vec3(a Vec3, s float32) Vec3 {
+func Scale_vec3(a Vec3, s float32) Vec3 {
 	var b Vec3 = Vec3{X: a.X * s, Y: a.Y * s, Z: a.Z * s}
 	return b
 }
@@ -373,7 +373,7 @@ func cross_product(u Vec3, v Vec3) Vec3 {
 	return result
 }
 func angle_between_vec3(u Vec3, v Vec3) float32 {
-	return float32(math.Acos(float64(dot_vec3s(u, v))))
+	return float32(math.Acos(float64(Dot_vec3s(u, v))))
 }
 
 type mat2 [4]float32
@@ -392,19 +392,19 @@ func c1_mat2(m mat2) vec2 {
 func c2_mat2(m mat2) vec2 {
 	return make_vec2(m[2], m[3])
 }
-func setc1_mat2(m mat2, v vec2) {
+func setc1_mat2(m *mat2, v vec2) {
 	m[0] = v.X
 	m[1] = v.Y
 }
-func setc2_mat2(m mat2, v vec2) {
+func setc2_mat2(m *mat2, v vec2) {
 	m[2] = v.X
 	m[3] = v.Y
 }
-func setx_mat2(m mat2, v vec2) {
+func setx_mat2(m *mat2, v vec2) {
 	m[0] = v.X
 	m[2] = v.Y
 }
-func sety_mat2(m mat2, v vec2) {
+func sety_mat2(m *mat2, v vec2) {
 	m[1] = v.X
 	m[3] = v.Y
 }
@@ -732,7 +732,7 @@ func distance_vec3(a Vec3, b Vec3) float32 {
 	return length_vec3(sub_vec3s(a, b))
 }
 func reflect_vec3(i Vec3, n Vec3) Vec3 {
-	return sub_vec3s(i, scale_vec3(n, dot_vec3s(i, n)*2))
+	return sub_vec3s(i, Scale_vec3(n, Dot_vec3s(i, n)*2))
 }
 func smoothstep(edge0 float32, edge1 float32, x float32) float32 {
 	var t float32 = clamp_01((x - edge0) / (edge1 - edge0))
@@ -745,7 +745,7 @@ func mix_vec2s(x vec2, y vec2, a float32) vec2 {
 	return add_vec2s(scale_vec2(x, 1-a), scale_vec2(y, a))
 }
 func mix_vec3s(x Vec3, y Vec3, a float32) Vec3 {
-	return add_vec3s(scale_vec3(x, 1-a), scale_vec3(y, a))
+	return add_vec3s(Scale_vec3(x, 1-a), Scale_vec3(y, a))
 }
 func mix_vec4s(x Vec4, y Vec4, a float32) Vec4 {
 	return add_vec4s(scale_vec4(x, 1-a), scale_vec4(y, a))
@@ -1229,12 +1229,12 @@ type Shader_Builtins struct {
 	Gl_FragDepth   float32
 	Discard        GLboolean
 }
-type vert_func func(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer)
-type frag_func func(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer)
+type vert_func func(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms interface{})
+type frag_func func(fs_input *float32, builtins *Shader_Builtins, uniforms interface{})
 type glProgram struct {
 	Vertex_shader        vert_func
 	Fragment_shader      frag_func
-	Uniform              unsafe.Pointer
+	Uniform              interface{}
 	Vs_output_size       int64
 	Interpolation        [64]GLenum
 	Fragdepth_or_discard GLboolean
@@ -1653,13 +1653,13 @@ func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 			break
 		}
 	}
-	var f Vec3 = norm_vec3(sub_vec3s(center, eye))
-	var s Vec3 = norm_vec3(cross_product(f, up))
+	var f Vec3 = Norm_vec3(sub_vec3s(center, eye))
+	var s Vec3 = Norm_vec3(cross_product(f, up))
 	var u Vec3 = cross_product(s, f)
 	setx_mat4v3(mat, s)
 	sety_mat4v3(mat, u)
 	setz_mat4v3(mat, negate_vec3(f))
-	setc4_mat4v3(mat, make_vec3(-dot_vec3s(s, eye), -dot_vec3s(u, eye), dot_vec3s(f, eye)))
+	setc4_mat4v3(mat, make_vec3(-Dot_vec3s(s, eye), -Dot_vec3s(u, eye), Dot_vec3s(f, eye)))
 }
 
 var CVEC_glVertex_Array_SZ uint64 = 50
@@ -3463,7 +3463,7 @@ func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 	if c.Front_face == GLenum(GL_CW) {
 		normal = negate_vec3(normal)
 	}
-	if dot_vec3s(normal, tmpvec3) <= 0 {
+	if Dot_vec3s(normal, tmpvec3) <= 0 {
 		return 0
 	}
 	return 1
@@ -3977,7 +3977,7 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 	var line_length_squared float32 = length_vec2(sub_p2p1)
 	line_length_squared *= line_length_squared
 	var fragment_shader frag_func = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragment_shader
-	var uniform unsafe.Pointer = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform
+	var uniform interface{} = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform
 	var fragdepth_or_discard int64 = int64((*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragdepth_or_discard)
 	_ = fragdepth_or_discard
 	var i_x1 float32
@@ -4145,19 +4145,19 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 	var (
 		tmp                  float32
 		tmp_ptr              *float32
-		fragment_shader      frag_func      = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragment_shader
-		uniform              unsafe.Pointer = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform
-		fragdepth_or_discard int64          = int64((*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragdepth_or_discard)
-		hp1                  Vec3           = vec4_to_vec3h(v1)
-		hp2                  Vec3           = vec4_to_vec3h(v2)
-		x1                   float32        = hp1.X
-		x2                   float32        = hp2.X
-		y1                   float32        = hp1.Y
-		y2                   float32        = hp2.Y
-		z1                   float32        = hp1.Z
-		z2                   float32        = hp2.Z
-		w1                   float32        = v1.W
-		w2                   float32        = v2.W
+		fragment_shader      frag_func   = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragment_shader
+		uniform              interface{} = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform
+		fragdepth_or_discard int64       = int64((*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Fragdepth_or_discard)
+		hp1                  Vec3        = vec4_to_vec3h(v1)
+		hp2                  Vec3        = vec4_to_vec3h(v2)
+		x1                   float32     = hp1.X
+		x2                   float32     = hp2.X
+		y1                   float32     = hp1.Y
+		y2                   float32     = hp2.Y
+		z1                   float32     = hp1.Z
+		z2                   float32     = hp2.Z
+		w1                   float32     = v1.W
+		w2                   float32     = v2.W
 		x                    int64
 		j                    int64
 		steep                int64 = int64(libc.BoolToInt(math32.Abs(y2-y1) > math32.Abs(x2-x1)))
@@ -5435,10 +5435,10 @@ func is_valid(target GLenum, error GLenum, n int64, _rest ...interface{}) int64 
 	}
 	return 0
 }
-func default_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
+func default_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms interface{}) {
 	builtins.Gl_Position = *(*Vec4)(unsafe.Add(unsafe.Pointer((*Vec4)(vertex_attribs)), unsafe.Sizeof(Vec4{})*0))
 }
-func default_fs(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
+func default_fs(fs_input *float32, builtins *Shader_Builtins, uniforms interface{}) {
 	var fragcolor *Vec4 = &builtins.Gl_FragColor
 	fragcolor.X = 1.0
 	fragcolor.Y = 0.0
@@ -5621,11 +5621,7 @@ func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth i
 		}(v0, v1, v2, provoke)
 	}
 	context.Error = GLenum(GL_NO_ERROR)
-	var tmp_prog glProgram = glProgram{Vertex_shader: func(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-		default_vs(vs_output, vertex_attribs, builtins, uniforms)
-	}, Fragment_shader: func(fs_input *float32, builtins *Shader_Builtins, uniforms unsafe.Pointer) {
-		default_fs(fs_input, builtins, uniforms)
-	}, Uniform: nil, Vs_output_size: GL_FALSE}
+	var tmp_prog glProgram = glProgram{Vertex_shader: default_vs, Fragment_shader: default_fs, Uniform: nil, Vs_output_size: GL_FALSE}
 	cvec_push_glProgram(&context.Programs, tmp_prog)
 	context.Cur_program = 0
 	var tmp_va glVertex_Array
@@ -5742,12 +5738,12 @@ func glGetString(name GLenum) *GLubyte {
 		return nil
 	}
 }
-func glGetError() GLenum {
+func GlGetError() GLenum {
 	var err GLenum = c.Error
 	c.Error = GLenum(GL_NO_ERROR)
 	return err
 }
-func glGenVertexArrays(n GLsizei, arrays *GLuint) {
+func GlGenVertexArrays(n GLsizei, arrays *GLuint) {
 	var tmp glVertex_Array
 	init_glVertex_Array(&tmp)
 	tmp.Deleted = GL_FALSE
@@ -5867,7 +5863,7 @@ func glDeleteTextures(n GLsizei, textures *GLuint) {
 		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Deleted = GL_TRUE
 	}
 }
-func glBindVertexArray(array GLuint) {
+func GlBindVertexArray(array GLuint) {
 	if uint64(array) < c.Vertex_arrays.Size && (*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(array)))).Deleted == GL_FALSE {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
@@ -6424,7 +6420,7 @@ func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GL
 func GlEnableVertexAttribArray(index GLuint) {
 	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Enabled = GL_TRUE
 }
-func glDisableVertexAttribArray(index GLuint) {
+func GlDisableVertexAttribArray(index GLuint) {
 	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Enabled = GL_FALSE
 }
 func glVertexAttribDivisor(index GLuint, divisor GLuint) {
@@ -6581,7 +6577,7 @@ func glDrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenu
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, GL_TRUE)
 	}
 }
-func glViewport(x int64, y int64, width GLsizei, height GLsizei) {
+func GlViewport(x int64, y int64, width GLsizei, height GLsizei) {
 	if width < 0 || height < 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6670,7 +6666,7 @@ func GlClear(mask GLbitfield) {
 		}
 	}
 }
-func glEnable(cap_ GLenum) {
+func GlEnable(cap_ GLenum) {
 	switch cap_ {
 	case GL_CULL_FACE:
 		c.Cull_face = GL_TRUE
@@ -6875,7 +6871,7 @@ func glFrontFace(mode GLenum) {
 	}
 	c.Front_face = mode
 }
-func glPolygonMode(face GLenum, mode GLenum) {
+func GlPolygonMode(face GLenum, mode GLenum) {
 	if face != GLenum(GL_FRONT) && face != GLenum(GL_BACK) && face != GLenum(GL_FRONT_AND_BACK) || mode != GLenum(GL_POINT) && mode != GLenum(GL_LINE) && mode != GLenum(GL_FILL) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -7044,7 +7040,7 @@ func GlUseProgram(program GLuint) {
 	c.Fragdepth_or_discard = (*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(program)))).Fragdepth_or_discard
 	c.Cur_program = program
 }
-func PglSetUniform(uniform unsafe.Pointer) {
+func PglSetUniform(uniform interface{}) {
 	(*(*glProgram)(unsafe.Add(unsafe.Pointer(c.Programs.A), unsafe.Sizeof(glProgram{})*uintptr(c.Cur_program)))).Uniform = uniform
 }
 func glBlendFunc(sfactor GLenum, dfactor GLenum) {

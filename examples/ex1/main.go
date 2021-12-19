@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gotranspile/cxgo/runtime/libc"
 	"github.com/veandco/go-sdl2/sdl"
 	"pgl"
 	"unsafe"
@@ -60,11 +59,11 @@ func main() {
 	var myshader = pgl.PglCreateProgram(normal_vs, normal_fs, 0, nil, pgl.GL_FALSE)
 	pgl.GlUseProgram(myshader)
 
-	pgl.PglSetUniform(unsafe.Pointer(&the_uniforms))
+	pgl.PglSetUniform(&the_uniforms)
 
 	the_uniforms.v_color = Red
 
-	libc.MemCpy(unsafe.Pointer(&the_uniforms.mvp_mat), unsafe.Pointer(&identity), int(unsafe.Sizeof(pgl.Mat4{})))
+	the_uniforms.mvp_mat = identity
 
 	var (
 		e    sdl.Event
@@ -118,12 +117,12 @@ func main() {
 	cleanup()
 }
 
-func normal_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_Position = pgl.Mult_mat4_vec4(*(*pgl.Mat4)(uniforms), *(*pgl.Vec4)(vertex_attribs))
+func normal_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
+	builtins.Gl_Position = pgl.Mult_mat4_vec4((uniforms).(*My_Uniforms).mvp_mat, *(*pgl.Vec4)(vertex_attribs))
 }
 
-func normal_fs(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms unsafe.Pointer) {
-	builtins.Gl_FragColor = (*My_Uniforms)(uniforms).v_color
+func normal_fs(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms interface{}) {
+	builtins.Gl_FragColor = (uniforms).(*My_Uniforms).v_color
 }
 
 func setup_context() {
