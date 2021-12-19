@@ -366,21 +366,6 @@ func transpose(m *pgl.GLfloat) {
 	copy(unsafe.Slice(m, 16), t[:])
 }
 
-//    GLfloat t[16];
-//    identity(t);
-//
-// Extract and invert the translation part 't'. The inverse of a
-// translation matrix can be calculated by negating the translation
-// coordinates.
-//    t[12] = -m[12]; t[13] = -m[13]; t[14] = -m[14];
-//
-// Invert the rotation part 'r'. The inverse of a rotation matrix is
-// equal to its transpose.
-//    m[12] = m[13] = m[14] = 0;
-//    transpose(m);
-//
-//    // inv(m) = inv(r) * inv(t)
-//    multiply(m, t);
 func invert(m *pgl.GLfloat) {
 	var t [16]pgl.GLfloat
 	identity(&t[0])
@@ -528,10 +513,10 @@ func fragment_shader(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms 
 }
 func gears_init() {
 	var program pgl.GLuint
-	pgl.GlEnable(pgl.GLenum(pgl.GL_CULL_FACE))
-	pgl.GlEnable(pgl.GLenum(pgl.GL_DEPTH_TEST))
+	pgl.GlEnable(pgl.GL_CULL_FACE)
+	pgl.GlEnable(pgl.GL_DEPTH_TEST)
 	var smooth [3]pgl.GLenum = [3]pgl.GLenum{pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH)}
-	program = pgl.PglCreateProgram(vertex_shader, fragment_shader, 3, &smooth[0], pgl.GL_FALSE)
+	program = pgl.PglCreateProgram(vertex_shader, fragment_shader, 3, smooth[:], pgl.GL_FALSE)
 	pgl.GlUseProgram(program)
 	pgl.PglSetUniform(&uniforms)
 	perspective(&ProjectionMatrix[0], pgl.GLfloat(60.0), pgl.GLfloat(int(WIDTH/HEIGHT)), pgl.GLfloat(1.0), pgl.GLfloat(1024.0))

@@ -82,7 +82,7 @@ func main() {
 	pgl.GlEnableVertexAttribArray(4)
 	pgl.GlVertexAttribPointer(4, 4, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
 
-	var myshader = pgl.PglCreateProgram(smooth_vs, smooth_fs, 4, &smooth[0], pgl.GL_FALSE)
+	var myshader = pgl.PglCreateProgram(smooth_vs, smooth_fs, 4, smooth[:], pgl.GL_FALSE)
 	pgl.GlUseProgram(myshader)
 
 	pgl.PglSetUniform(&the_uniforms)
@@ -158,7 +158,7 @@ func smooth_vs(output *float32, attribs unsafe.Pointer, builtins *pgl.Shader_Bui
 	var v_attribs = unsafe.Slice((*pgl.Vec4)(attribs), 5)
 	*(*pgl.Vec4)(unsafe.Pointer(output)) = v_attribs[4] // color
 	if v_attribs[4].W == 0 {
-		fmt.Println("")
+		panic("GONE")
 	}
 	builtins.Gl_Position = pgl.Mult_mat4_vec4(uniforms.(*My_Uniforms).mvp_mat, v_attribs[0])
 }
