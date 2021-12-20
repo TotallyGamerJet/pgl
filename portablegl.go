@@ -2174,7 +2174,7 @@ func cvec_free_glBuffer_heap(vec unsafe.Pointer) {
 }
 func cvec_free_glBuffer(vec unsafe.Pointer) {
 	var tmp *cvector_glBuffer = (*cvector_glBuffer)(vec)
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
+	tmp.A = nil
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
@@ -3271,7 +3271,7 @@ func cvec_free_float_heap(vec unsafe.Pointer) {
 }
 func cvec_free_float(vec unsafe.Pointer) {
 	var tmp *cvector_float = (*cvector_float)(vec)
-	libc.Free(unsafe.Pointer(tmp.A))
+	tmp.A = nil
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
@@ -3494,7 +3494,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			provoke = 0
 		}
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-2); i, vert = i+3, vert+3 {
-			draw_triangle((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+2))), vert+uint64(provoke))
+			draw_triangle(&c.Glverts.A[vert], &c.Glverts.A[vert+1], &c.Glverts.A[vert+2], vert+uint64(provoke))
 		}
 	} else if mode == GLenum(GL_TRIANGLE_STRIP) {
 		var (
@@ -5059,7 +5059,6 @@ func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth i
 	context.Zbuf.Buf = (*u8)(libc.Malloc(int(w * h * int64(unsafe.Sizeof(float32(0))))))
 	if context.Zbuf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
-			libc.Free(unsafe.Pointer(*back))
 			*back = nil
 		}
 		return 0
@@ -5067,10 +5066,9 @@ func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth i
 	context.Stencil_buf.Buf = (*u8)(libc.Malloc(int(w * h)))
 	if context.Stencil_buf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
-			libc.Free(unsafe.Pointer(*back))
 			*back = nil
 		}
-		libc.Free(unsafe.Pointer(context.Zbuf.Buf))
+		context.Zbuf.Buf = nil
 		return 0
 	}
 	context.X_min = 0
@@ -5206,8 +5204,8 @@ func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth i
 }
 func Free_glContext(context *GlContext) {
 	var i int64
-	libc.Free(unsafe.Pointer(context.Zbuf.Buf))
-	libc.Free(unsafe.Pointer(context.Stencil_buf.Buf))
+	context.Zbuf.Buf = nil
+	context.Stencil_buf.Buf = nil
 	if context.User_alloced_backbuf == 0 {
 		libc.Free(unsafe.Pointer(context.Back_buffer.Buf))
 	}

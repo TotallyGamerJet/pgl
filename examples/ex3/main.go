@@ -3,7 +3,10 @@ package main
 import (
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
+	"log"
+	"os"
 	"pgl"
+	"runtime/pprof"
 	"unsafe"
 )
 
@@ -34,6 +37,12 @@ type My_Uniforms struct {
 }
 
 func main() {
+	f, err := os.Create("memprof.mprof")
+	if err != nil {
+		log.Fatal(err)
+	}
+	pprof.WriteHeapProfile(f)
+	f.Close()
 	setup_context()
 
 	var smooth = [4]pgl.GLenum{pgl.SMOOTH, pgl.SMOOTH, pgl.SMOOTH, pgl.SMOOTH}
