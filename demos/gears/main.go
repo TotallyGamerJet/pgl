@@ -575,7 +575,7 @@ func setup_context() {
 		panic(err)
 	}
 	var err error
-	window, err = sdl.CreateWindow("c_ex3", 100, 100, WIDTH, HEIGHT, sdl.WINDOW_SHOWN)
+	window, err = sdl.CreateWindow("gears", 100, 100, WIDTH, HEIGHT, sdl.WINDOW_SHOWN)
 	if err != nil {
 		sdl.Quit()
 		panic(err)

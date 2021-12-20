@@ -1293,12 +1293,12 @@ type glFramebuffer struct {
 }
 type Vertex_Shader_output struct {
 	Size          int64
-	Interpolation *GLenum
+	Interpolation []GLenum
 	Output_buf    cvector_float
 }
 type draw_triangle_func func(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64)
 type cvector_glVertex_Array struct {
-	A        *glVertex_Array
+	A        []glVertex_Array
 	Size     uint64
 	Capacity uint64
 }
@@ -1679,11 +1679,7 @@ func cvec_glVertex_Array_heap(size uint64, capacity uint64) *cvector_glVertex_Ar
 	} else {
 		vec.Capacity = vec.Size + CVEC_glVertex_Array_SZ
 	}
-	if (func() *glVertex_Array {
-		p := &vec.A
-		vec.A = (*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
 		libc.Assert(vec.A != nil)
 		libc.Free(unsafe.Pointer(vec))
 		return nil
@@ -1701,16 +1697,12 @@ func cvec_init_glVertex_Array_heap(vals *glVertex_Array, num uint64) *cvector_gl
 	}
 	vec.Capacity = num + CVEC_glVertex_Array_SZ
 	vec.Size = num
-	if (func() *glVertex_Array {
-		p := &vec.A
-		vec.A = (*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
 		libc.Assert(vec.A != nil)
 		libc.Free(unsafe.Pointer(vec))
 		return nil
 	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
 	return vec
 }
 func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint64) int64 {
@@ -1720,7 +1712,7 @@ func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint
 	} else {
 		vec.Capacity = vec.Size + CVEC_glVertex_Array_SZ
 	}
-	if vec.A = (*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{}))))); vec.A == nil {
+	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
 		libc.Assert(vec.A != nil)
 		vec.Capacity = 0
 		vec.Size = 0
@@ -1731,11 +1723,7 @@ func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint
 func cvec_init_glVertex_Array(vec *cvector_glVertex_Array, vals *glVertex_Array, num uint64) int64 {
 	vec.Capacity = num + CVEC_glVertex_Array_SZ
 	vec.Size = num
-	if (func() *glVertex_Array {
-		p := &vec.A
-		vec.A = (*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
 		libc.Assert(vec.A != nil)
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
@@ -1744,7 +1732,7 @@ func cvec_init_glVertex_Array(vec *cvector_glVertex_Array, vals *glVertex_Array,
 		}()
 		return 0
 	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
 	return 1
 }
 func cvec_copyc_glVertex_Array(dest unsafe.Pointer, src unsafe.Pointer) int64 {
@@ -1758,24 +1746,24 @@ func cvec_copyc_glVertex_Array(dest unsafe.Pointer, src unsafe.Pointer) int64 {
 	return cvec_copy_glVertex_Array(vec1, vec2)
 }
 func cvec_copy_glVertex_Array(dest *cvector_glVertex_Array, src *cvector_glVertex_Array) int64 {
-	var tmp *glVertex_Array = nil
-	if tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(dest.A), int(src.Capacity*uint64(unsafe.Sizeof(glVertex_Array{}))))); tmp == nil {
+	var tmp []glVertex_Array = nil
+	if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glVertex_Array{}))))), src.Capacity); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
 	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(dest.A), unsafe.Pointer(src.A), int(src.Size*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(glVertex_Array{}))))
 	dest.Size = src.Size
 	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int64 {
 	var (
-		tmp    *glVertex_Array
+		tmp    []glVertex_Array
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
@@ -1783,15 +1771,12 @@ func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int
 		}()))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *glVertex_Array {
-			tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{})))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
@@ -1802,26 +1787,23 @@ func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int
 	return 1
 }
 func cvec_pop_glVertex_Array(vec *cvector_glVertex_Array) glVertex_Array {
-	return *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
+	return *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
 		p := &vec.Size
 		*p--
 		return *p
 	}())))
 }
 func cvec_back_glVertex_Array(vec *cvector_glVertex_Array) *glVertex_Array {
-	return (*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(vec.Size-1)))
+	return (*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(vec.Size-1)))
 }
 func cvec_extend_glVertex_Array(vec *cvector_glVertex_Array, num uint64) int64 {
 	var (
-		tmp    *glVertex_Array
+		tmp    []glVertex_Array
 		tmp_sz uint64
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_glVertex_Array_SZ
-		if (func() *glVertex_Array {
-			tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{})))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -1833,24 +1815,21 @@ func cvec_extend_glVertex_Array(vec *cvector_glVertex_Array, num uint64) int64 {
 }
 func cvec_insert_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a glVertex_Array) int64 {
 	var (
-		tmp    *glVertex_Array
+		tmp    []glVertex_Array
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
+		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *glVertex_Array {
-			tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{})))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
+		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
 		vec.Capacity = tmp_sz
 	}
 	vec.Size++
@@ -1858,43 +1837,37 @@ func cvec_insert_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a glVerte
 }
 func cvec_insert_array_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a *glVertex_Array, num uint64) int64 {
 	var (
-		tmp    *glVertex_Array
+		tmp    []glVertex_Array
 		tmp_sz uint64
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_glVertex_Array_SZ
-		if (func() *glVertex_Array {
-			tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{})))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
 		vec.Capacity = tmp_sz
 	}
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i+num)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+num)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
 	vec.Size += num
 	return 1
 }
 func cvec_replace_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a glVertex_Array) glVertex_Array {
-	var tmp glVertex_Array = *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))
-	*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
+	var tmp glVertex_Array = *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))
+	*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
 	return tmp
 }
 func cvec_erase_glVertex_Array(vec *cvector_glVertex_Array, start uint64, end uint64) {
 	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(start)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glVertex_Array{}))))
+	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(start)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glVertex_Array{}))))
 	vec.Size -= d
 }
 func cvec_reserve_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64 {
-	var tmp *glVertex_Array
+	var tmp []glVertex_Array
 	if vec.Capacity < size {
-		if (func() *glVertex_Array {
-			tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int((size+CVEC_glVertex_Array_SZ)*uint64(unsafe.Sizeof(glVertex_Array{})))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glVertex_Array_SZ)*uint64(unsafe.Sizeof(glVertex_Array{}))))), size+CVEC_glVertex_Array_SZ); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -1904,14 +1877,11 @@ func cvec_reserve_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64
 	return 1
 }
 func cvec_set_cap_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64 {
-	var tmp *glVertex_Array
+	var tmp []glVertex_Array
 	if size < vec.Size {
 		vec.Size = size
 	}
-	if (func() *glVertex_Array {
-		tmp = (*glVertex_Array)(libc.Realloc(unsafe.Pointer(vec.A), int(size*uint64(unsafe.Sizeof(glVertex_Array{})))))
-		return tmp
-	}()) == nil {
+	if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glVertex_Array{}))))), size); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
@@ -1922,13 +1892,13 @@ func cvec_set_cap_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64
 func cvec_set_val_sz_glVertex_Array(vec *cvector_glVertex_Array, val glVertex_Array) {
 	var i uint64
 	for i = 0; i < vec.Size; i++ {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
 	}
 }
 func cvec_set_val_cap_glVertex_Array(vec *cvector_glVertex_Array, val glVertex_Array) {
 	var i uint64
 	for i = 0; i < vec.Capacity; i++ {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
+		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
 	}
 }
 func cvec_clear_glVertex_Array(vec *cvector_glVertex_Array) {
@@ -1939,12 +1909,12 @@ func cvec_free_glVertex_Array_heap(vec unsafe.Pointer) {
 	if tmp == nil {
 		return
 	}
-	libc.Free(unsafe.Pointer(tmp.A))
+	libc.Free(unsafe.Pointer(&tmp.A[0]))
 	libc.Free(unsafe.Pointer(tmp))
 }
 func cvec_free_glVertex_Array(vec unsafe.Pointer) {
 	var tmp *cvector_glVertex_Array = (*cvector_glVertex_Array)(vec)
-	libc.Free(unsafe.Pointer(tmp.A))
+	libc.Free(unsafe.Pointer(&tmp.A[0]))
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
@@ -2631,7 +2601,7 @@ func cvec_copyc_glProgram(dest unsafe.Pointer, src unsafe.Pointer) int64 {
 }
 func cvec_copy_glProgram(dest *cvector_glProgram, src *cvector_glProgram) int64 {
 	var tmp []glProgram = nil
-	if tmp = make([]glProgram, src.Capacity); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+	if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glProgram{}))))), src.Capacity); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
@@ -2655,7 +2625,7 @@ func cvec_push_glProgram(vec *cvector_glProgram, a glProgram) int64 {
 		}()))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = make([]glProgram, tmp_sz); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -2687,7 +2657,7 @@ func cvec_extend_glProgram(vec *cvector_glProgram, num uint64) int64 {
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_glProgram_SZ
-		if tmp = make([]glProgram, tmp_sz); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -2707,7 +2677,7 @@ func cvec_insert_glProgram(vec *cvector_glProgram, i uint64, a glProgram) int64 
 		*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = make([]glProgram, tmp_sz); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -2726,7 +2696,7 @@ func cvec_insert_array_glProgram(vec *cvector_glProgram, i uint64, a *glProgram,
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_glProgram_SZ
-		if tmp = make([]glProgram, tmp_sz); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -2751,7 +2721,7 @@ func cvec_erase_glProgram(vec *cvector_glProgram, start uint64, end uint64) {
 func cvec_reserve_glProgram(vec *cvector_glProgram, size uint64) int64 {
 	var tmp []glProgram
 	if vec.Capacity < size {
-		if tmp = make([]glProgram, size+CVEC_glProgram_SZ); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glProgram_SZ)*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glProgram_SZ)*uint64(unsafe.Sizeof(glProgram{}))))), size+CVEC_glProgram_SZ); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -2765,7 +2735,7 @@ func cvec_set_cap_glProgram(vec *cvector_glProgram, size uint64) int64 {
 	if size < vec.Size {
 		vec.Size = size
 	}
-	if tmp = make([]glProgram, size); /*(*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glProgram{})))))*/ tmp == nil {
+	if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glProgram{}))))), size); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
@@ -3336,10 +3306,7 @@ func cvec_erase_float(vec *cvector_float, start uint64, end uint64) {
 func cvec_reserve_float(vec *cvector_float, size uint64) int64 {
 	var tmp *float32
 	if vec.Capacity < size {
-		if (func() *float32 {
-			tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int((size+CVEC_float_SZ)*uint64(unsafe.Sizeof(float32(0))))))
-			return tmp
-		}()) == nil {
+		if tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int((size+CVEC_float_SZ)*uint64(unsafe.Sizeof(float32(0)))))); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -3418,26 +3385,21 @@ func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 	}
 	return 1
 }
-func do_vertex(v *glVertex_Attrib, enabled *int64, num_enabled uint64, i uint64, vert uint64) {
+func do_vertex(v *glVertex_Attrib, enabled []int64, num_enabled uint64, i uint64, vert uint64) {
 	var (
 		buf     GLuint
 		buf_pos *u8
 		tmpvec4 Vec4
 	)
 	for j := int64(0); uint64(j) < num_enabled; j++ {
-		buf = GLuint((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j))))))).Buf)
-		buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(buf)))).Data), (*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j))))))).Offset))), uint64((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j))))))).Stride)*i))
-		for {
-			tmpvec4.X = 0.0
-			tmpvec4.Y = 0.0
-			tmpvec4.Z = 0.0
-			tmpvec4.W = 1.0
-			if true {
-				break
-			}
-		}
-		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j))))))).Size)*unsafe.Sizeof(float32(0))))
-		c.Vertex_attribs_vs[*(*int64)(unsafe.Add(unsafe.Pointer(enabled), unsafe.Sizeof(int64(0))*uintptr(j)))] = tmpvec4
+		buf = GLuint((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(enabled[j])))).Buf)
+		buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(buf)))).Data), (*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(enabled[j])))).Offset))), uint64((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(enabled[j])))).Stride)*i))
+		tmpvec4.X = 0.0
+		tmpvec4.Y = 0.0
+		tmpvec4.Z = 0.0
+		tmpvec4.W = 1.0
+		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr((*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(enabled[j])))).Size)*unsafe.Sizeof(float32(0))))
+		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
 	var vs_out *float32 = (*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*uintptr(vert*uint64(c.Vs_output.Size))))
 	c.Programs.A[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
@@ -3458,8 +3420,8 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		enabled     [16]int64
 	)
 	libc.MemSet(unsafe.Pointer(&enabled[0]), 0, int(GL_MAX_VERTEX_ATTRIBS*unsafe.Sizeof(int64(0))))
-	var v *glVertex_Attrib = &(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[0]
-	var elem_buffer GLuint = (*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer
+	var v *glVertex_Attrib = &(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[0]
+	var elem_buffer GLuint = (c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer
 	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
 		libc.MemCpy(unsafe.Pointer(&c.Vertex_attribs_vs[i]), unsafe.Pointer(&vec4_init[0]), int(unsafe.Sizeof(Vec4{})))
 		if (*(*glVertex_Attrib)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(glVertex_Attrib{})*uintptr(i)))).Enabled != 0 {
@@ -3488,7 +3450,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 	c.Builtins.Gl_InstanceID = GLint(instance_id)
 	if use_elements == 0 {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-			do_vertex(v, &enabled[0], num_enabled, i, vert)
+			do_vertex(v, enabled[:], num_enabled, i, vert)
 		}
 	} else {
 		var (
@@ -3498,15 +3460,15 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		)
 		if (*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(elem_buffer)))).Type == GLenum(GL_UNSIGNED_BYTE) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, &enabled[0], num_enabled, uint64(*(*GLubyte)(unsafe.Add(unsafe.Pointer(ubyte_array), i))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLubyte)(unsafe.Add(unsafe.Pointer(ubyte_array), i))), vert)
 			}
 		} else if (*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(elem_buffer)))).Type == GLenum(GL_UNSIGNED_SHORT) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, &enabled[0], num_enabled, uint64(*(*GLushort)(unsafe.Add(unsafe.Pointer(ushort_array), unsafe.Sizeof(GLushort(0))*uintptr(i)))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLushort)(unsafe.Add(unsafe.Pointer(ushort_array), unsafe.Sizeof(GLushort(0))*uintptr(i)))), vert)
 			}
 		} else {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, &enabled[0], num_enabled, uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(uint_array), unsafe.Sizeof(GLuint(0))*uintptr(i)))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(uint_array), unsafe.Sizeof(GLuint(0))*uintptr(i)))), vert)
 			}
 		}
 	}
@@ -3685,9 +3647,9 @@ func setup_fs_input(t float32, v1_out *float32, v2_out *float32, wa float32, wb 
 		inv_wb    float32  = float32(1.0 / float64(wb))
 	)
 	for i := int64(0); i < c.Vs_output.Size; i++ {
-		if *(*GLenum)(unsafe.Add(unsafe.Pointer(c.Vs_output.Interpolation), unsafe.Sizeof(GLenum(0))*uintptr(i))) == GLenum(SMOOTH) {
+		if c.Vs_output.Interpolation[i] == GLenum(SMOOTH) {
 			c.Fs_input[i] = (*(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i)))*inv_wa + t*(*(*float32)(unsafe.Add(unsafe.Pointer(v2_out), unsafe.Sizeof(float32(0))*uintptr(i)))*inv_wb-*(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i)))*inv_wa)) / (inv_wa + t*(inv_wb-inv_wa))
-		} else if *(*GLenum)(unsafe.Add(unsafe.Pointer(c.Vs_output.Interpolation), unsafe.Sizeof(GLenum(0))*uintptr(i))) == GLenum(NOPERSPECTIVE) {
+		} else if c.Vs_output.Interpolation[i] == GLenum(NOPERSPECTIVE) {
 			c.Fs_input[i] = *(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i))) + t*(*(*float32)(unsafe.Add(unsafe.Pointer(v2_out), unsafe.Sizeof(float32(0))*uintptr(i)))-*(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i))))
 		} else {
 			c.Fs_input[i] = *(*float32)(unsafe.Add(unsafe.Pointer(vs_output), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(i))))
@@ -4596,7 +4558,7 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 			point.Z = clampf_01(point.Z)
 		}
 		for j := int64(0); j < c.Vs_output.Size; j++ {
-			if *(*GLenum)(unsafe.Add(unsafe.Pointer(c.Vs_output.Interpolation), unsafe.Sizeof(GLenum(0))*uintptr(j))) != GLenum(FLAT) {
+			if c.Vs_output.Interpolation[j] != GLenum(FLAT) {
 				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(vert[i].Vs_out), unsafe.Sizeof(float32(0))*uintptr(j)))
 			} else {
 				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
@@ -4726,10 +4688,10 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 					z = float32((float64(z)-(-1.0))/(1.0-(-1.0))*float64(c.Depth_range_far-c.Depth_range_near) + float64(c.Depth_range_near))
 					z += poly_offset
 					for i := int64(0); i < c.Vs_output.Size; i++ {
-						if *(*GLenum)(unsafe.Add(unsafe.Pointer(c.Vs_output.Interpolation), unsafe.Sizeof(GLenum(0))*uintptr(i))) == GLenum(SMOOTH) {
+						if c.Vs_output.Interpolation[i] == GLenum(SMOOTH) {
 							tmp = alpha*perspective[i] + beta*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] + gamma*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i]
 							fs_input[i] = tmp / tmp2
-						} else if *(*GLenum)(unsafe.Add(unsafe.Pointer(c.Vs_output.Interpolation), unsafe.Sizeof(GLenum(0))*uintptr(i))) == GLenum(NOPERSPECTIVE) {
+						} else if c.Vs_output.Interpolation[i] == GLenum(NOPERSPECTIVE) {
 							fs_input[i] = alpha**(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + beta**(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + gamma**(*float32)(unsafe.Add(unsafe.Pointer(v2.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i)))
 						} else {
 							fs_input[i] = *(*float32)(unsafe.Add(unsafe.Pointer(vs_output), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(i))))
@@ -5586,8 +5548,8 @@ func GlGenVertexArrays(n GLsizei, arrays *GLuint) {
 	tmp.Deleted = GL_FALSE
 	n--
 	for i := int64(1); uint64(i) < c.Vertex_arrays.Size && n >= 0; i++ {
-		if (*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))).Deleted != 0 {
-			*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = tmp
+		if (c.Vertex_arrays.A[i]).Deleted != 0 {
+			c.Vertex_arrays.A[i] = tmp
 			*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(func() GLsizei {
 				p := &n
 				x := *p
@@ -5607,10 +5569,11 @@ func glDeleteVertexArrays(n GLsizei, arrays *GLuint) {
 			continue
 		}
 		if *(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))) == c.Cur_vertex_array {
-			libc.MemCpy(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*0))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))))))), int(unsafe.Sizeof(glVertex_Array{})))
+			//TODO check if memcpy isn't enough
+			libc.MemCpy(unsafe.Pointer(&c.Vertex_arrays.A[0]), unsafe.Pointer(&c.Vertex_arrays.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i)))]), int(unsafe.Sizeof(glVertex_Array{})))
 			c.Cur_vertex_array = 0
 		}
-		(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Deleted = GL_TRUE
+		c.Vertex_arrays.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Deleted = GL_TRUE
 	}
 }
 func GlGenBuffers(n GLsizei, buffers *GLuint) {
@@ -5701,7 +5664,7 @@ func glDeleteTextures(n GLsizei, textures *GLuint) {
 	}
 }
 func GlBindVertexArray(array GLuint) {
-	if uint64(array) < c.Vertex_arrays.Size && (*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(array)))).Deleted == GL_FALSE {
+	if uint64(array) < c.Vertex_arrays.Size && c.Vertex_arrays.A[array].Deleted == GL_FALSE {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
@@ -5753,7 +5716,7 @@ func GlBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum
 	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(c.Bound_buffers[target])))).User_owned = GL_FALSE
 	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(c.Bound_buffers[target])))).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER-GL_ARRAY_BUFFER) {
-		(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer = c.Bound_buffers[target]
+		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
 func glBufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Pointer) {
@@ -6242,7 +6205,7 @@ func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GL
 		}
 		return
 	}
-	var v *glVertex_Attrib = &((*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index])
+	var v *glVertex_Attrib = &((c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index])
 	v.Size = size
 	v.Type = type_
 	if stride != 0 {
@@ -6255,10 +6218,10 @@ func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GL
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
 func GlEnableVertexAttribArray(index GLuint) {
-	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Enabled = GL_TRUE
+	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_TRUE
 }
 func GlDisableVertexAttribArray(index GLuint) {
-	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Enabled = GL_FALSE
+	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_FALSE
 }
 func glVertexAttribDivisor(index GLuint, divisor GLuint) {
 	if index >= GL_MAX_VERTEX_ATTRIBS {
@@ -6267,7 +6230,7 @@ func glVertexAttribDivisor(index GLuint, divisor GLuint) {
 		}
 		return
 	}
-	(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Vertex_attribs[index].Divisor = divisor
+	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Divisor = divisor
 }
 func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	var (
@@ -6317,7 +6280,7 @@ func glDrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
 	if count == 0 {
 		return
 	}
-	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer)))).Type = type_
+	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer)))).Type = type_
 	run_pipeline(mode, GLint(offset), count, 0, 0, GL_TRUE)
 }
 func glDrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount GLsizei) {
@@ -6382,7 +6345,7 @@ func glDrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GL
 	if count == 0 || instancecount == 0 {
 		return
 	}
-	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer)))).Type = type_
+	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer)))).Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, GL_TRUE)
 	}
@@ -6409,7 +6372,7 @@ func glDrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenu
 	if count == 0 || instancecount == 0 {
 		return
 	}
-	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer)))).Type = type_
+	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr((c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer)))).Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, GL_TRUE)
 	}
@@ -6826,7 +6789,7 @@ func GlUseProgram(program GLuint) {
 	}
 	c.Vs_output.Size = c.Programs.A[program].Vs_output_size
 	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(c.Vs_output.Size*MAX_VERTICES))
-	c.Vs_output.Interpolation = &c.Programs.A[program].Interpolation[0]
+	c.Vs_output.Interpolation = c.Programs.A[program].Interpolation[:]
 	c.Fragdepth_or_discard = c.Programs.A[program].Fragdepth_or_discard
 	c.Cur_program = program
 }
@@ -7576,7 +7539,7 @@ func pglSetInterp(n GLsizei, interpolation *GLenum) {
 	c.Vs_output.Size = int64(n)
 	libc.MemCpy(unsafe.Pointer(&c.Programs.A[c.Cur_program].Interpolation[0]), unsafe.Pointer(interpolation), int(uintptr(n)*unsafe.Sizeof(GLenum(0))))
 	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(n*MAX_VERTICES))
-	c.Vs_output.Interpolation = &c.Programs.A[c.Cur_program].Interpolation[0]
+	c.Vs_output.Interpolation = c.Programs.A[c.Cur_program].Interpolation[:]
 }
 func pglDrawFrame() {
 	var frag_shader frag_func = c.Programs.A[c.Cur_program].Fragment_shader
@@ -7619,7 +7582,7 @@ func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenu
 	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(c.Bound_buffers[target])))).User_owned = GL_TRUE
 	(*(*glBuffer)(unsafe.Add(unsafe.Pointer(c.Buffers.A), unsafe.Sizeof(glBuffer{})*uintptr(c.Bound_buffers[target])))).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
-		(*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(c.Vertex_arrays.A), unsafe.Sizeof(glVertex_Array{})*uintptr(c.Cur_vertex_array)))).Element_buffer = c.Bound_buffers[target]
+		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
 func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
