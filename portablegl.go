@@ -1243,7 +1243,7 @@ type glProgram struct {
 type glBuffer struct {
 	Size       GLsizei
 	Type       GLenum
-	Data       *u8
+	Data       []u8
 	Deleted    GLboolean
 	User_owned GLboolean
 }
@@ -3345,7 +3345,7 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 	)
 	for j := int64(0); uint64(j) < num_enabled; j++ {
 		buf = GLuint(v[enabled[j]].Buf)
-		buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((c.Buffers.A[buf]).Data), v[enabled[j]].Offset))), uint64(v[enabled[j]].Stride)*i))
+		buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[buf]).Data[0]), v[enabled[j]].Offset))), uint64(v[enabled[j]].Stride)*i))
 		tmpvec4.X = 0.0
 		tmpvec4.Y = 0.0
 		tmpvec4.Z = 0.0
@@ -3387,7 +3387,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				j++
 			} else if (instance_id % GLsizei(v[i].Divisor)) == 0 {
 				var n int64 = int64(instance_id/GLsizei(v[i].Divisor) + GLsizei(base_instance))
-				buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((c.Buffers.A[v[i].Buf]).Data), v[i].Offset))), int64(v[i].Stride)*n))
+				buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[v[i].Buf]).Data[0]), v[i].Offset))), int64(v[i].Stride)*n))
 				tmpvec4.X = 0.0
 				tmpvec4.Y = 0.0
 				tmpvec4.Z = 0.0
@@ -3406,9 +3406,9 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		}
 	} else {
 		var (
-			uint_array   *GLuint   = (*GLuint)(unsafe.Pointer(c.Buffers.A[elem_buffer].Data))
-			ushort_array *GLushort = (*GLushort)(unsafe.Pointer(c.Buffers.A[elem_buffer].Data))
-			ubyte_array  *GLubyte  = (*GLubyte)(unsafe.Pointer(c.Buffers.A[elem_buffer].Data))
+			uint_array   *GLuint   = (*GLuint)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
+			ushort_array *GLushort = (*GLushort)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
+			ubyte_array  *GLubyte  = (*GLubyte)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
 		)
 		if c.Buffers.A[elem_buffer].Type == GLenum(GL_UNSIGNED_BYTE) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
@@ -5255,7 +5255,7 @@ func Free_glContext(context *GlContext) {
 	for i = 0; uint64(i) < context.Buffers.Size; i++ {
 		if context.Buffers.A[i].User_owned == 0 {
 			stdio.Printf("freeing buffer %d\n", i)
-			libc.Free(unsafe.Pointer(context.Buffers.A[i].Data))
+			libc.Free(unsafe.Pointer(&context.Buffers.A[i].Data[0]))
 		}
 	}
 	for i = 0; uint64(i) < context.Textures.Size; i++ {
@@ -5385,7 +5385,7 @@ func glDeleteBuffers(n GLsizei, buffers *GLuint) {
 			c.Bound_buffers[type_] = 0
 		}
 		if c.Buffers.A[b[i]].User_owned == 0 {
-			libc.Free(unsafe.Pointer(c.Buffers.A[b[i]].Data))
+			libc.Free(unsafe.Pointer(&c.Buffers.A[b[i]].Data[0]))
 			c.Buffers.A[b[i]].Data = nil
 		}
 		c.Buffers.A[b[i]].Deleted = GL_TRUE
@@ -5473,19 +5473,15 @@ func GlBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum
 		}
 		return
 	}
-	libc.Free(unsafe.Pointer(c.Buffers.A[c.Bound_buffers[target]].Data))
-	if (func() *u8 {
-		p := &(c.Buffers.A[c.Bound_buffers[target]]).Data
-		(c.Buffers.A[c.Bound_buffers[target]]).Data = (*u8)(libc.Malloc(int(size)))
-		return *p
-	}()) == nil {
+	c.Buffers.A[c.Bound_buffers[target]].Data = nil
+	if (c.Buffers.A[c.Bound_buffers[target]]).Data = make([]u8, size); c.Buffers.A[c.Bound_buffers[target]].Data == nil {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
 		}
 		return
 	}
 	if data != nil {
-		libc.MemCpy(unsafe.Pointer(c.Buffers.A[c.Bound_buffers[target]].Data), data, int(size))
+		copy(c.Buffers.A[c.Bound_buffers[target]].Data, unsafe.Slice((*u8)(data), size))
 	}
 	c.Buffers.A[c.Bound_buffers[target]].User_owned = GL_FALSE
 	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
@@ -5513,7 +5509,7 @@ func glBufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Po
 		}
 		return
 	}
-	libc.MemCpy(unsafe.Add(unsafe.Pointer((c.Buffers.A[c.Bound_buffers[target]]).Data), offset), data, int(size))
+	libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[c.Bound_buffers[target]]).Data[0]), offset), data, int(size))
 }
 func glBindTexture(target GLenum, texture GLuint) {
 	if target < GLenum(GL_TEXTURE_1D) || target >= GLenum(GL_NUM_TEXTURE_TYPES) {
@@ -6008,7 +6004,7 @@ func glVertexAttribDivisor(index GLuint, divisor GLuint) {
 }
 func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	var (
-		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer((c.Buffers.A[v.Buf]).Data), v.Offset))), v.Stride*i))
+		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[v.Buf]).Data[0]), v.Offset))), v.Stride*i))
 		tmpvec4 Vec4
 	)
 	libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v.Size)*unsafe.Sizeof(float32(0))))
@@ -7351,9 +7347,9 @@ func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenu
 		return
 	}
 	if (c.Buffers.A[c.Bound_buffers[target]]).User_owned == 0 {
-		libc.Free(unsafe.Pointer((c.Buffers.A[c.Bound_buffers[target]]).Data))
+		libc.Free(unsafe.Pointer(&(c.Buffers.A[c.Bound_buffers[target]]).Data[0]))
 	}
-	(c.Buffers.A[c.Bound_buffers[target]]).Data = (*u8)(data)
+	(c.Buffers.A[c.Bound_buffers[target]]).Data = unsafe.Slice((*u8)(data), size)
 	(c.Buffers.A[c.Bound_buffers[target]]).User_owned = GL_TRUE
 	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
@@ -7516,7 +7512,7 @@ func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
 		return
 	}
 	if buffer != 0 && uint64(buffer) < c.Buffers.Size && (c.Buffers.A[buffer]).Deleted == 0 {
-		*data = unsafe.Pointer((c.Buffers.A[buffer]).Data)
+		*data = unsafe.Pointer(&(c.Buffers.A[buffer]).Data[0])
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
