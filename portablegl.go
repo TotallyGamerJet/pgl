@@ -5341,16 +5341,17 @@ func GlGenVertexArrays(n GLsizei, arrays *GLuint) {
 	}
 }
 func glDeleteVertexArrays(n GLsizei, arrays *GLuint) {
+	a := unsafe.Slice(arrays, n)
 	for i := int64(0); i < int64(n); i++ {
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))) == 0 || uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i)))) >= c.Vertex_arrays.Size {
+		if a[i] == 0 || uint64(a[i]) >= c.Vertex_arrays.Size {
 			continue
 		}
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i))) == c.Cur_vertex_array {
+		if a[i] == c.Cur_vertex_array {
 			//TODO check if memcpy isn't enough
-			libc.MemCpy(unsafe.Pointer(&c.Vertex_arrays.A[0]), unsafe.Pointer(&c.Vertex_arrays.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i)))]), int(unsafe.Sizeof(glVertex_Array{})))
+			libc.MemCpy(unsafe.Pointer(&c.Vertex_arrays.A[0]), unsafe.Pointer(&c.Vertex_arrays.A[a[i]]), int(unsafe.Sizeof(glVertex_Array{})))
 			c.Cur_vertex_array = 0
 		}
-		c.Vertex_arrays.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(arrays), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Deleted = GL_TRUE
+		c.Vertex_arrays.A[a[i]].Deleted = GL_TRUE
 	}
 }
 func GlGenBuffers(n GLsizei, buffers *GLuint) {
@@ -5373,23 +5374,25 @@ func GlGenBuffers(n GLsizei, buffers *GLuint) {
 	}
 }
 func glDeleteBuffers(n GLsizei, buffers *GLuint) {
+	b := unsafe.Slice(buffers, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i))) == 0 || uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))) >= c.Buffers.Size {
+		if b[i] == 0 || uint64(b[i]) >= c.Buffers.Size {
 			continue
 		}
-		type_ = c.Buffers.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Type
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i))) == c.Bound_buffers[type_] {
+		type_ = c.Buffers.A[b[i]].Type
+		if b[i] == c.Bound_buffers[type_] {
 			c.Bound_buffers[type_] = 0
 		}
-		if c.Buffers.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))].User_owned == 0 {
-			libc.Free(unsafe.Pointer(c.Buffers.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Data))
-			c.Buffers.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Data = nil
+		if c.Buffers.A[b[i]].User_owned == 0 {
+			libc.Free(unsafe.Pointer(c.Buffers.A[b[i]].Data))
+			c.Buffers.A[b[i]].Data = nil
 		}
-		c.Buffers.A[*(*GLuint)(unsafe.Add(unsafe.Pointer(buffers), unsafe.Sizeof(GLuint(0))*uintptr(i)))].Deleted = GL_TRUE
+		c.Buffers.A[b[i]].Deleted = GL_TRUE
 	}
 }
 func glGenTextures(n GLsizei, textures *GLuint) {
+	t := unsafe.Slice(textures, n)
 	var tmp glTexture
 	tmp.Mag_filter = GLenum(GL_LINEAR)
 	tmp.Min_filter = GLenum(GL_LINEAR)
@@ -5407,34 +5410,31 @@ func glGenTextures(n GLsizei, textures *GLuint) {
 	for i := int64(0); uint64(i) < c.Textures.Size && n >= 0; i++ {
 		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i)))).Deleted != 0 {
 			*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = tmp
-			*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(func() GLsizei {
-				p := &n
-				x := *p
-				*p--
-				return x
-			}()))) = GLuint(int32(i))
+			t[n] = GLuint(int32(i))
+			n--
 		}
 	}
 	for ; n >= 0; n-- {
 		cvec_push_glTexture(&c.Textures, tmp)
-		*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(n))) = GLuint(c.Textures.Size - 1)
+		t[n] = GLuint(c.Textures.Size - 1)
 	}
 }
 func glDeleteTextures(n GLsizei, textures *GLuint) {
+	t := unsafe.Slice(textures, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))) == 0 || uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i)))) >= c.Textures.Size {
+		if t[i] == 0 || uint64(t[i]) >= c.Textures.Size {
 			continue
 		}
-		type_ = (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Type
-		if *(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))) == c.Bound_textures[type_] {
+		type_ = (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Type
+		if t[i] == c.Bound_textures[type_] {
 			c.Bound_textures[type_] = 0
 		}
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).User_owned == 0 {
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Data))
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Data = nil
+		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).User_owned == 0 {
+			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Data))
+			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Data = nil
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(*(*GLuint)(unsafe.Add(unsafe.Pointer(textures), unsafe.Sizeof(GLuint(0))*uintptr(i))))))).Deleted = GL_TRUE
+		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Deleted = GL_TRUE
 	}
 }
 func GlBindVertexArray(array GLuint) {
@@ -7308,10 +7308,11 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 func pglClearScreen() {
 	libc.MemSet(unsafe.Pointer(c.Back_buffer.Buf), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
 }
-func pglSetInterp(n GLsizei, interpolation *GLenum) {
+func pglSetInterp(interpolation []GLenum) {
+	n := len(interpolation)
 	c.Programs.A[c.Cur_program].Vs_output_size = int64(n)
 	c.Vs_output.Size = int64(n)
-	libc.MemCpy(unsafe.Pointer(&c.Programs.A[c.Cur_program].Interpolation[0]), unsafe.Pointer(interpolation), int(uintptr(n)*unsafe.Sizeof(GLenum(0))))
+	copy(c.Programs.A[c.Cur_program].Interpolation[:], interpolation)
 	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(n*MAX_VERTICES))
 	c.Vs_output.Interpolation = c.Programs.A[c.Cur_program].Interpolation[:]
 }
