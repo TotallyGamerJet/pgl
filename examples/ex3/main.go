@@ -157,9 +157,6 @@ func smooth_fs(input *float32, builtins *pgl.Shader_Builtins, uniforms interface
 func smooth_vs(output *float32, attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 	var v_attribs = unsafe.Slice((*pgl.Vec4)(attribs), 5)
 	*(*pgl.Vec4)(unsafe.Pointer(output)) = v_attribs[4] // color
-	if v_attribs[4].W == 0 {
-		panic("GONE")
-	}
 	builtins.Gl_Position = pgl.Mult_mat4_vec4(uniforms.(*My_Uniforms).mvp_mat, v_attribs[0])
 }
 

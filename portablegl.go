@@ -3354,9 +3354,6 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 		_ = b
 		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
-		if c.Vertex_attribs_vs[4].W == 0 {
-			panic("out")
-		}
 	}
 	var vs_out *float32 = (*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*uintptr(vert*uint64(c.Vs_output.Size))))
 	c.Programs.A[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
@@ -3374,9 +3371,8 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		tmpvec4     Vec4
 		buf_pos     *u8
 		vec4_init   = Vec4{0.0, 0.0, 0.0, 1.0}
-		enabled     [16]int64
+		enabled     [GL_MAX_VERTEX_ATTRIBS]int64
 	)
-	libc.MemSet(unsafe.Pointer(&enabled[0]), 0, int(GL_MAX_VERTEX_ATTRIBS*unsafe.Sizeof(int64(0))))
 	var v []glVertex_Attrib = c.Vertex_arrays.A[c.Cur_vertex_array].Vertex_attribs[:]
 	var elem_buffer GLuint = (c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer
 	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
@@ -3406,21 +3402,21 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		}
 	} else {
 		var (
-			uint_array   *GLuint   = (*GLuint)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
-			ushort_array *GLushort = (*GLushort)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
-			ubyte_array  *GLubyte  = (*GLubyte)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0]))
+			uint_array   []GLuint   = unsafe.Slice((*GLuint)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
+			ushort_array []GLushort = unsafe.Slice((*GLushort)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
+			ubyte_array  []GLubyte  = unsafe.Slice((*GLubyte)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
 		)
 		if c.Buffers.A[elem_buffer].Type == GLenum(GL_UNSIGNED_BYTE) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLubyte)(unsafe.Add(unsafe.Pointer(ubyte_array), i))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(ubyte_array[i]), vert)
 			}
 		} else if c.Buffers.A[elem_buffer].Type == GLenum(GL_UNSIGNED_SHORT) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLushort)(unsafe.Add(unsafe.Pointer(ushort_array), unsafe.Sizeof(GLushort(0))*uintptr(i)))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(ushort_array[i]), vert)
 			}
 		} else {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
-				do_vertex(v, enabled[:], num_enabled, uint64(*(*GLuint)(unsafe.Add(unsafe.Pointer(uint_array), unsafe.Sizeof(GLuint(0))*uintptr(i)))), vert)
+				do_vertex(v, enabled[:], num_enabled, uint64(uint_array[i]), vert)
 			}
 		}
 	}
@@ -5255,7 +5251,7 @@ func Free_glContext(context *GlContext) {
 	for i = 0; uint64(i) < context.Buffers.Size; i++ {
 		if context.Buffers.A[i].User_owned == 0 {
 			stdio.Printf("freeing buffer %d\n", i)
-			libc.Free(unsafe.Pointer(&context.Buffers.A[i].Data[0]))
+			context.Buffers.A[i].Data = nil
 		}
 	}
 	for i = 0; uint64(i) < context.Textures.Size; i++ {
@@ -5385,7 +5381,6 @@ func glDeleteBuffers(n GLsizei, buffers *GLuint) {
 			c.Bound_buffers[type_] = 0
 		}
 		if c.Buffers.A[b[i]].User_owned == 0 {
-			libc.Free(unsafe.Pointer(&c.Buffers.A[b[i]].Data[0]))
 			c.Buffers.A[b[i]].Data = nil
 		}
 		c.Buffers.A[b[i]].Deleted = GL_TRUE
@@ -7347,7 +7342,7 @@ func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenu
 		return
 	}
 	if (c.Buffers.A[c.Bound_buffers[target]]).User_owned == 0 {
-		libc.Free(unsafe.Pointer(&(c.Buffers.A[c.Bound_buffers[target]]).Data[0]))
+		c.Buffers.A[c.Bound_buffers[target]].Data = nil
 	}
 	(c.Buffers.A[c.Bound_buffers[target]]).Data = unsafe.Slice((*u8)(data), size)
 	(c.Buffers.A[c.Bound_buffers[target]]).User_owned = GL_TRUE
