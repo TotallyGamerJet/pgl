@@ -136,7 +136,7 @@ func main() {
 		pgl.Load_rotation_mat4(&rot_mat, y_axis, pgl.DEG_TO_RAD(30)*frame_time)
 		pgl.Mult_mat4_mat4(&tmp_mat, rot_mat, save_rot)
 
-		save_rot = tmp_mat //memcpy(save_rot, tmp_mat, sizeof(mat4));
+		save_rot = tmp_mat
 		pgl.Mult_mat4_mat4(&the_uniforms.mvp_mat, vp_mat, save_rot)
 
 		pgl.GlDrawArrays(pgl.GL_TRIANGLES, 0, 3)
