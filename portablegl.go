@@ -20,7 +20,7 @@ const MAX_VERTICES = 500000
 const GL_MAX_VERTEX_ATTRIBS = 16
 const GL_MAX_VERTEX_OUTPUT_COMPONENTS = 64
 const GL_MAX_DRAW_BUFFERS = 8
-const CLIP_EPSILON = 0
+const CLIP_EPSILON = 1e-5
 
 type u8 uint8
 type u16 uint16
@@ -1283,11 +1283,11 @@ type glVertex struct {
 	Screen_space Vec4
 	Clip_code    int64
 	Edge_flag    int64
-	Vs_out       *float32
+	Vs_out       []float32
 }
 type glFramebuffer struct {
 	Buf     []u8
-	Lastrow *u8
+	Lastrow []u8
 	W       uint64
 	H       uint64
 }
@@ -3279,7 +3279,7 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 	}
 	var vs_out *float32 = &c.Vs_output.Output_buf.A[vert*uint64(c.Vs_output.Size)]
 	c.Programs.A[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
-	c.Glverts.A[vert].Vs_out = vs_out
+	c.Glverts.A[vert].Vs_out = unsafe.Slice(vs_out, c.Vs_output.Size)
 	c.Glverts.A[vert].Clip_space = c.Builtins.Gl_Position
 	c.Glverts.A[vert].Edge_flag = 1
 	c.Glverts.A[vert].Clip_code = gl_clipcode(c.Builtins.Gl_Position)
@@ -3352,7 +3352,7 @@ func draw_point(vert *glVertex) {
 	if c.Depth_clamp != 0 {
 		point.Z = clampf_01(point.Z)
 	}
-	libc.MemCpy(unsafe.Pointer(&fs_input[0]), unsafe.Pointer(vert.Vs_out), int(c.Vs_output.Size*int64(unsafe.Sizeof(float32(0)))))
+	copy(fs_input[:], vert.Vs_out[:c.Vs_output.Size]) //libc.MemCpy(unsafe.Pointer(&fs_input[0]), unsafe.Pointer(vert.Vs_out), int(c.Vs_output.Size*int64(unsafe.Sizeof(float32(0)))))
 	var x float32 = float32(float64(point.X) + 0.5)
 	var y float32 = float32(float64(point.Y) + 0.5)
 	var p_size float32 = float32(c.Point_size)
@@ -3467,7 +3467,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			provoke = -2
 		}
 		for vert = 2; vert < uint64(count); vert++ {
-			draw_triangle((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(a))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(b))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), vert+uint64(provoke))
+			draw_triangle(&c.Glverts.A[a], &c.Glverts.A[b], &c.Glverts.A[vert], vert+uint64(provoke))
 			if toggle == 0 {
 				a = vert
 			} else {
@@ -3552,8 +3552,8 @@ func clip_line(denom float32, num float32, tmin *float32, tmax *float32) int64 {
 }
 func interpolate_clipped_line(v1 *glVertex, v2 *glVertex, v1_out *float32, v2_out *float32, tmin float32, tmax float32) {
 	for i := int64(0); i < c.Vs_output.Size; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i))) = *(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + (*(*float32)(unsafe.Add(unsafe.Pointer(v2.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i)))-*(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))))*tmin
-		*(*float32)(unsafe.Add(unsafe.Pointer(v2_out), unsafe.Sizeof(float32(0))*uintptr(i))) = *(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + (*(*float32)(unsafe.Add(unsafe.Pointer(v2.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i)))-*(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))))*tmax
+		*(*float32)(unsafe.Add(unsafe.Pointer(v1_out), unsafe.Sizeof(float32(0))*uintptr(i))) = v1.Vs_out[i] + (v2.Vs_out[i]-v1.Vs_out[i])*tmin
+		*(*float32)(unsafe.Add(unsafe.Pointer(v2_out), unsafe.Sizeof(float32(0))*uintptr(i))) = v1.Vs_out[i] + (v2.Vs_out[i]-v1.Vs_out[i])*tmax
 	}
 }
 func draw_line_clip(v1 *glVertex, v2 *glVertex) {
@@ -3586,9 +3586,9 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 		t1 = Mult_mat4_vec4(c.Vp_mat, p1)
 		t2 = Mult_mat4_vec4(c.Vp_mat, p2)
 		if c.Line_smooth == 0 {
-			draw_line_shader(t1, t2, v1.Vs_out, v2.Vs_out, provoke)
+			draw_line_shader(t1, t2, &v1.Vs_out[0], &v2.Vs_out[0], provoke)
 		} else {
-			draw_line_smooth_shader(t1, t2, v1.Vs_out, v2.Vs_out, provoke)
+			draw_line_smooth_shader(t1, t2, &v1.Vs_out[0], &v2.Vs_out[0], provoke)
 		}
 	} else {
 		d = sub_vec4s(p2, p1)
@@ -3876,10 +3876,10 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 	cmath.Modff(yend, &ypxl1)
 	z1 = float32((float64(z1)-(-1.0))/(1.0-(-1.0))*float64(c.Depth_range_far-c.Depth_range_near) + float64(c.Depth_range_near))
 	if steep != 0 {
-		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z1, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1)))))) != 0 {
+		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z1, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1)))))) != 0 {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1))))) = z1
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1+1))))) = z1
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1))))) = z1
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1+1))))) = z1
 			}
 			for {
 				c.Builtins.Gl_FragCoord.X = ypxl1
@@ -3911,10 +3911,10 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 			}
 		}
 	} else {
-		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z1, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1))*c.Zbuf.W+uint64(int64(xpxl1)))))) != 0 {
+		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z1, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1))*c.Zbuf.W+uint64(int64(xpxl1)))))) != 0 {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1+1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1+1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
 			}
 			for {
 				c.Builtins.Gl_FragCoord.X = xpxl1
@@ -3955,10 +3955,10 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 	cmath.Modff(yend, &ypxl2)
 	z2 = float32((float64(z2)-(-1.0))/(1.0-(-1.0))*float64(c.Depth_range_far-c.Depth_range_near) + float64(c.Depth_range_near))
 	if steep != 0 {
-		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z2, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2)))))) != 0 {
+		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z2, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2)))))) != 0 {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2))))) = z2
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2+1))))) = z2
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2))))) = z2
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2+1))))) = z2
 			}
 			for {
 				c.Builtins.Gl_FragCoord.X = ypxl2
@@ -3990,10 +3990,10 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 			}
 		}
 	} else {
-		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z2, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2))*c.Zbuf.W+uint64(int64(xpxl2)))))) != 0 {
+		if c.Depth_test == 0 || fragdepth_or_discard == 0 && depthtest(z2, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2))*c.Zbuf.W+uint64(int64(xpxl2)))))) != 0 {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2+1))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2+1))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
 			}
 			for {
 				c.Builtins.Gl_FragCoord.X = xpxl2
@@ -4048,11 +4048,11 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 		w = (1-t)*w1 + t*w2
 		if steep != 0 {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				if depthtest(z, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery)))))) == 0 {
+				if depthtest(z, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery)))))) == 0 {
 					continue
 				} else {
-					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery))))) = z
-					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery+1))))) = z
+					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery))))) = z
+					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery+1))))) = z
 				}
 			}
 			for {
@@ -4085,11 +4085,11 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 			}
 		} else {
 			if c.Fragdepth_or_discard == 0 && c.Depth_test != 0 {
-				if depthtest(z, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery))*c.Zbuf.W+uint64(x))))) == 0 {
+				if depthtest(z, *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery))*c.Zbuf.W+uint64(x))))) == 0 {
 					continue
 				} else {
-					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery))*c.Zbuf.W+uint64(x)))) = z
-					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery+1))*c.Zbuf.W+uint64(x)))) = z
+					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery))*c.Zbuf.W+uint64(x)))) = z
+					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery+1))*c.Zbuf.W+uint64(x)))) = z
 				}
 			}
 			for {
@@ -4318,7 +4318,10 @@ var clip_proc [6]*func(*Vec4, *Vec4, *Vec4) float32 = [6]*func(*Vec4, *Vec4, *Ve
 
 func update_clip_pt(q *glVertex, v0 *glVertex, v1 *glVertex, t float32) {
 	for i := int64(0); i < c.Vs_output.Size; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(q.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) = *(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + (*(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i)))-*(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))))*t
+		//why is this correct for both SMOOTH and NOPERSPECTIVE?
+		q.Vs_out[i] = v0.Vs_out[i] + (v1.Vs_out[i]-v0.Vs_out[i])*t
+		//FLAT should be handled indirectly by the provoke index
+		//nothing to do here unless I change that
 	}
 	q.Clip_code = gl_clipcode(q.Clip_space)
 }
@@ -4337,8 +4340,8 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 		tmp1_out      [64]float32
 		tmp2_out      [64]float32
 	)
-	tmp1.Vs_out = &tmp1_out[0]
-	tmp2.Vs_out = &tmp2_out[0]
+	tmp1.Vs_out = tmp1_out[:]
+	tmp2.Vs_out = tmp2_out[:]
 	cc[0] = v0.Clip_code
 	cc[1] = v1.Clip_code
 	cc[2] = v2.Clip_code
@@ -4429,7 +4432,7 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 		}
 		for j := int64(0); j < c.Vs_output.Size; j++ {
 			if c.Vs_output.Interpolation[j] != GLenum(FLAT) {
-				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(vert[i].Vs_out), unsafe.Sizeof(float32(0))*uintptr(j)))
+				fs_input[j] = vert[i].Vs_out[j]
 			} else {
 				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(&c.Vs_output.Output_buf.A[0]), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
 			}
@@ -4443,13 +4446,13 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 }
 func draw_triangle_line(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 	if v0.Edge_flag != 0 {
-		draw_line_shader(v0.Screen_space, v1.Screen_space, v0.Vs_out, v1.Vs_out, provoke)
+		draw_line_shader(v0.Screen_space, v1.Screen_space, &v0.Vs_out[0], &v1.Vs_out[0], provoke)
 	}
 	if v1.Edge_flag != 0 {
-		draw_line_shader(v1.Screen_space, v2.Screen_space, v1.Vs_out, v2.Vs_out, provoke)
+		draw_line_shader(v1.Screen_space, v2.Screen_space, &v1.Vs_out[0], &v2.Vs_out[0], provoke)
 	}
 	if v2.Edge_flag != 0 {
-		draw_line_shader(v2.Screen_space, v0.Screen_space, v2.Vs_out, v0.Vs_out, provoke)
+		draw_line_shader(v2.Screen_space, v0.Screen_space, &v2.Vs_out[0], &v0.Vs_out[0], provoke)
 	}
 }
 func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
@@ -4534,11 +4537,11 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 	var z float32
 	var fs_input [64]float32
 	var perspective [192]float32
-	var vs_output *float32 = &c.Vs_output.Output_buf.A[0]
+	var vs_output = &c.Vs_output.Output_buf.A[0]
 	for i := int64(0); i < c.Vs_output.Size; i++ {
-		perspective[i] = *(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) / p0.W
-		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] = *(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) / p1.W
-		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i] = *(*float32)(unsafe.Add(unsafe.Pointer(v2.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) / p2.W
+		perspective[i] = v0.Vs_out[i] / p0.W
+		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] = v1.Vs_out[i] / p1.W
+		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i] = v2.Vs_out[i] / p2.W
 	}
 	var inv_w0 float32 = 1 / p0.W
 	var inv_w1 float32 = 1 / p1.W
@@ -4562,20 +4565,15 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 							tmp = alpha*perspective[i] + beta*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] + gamma*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i]
 							fs_input[i] = tmp / tmp2
 						} else if c.Vs_output.Interpolation[i] == GLenum(NOPERSPECTIVE) {
-							fs_input[i] = alpha**(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + beta**(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) + gamma**(*float32)(unsafe.Add(unsafe.Pointer(v2.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i)))
+							fs_input[i] = alpha*v0.Vs_out[i] + beta*v1.Vs_out[i] + gamma*v2.Vs_out[i]
 						} else {
 							fs_input[i] = *(*float32)(unsafe.Add(unsafe.Pointer(vs_output), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(i))))
 						}
 					}
-					for {
-						c.Builtins.Gl_FragCoord.X = x
-						c.Builtins.Gl_FragCoord.Y = y
-						c.Builtins.Gl_FragCoord.Z = z
-						c.Builtins.Gl_FragCoord.W = tmp2
-						if true {
-							break
-						}
-					}
+					c.Builtins.Gl_FragCoord.X = x
+					c.Builtins.Gl_FragCoord.Y = y
+					c.Builtins.Gl_FragCoord.Z = z
+					c.Builtins.Gl_FragCoord.W = tmp2
 					c.Builtins.Discard = GL_FALSE
 					c.Builtins.Gl_FragDepth = z
 					c.Programs.A[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
@@ -4927,7 +4925,7 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 			return
 		}
 	}
-	var stencil_dest *u8 = (*u8)(unsafe.Add(unsafe.Pointer(c.Stencil_buf.Lastrow), uint64(-y)*c.Stencil_buf.W+uint64(x)))
+	var stencil_dest *u8 = (*u8)(unsafe.Add(unsafe.Pointer(&c.Stencil_buf.Lastrow[0]), uint64(-y)*c.Stencil_buf.W+uint64(x)))
 	if c.Stencil_test != 0 {
 		if stencil_test(*stencil_dest) == 0 {
 			stencil_op(0, 1, stencil_dest)
@@ -4936,7 +4934,7 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 	}
 	if c.Depth_test != 0 {
 		var (
-			dest_depth   float32 = *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x))))
+			dest_depth   float32 = *(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x))))
 			src_depth    float32 = c.Builtins.Gl_FragDepth
 			depth_result int64   = depthtest(src_depth, dest_depth)
 		)
@@ -4946,13 +4944,13 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 		if depth_result == 0 {
 			return
 		}
-		*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x)))) = src_depth
+		*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x)))) = src_depth
 	} else if c.Stencil_test != 0 {
 		stencil_op(1, 1, stencil_dest)
 	}
 	var dest_color Color
 	var src_color Color
-	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
+	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
 	dest_color = make_Color(u8(int8(int64(*dest&c.Rmask)>>c.Rshift)), u8(int8(int64(*dest&c.Gmask)>>c.Gshift)), u8(int8(int64(*dest&c.Bmask)>>c.Bshift)), u8(int8(int64(*dest&c.Amask)>>c.Ashift)))
 	if c.Blend != 0 {
 		src_color = blend_pixel(cf, Color_to_vec4(dest_color))
@@ -5036,14 +5034,14 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Y_max = uint64(h)
 	context.Zbuf.W = uint64(w)
 	context.Zbuf.H = uint64(h)
-	context.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Zbuf.Buf[0]), (h-1)*w*int64(unsafe.Sizeof(float32(0)))))
+	context.Zbuf.Lastrow = context.Zbuf.Buf[(h-1)*w*int64(unsafe.Sizeof(float32(0))):]
 	context.Stencil_buf.W = uint64(w)
 	context.Stencil_buf.H = uint64(h)
-	context.Stencil_buf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Stencil_buf.Buf[0]), (h-1)*w))
+	context.Stencil_buf.Lastrow = context.Stencil_buf.Buf[:(h-1)*w] //(*u8)(unsafe.Add(unsafe.Pointer(&context.Stencil_buf.Buf[0]), (h-1)*w))
 	context.Back_buffer.W = uint64(w)
 	context.Back_buffer.H = uint64(h)
 	context.Back_buffer.Buf = unsafe.Slice((*u8)(unsafe.Pointer(&(*back)[0])), w*h*int64(unsafe.Sizeof(U32(0))))
-	context.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Back_buffer.Buf[0]), (h-1)*w*int64(unsafe.Sizeof(U32(0)))))
+	context.Back_buffer.Lastrow = context.Back_buffer.Buf[(h-1)*w*int64(unsafe.Sizeof(U32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&context.Back_buffer.Buf[0]), (h-1)*w*int64(unsafe.Sizeof(U32(0)))))
 	context.Bitdepth = bitdepth
 	context.Rmask = Rmask
 	context.Gmask = Gmask
@@ -5202,7 +5200,7 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Zbuf.Buf = tmp
 	c.Zbuf.W = w
 	c.Zbuf.H = h
-	c.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
+	c.Zbuf.Lastrow = c.Zbuf.Buf[(h-1)*w*uint64(unsafe.Sizeof(float32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
 	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Back_buffer.Buf[0]), int(w*h*uint64(unsafe.Sizeof(U32(0)))))), int(w*h*uint64(unsafe.Sizeof(U32(0)))))
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
@@ -5213,7 +5211,7 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Back_buffer.Buf = tmp
 	c.Back_buffer.W = w
 	c.Back_buffer.H = h
-	c.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
+	c.Back_buffer.Lastrow = c.Back_buffer.Buf[(h-1)*w*uint64(unsafe.Sizeof(U32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
 	return unsafe.Pointer(&tmp[0])
 }
 func glGetString(name GLenum) *GLubyte {
@@ -6119,7 +6117,7 @@ func GlClear(mask GLbitfield) {
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
 				for x := int64(int64(c.Scissor_lx)); x < int64(c.Scissor_ux); x++ {
-					*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+					*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
 				}
 			}
 		}
@@ -6132,7 +6130,7 @@ func GlClear(mask GLbitfield) {
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
 				for x := int64(int64(c.Scissor_lx)); x < int64(c.Scissor_ux); x++ {
-					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Lastrow))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x)))) = float32(c.Clear_depth)
+					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-y)*c.Zbuf.W+uint64(x)))) = float32(c.Clear_depth)
 				}
 			}
 		}
@@ -6145,7 +6143,7 @@ func GlClear(mask GLbitfield) {
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
 				for x := int64(int64(c.Scissor_lx)); x < int64(c.Scissor_ux); x++ {
-					*(*u8)(unsafe.Add(unsafe.Pointer(c.Stencil_buf.Lastrow), uint64(-y)*c.Stencil_buf.W+uint64(x))) = u8(int8(c.Clear_stencil))
+					*(*u8)(unsafe.Add(unsafe.Pointer(&c.Stencil_buf.Lastrow[0]), uint64(-y)*c.Stencil_buf.W+uint64(x))) = u8(int8(c.Clear_stencil))
 				}
 			}
 		}
@@ -7446,7 +7444,7 @@ func pglGetTextureData(texture GLuint, data *unsafe.Pointer) {
 	}
 }
 func put_pixel(color Color, x int64, y int64) {
-	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Lastrow))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
+	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
 	_ = dest
 	*dest = U32(int32(int64(color.A)<<c.Ashift | int64(color.R)<<c.Rshift | int64(color.G)<<c.Gshift | int64(color.B)<<c.Bshift))
 }
