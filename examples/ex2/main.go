@@ -18,7 +18,7 @@ var (
 	tex    *sdl.Texture
 )
 
-var bbufpix = (*pgl.U32)(nil)
+var bbufpix []pgl.U32
 
 var the_Context pgl.GlContext
 
@@ -110,7 +110,7 @@ func main() {
 		pgl.GlClear(pgl.GL_COLOR_BUFFER_BIT)
 		pgl.GlDrawArrays(pgl.GL_TRIANGLES, 0, 3)
 
-		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(bbufpix)), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
+		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(&bbufpix[0])), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene
 		ren.Copy(tex, nil, nil)
 		ren.Present()

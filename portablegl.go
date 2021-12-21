@@ -950,7 +950,7 @@ type Plane struct {
 	D float32
 }
 type cvector_float struct {
-	A        *float32
+	A        []float32
 	Size     uint64
 	Capacity uint64
 }
@@ -1286,7 +1286,7 @@ type glVertex struct {
 	Vs_out       *float32
 }
 type glFramebuffer struct {
-	Buf     *u8
+	Buf     []u8
 	Lastrow *u8
 	W       uint64
 	H       uint64
@@ -2023,12 +2023,8 @@ func cvec_push_glBuffer(vec *cvector_glBuffer, a glBuffer) int64 {
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
+		vec.A[vec.Size] = a
+		vec.Size++
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
 		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glBuffer{}))))), tmp_sz); tmp == nil {
@@ -2036,12 +2032,8 @@ func cvec_push_glBuffer(vec *cvector_glBuffer, a glBuffer) int64 {
 			return 0
 		}
 		vec.A = tmp
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
+		vec.A[vec.Size] = a
+		vec.Size++
 		vec.Capacity = tmp_sz
 	}
 	return 1
@@ -3002,11 +2994,7 @@ func cvec_float_heap(size uint64, capacity uint64) *cvector_float {
 	} else {
 		vec.Capacity = vec.Size + CVEC_float_SZ
 	}
-	if (func() *float32 {
-		p := &vec.A
-		vec.A = (*float32)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(float32(0))))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
 		libc.Assert(vec.A != nil)
 		libc.Free(unsafe.Pointer(vec))
 		return nil
@@ -3024,16 +3012,12 @@ func cvec_init_float_heap(vals *float32, num uint64) *cvector_float {
 	}
 	vec.Capacity = num + CVEC_float_SZ
 	vec.Size = num
-	if (func() *float32 {
-		p := &vec.A
-		vec.A = (*float32)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(float32(0))))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
 		libc.Assert(vec.A != nil)
 		libc.Free(unsafe.Pointer(vec))
 		return nil
 	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
 	return vec
 }
 func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
@@ -3043,11 +3027,7 @@ func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
 	} else {
 		vec.Capacity = vec.Size + CVEC_float_SZ
 	}
-	if (func() *float32 {
-		p := &vec.A
-		vec.A = (*float32)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(float32(0))))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
 		libc.Assert(vec.A != nil)
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
@@ -3061,11 +3041,7 @@ func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
 func cvec_init_float(vec *cvector_float, vals *float32, num uint64) int64 {
 	vec.Capacity = num + CVEC_float_SZ
 	vec.Size = num
-	if (func() *float32 {
-		p := &vec.A
-		vec.A = (*float32)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(float32(0))))))
-		return *p
-	}()) == nil {
+	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
 		libc.Assert(vec.A != nil)
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
@@ -3074,7 +3050,7 @@ func cvec_init_float(vec *cvector_float, vals *float32, num uint64) int64 {
 		}()
 		return 0
 	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
 	return 1
 }
 func cvec_copyc_float(dest unsafe.Pointer, src unsafe.Pointer) int64 {
@@ -3088,27 +3064,24 @@ func cvec_copyc_float(dest unsafe.Pointer, src unsafe.Pointer) int64 {
 	return cvec_copy_float(vec1, vec2)
 }
 func cvec_copy_float(dest *cvector_float, src *cvector_float) int64 {
-	var tmp *float32 = nil
-	if (func() *float32 {
-		tmp = (*float32)(libc.Realloc(unsafe.Pointer(dest.A), int(src.Capacity*uint64(unsafe.Sizeof(float32(0))))))
-		return tmp
-	}()) == nil {
+	var tmp []float32 = nil
+	if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(float32(0)))))), src.Capacity); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
 	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(dest.A), unsafe.Pointer(src.A), int(src.Size*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(float32(0)))))
 	dest.Size = src.Size
 	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_float(vec *cvector_float, a float32) int64 {
 	var (
-		tmp    *float32
+		tmp    []float32
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
@@ -3116,15 +3089,12 @@ func cvec_push_float(vec *cvector_float, a float32) int64 {
 		}()))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *float32 {
-			tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(float32(0))))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), vec.Capacity); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
@@ -3135,26 +3105,23 @@ func cvec_push_float(vec *cvector_float, a float32) int64 {
 	return 1
 }
 func cvec_pop_float(vec *cvector_float) float32 {
-	return *(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
+	return *(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
 		p := &vec.Size
 		*p--
 		return *p
 	}())))
 }
 func cvec_back_float(vec *cvector_float) *float32 {
-	return (*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(vec.Size-1)))
+	return (*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(vec.Size-1)))
 }
 func cvec_extend_float(vec *cvector_float, num uint64) int64 {
 	var (
-		tmp    *float32
+		tmp    []float32
 		tmp_sz uint64
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_float_SZ
-		if (func() *float32 {
-			tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(float32(0))))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -3166,24 +3133,21 @@ func cvec_extend_float(vec *cvector_float, num uint64) int64 {
 }
 func cvec_insert_float(vec *cvector_float, i uint64, a float32) int64 {
 	var (
-		tmp    *float32
+		tmp    []float32
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i))) = a
+		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *float32 {
-			tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(float32(0))))))
-			return tmp
-		}()) == nil {
+		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i))) = a
+		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
 		vec.Capacity = tmp_sz
 	}
 	vec.Size++
@@ -3191,37 +3155,37 @@ func cvec_insert_float(vec *cvector_float, i uint64, a float32) int64 {
 }
 func cvec_insert_array_float(vec *cvector_float, i uint64, a *float32, num uint64) int64 {
 	var (
-		tmp    *float32
+		tmp    []float32
 		tmp_sz uint64
 	)
 	if vec.Capacity < vec.Size+num {
 		tmp_sz = vec.Capacity + num + CVEC_float_SZ
-		if tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))); tmp == nil {
+		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
 		vec.A = tmp
 		vec.Capacity = tmp_sz
 	}
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i+num)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+num)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(float32(0)))))
 	vec.Size += num
 	return 1
 }
 func cvec_replace_float(vec *cvector_float, i uint64, a float32) float32 {
-	var tmp float32 = *(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i)))
-	*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i))) = a
+	var tmp float32 = *(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))
+	*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
 	return tmp
 }
 func cvec_erase_float(vec *cvector_float, start uint64, end uint64) {
 	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(start)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(float32(0)))))
+	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(start)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(float32(0)))))
 	vec.Size -= d
 }
 func cvec_reserve_float(vec *cvector_float, size uint64) int64 {
-	var tmp *float32
+	var tmp []float32
 	if vec.Capacity < size {
-		if tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int((size+CVEC_float_SZ)*uint64(unsafe.Sizeof(float32(0)))))); tmp == nil {
+		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_float_SZ)*uint64(unsafe.Sizeof(float32(0)))))), size+CVEC_float_SZ); tmp == nil {
 			libc.Assert(tmp != nil)
 			return 0
 		}
@@ -3231,14 +3195,11 @@ func cvec_reserve_float(vec *cvector_float, size uint64) int64 {
 	return 1
 }
 func cvec_set_cap_float(vec *cvector_float, size uint64) int64 {
-	var tmp *float32
+	var tmp []float32
 	if size < vec.Size {
 		vec.Size = size
 	}
-	if (func() *float32 {
-		tmp = (*float32)(libc.Realloc(unsafe.Pointer(vec.A), int(size*uint64(unsafe.Sizeof(float32(0))))))
-		return tmp
-	}()) == nil {
+	if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(float32(0)))))), size); tmp == nil {
 		libc.Assert(tmp != nil)
 		return 0
 	}
@@ -3249,13 +3210,13 @@ func cvec_set_cap_float(vec *cvector_float, size uint64) int64 {
 func cvec_set_val_sz_float(vec *cvector_float, val float32) {
 	var i uint64
 	for i = 0; i < vec.Size; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i))) = val
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = val
 	}
 }
 func cvec_set_val_cap_float(vec *cvector_float, val float32) {
 	var i uint64
 	for i = 0; i < vec.Capacity; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(float32(0))*uintptr(i))) = val
+		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = val
 	}
 }
 func cvec_clear_float(vec *cvector_float) {
@@ -3266,7 +3227,7 @@ func cvec_free_float_heap(vec unsafe.Pointer) {
 	if tmp == nil {
 		return
 	}
-	libc.Free(unsafe.Pointer(tmp.A))
+	libc.Free(unsafe.Pointer(&tmp.A[0]))
 	libc.Free(unsafe.Pointer(tmp))
 }
 func cvec_free_float(vec unsafe.Pointer) {
@@ -3303,22 +3264,20 @@ func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint64, vert uint64) {
 	var (
 		buf     GLuint
-		buf_pos *u8
+		buf_pos []u8
 		tmpvec4 Vec4
 	)
 	for j := int64(0); uint64(j) < num_enabled; j++ {
 		buf = GLuint(v[enabled[j]].Buf)
-		buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[buf]).Data[0]), v[enabled[j]].Offset))), uint64(v[enabled[j]].Stride)*i))
+		buf_pos = c.Buffers.A[buf].Data[v[enabled[j]].Offset+GLsizei(uint64(v[enabled[j]].Stride)*i):]
 		tmpvec4.X = 0.0
 		tmpvec4.Y = 0.0
 		tmpvec4.Z = 0.0
 		tmpvec4.W = 1.0
-		b := unsafe.Slice((*float64)(unsafe.Pointer(buf_pos)), v[enabled[j]].Size)
-		_ = b
-		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
+		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(&buf_pos[0]), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
-	var vs_out *float32 = (*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*uintptr(vert*uint64(c.Vs_output.Size))))
+	var vs_out *float32 = &c.Vs_output.Output_buf.A[vert*uint64(c.Vs_output.Size)]
 	c.Programs.A[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
 	c.Glverts.A[vert].Vs_out = vs_out
 	c.Glverts.A[vert].Clip_space = c.Builtins.Gl_Position
@@ -3332,7 +3291,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		vert        uint64
 		num_enabled uint64
 		tmpvec4     Vec4
-		buf_pos     *u8
+		buf_pos     []u8
 		vec4_init   = Vec4{0.0, 0.0, 0.0, 1.0}
 		enabled     [GL_MAX_VERTEX_ATTRIBS]int64
 	)
@@ -3346,12 +3305,12 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				j++
 			} else if (instance_id % GLsizei(v[i].Divisor)) == 0 {
 				var n int64 = int64(instance_id/GLsizei(v[i].Divisor) + GLsizei(base_instance))
-				buf_pos = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[v[i].Buf]).Data[0]), v[i].Offset))), int64(v[i].Stride)*n))
+				buf_pos = c.Buffers.A[v[i].Buf].Data[v[i].Offset+v[i].Stride*GLsizei(n):]
 				tmpvec4.X = 0.0
 				tmpvec4.Y = 0.0
 				tmpvec4.Z = 0.0
 				tmpvec4.W = 1.0
-				libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
+				libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(&buf_pos[0]), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
 				c.Vertex_attribs_vs[i] = tmpvec4
 			}
 		}
@@ -3553,7 +3512,7 @@ func depthtest(zval float32, zbufval float32) int64 {
 }
 func setup_fs_input(t float32, v1_out *float32, v2_out *float32, wa float32, wb float32, provoke uint64) {
 	var (
-		vs_output *float32 = (*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*0))
+		vs_output *float32 = &c.Vs_output.Output_buf.A[0]
 		inv_wa    float32  = float32(1.0 / float64(wa))
 		inv_wb    float32  = float32(1.0 / float64(wb))
 	)
@@ -4472,7 +4431,7 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 			if c.Vs_output.Interpolation[j] != GLenum(FLAT) {
 				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(vert[i].Vs_out), unsafe.Sizeof(float32(0))*uintptr(j)))
 			} else {
-				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
+				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(&c.Vs_output.Output_buf.A[0]), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
 			}
 		}
 		c.Builtins.Discard = GL_FALSE
@@ -4575,7 +4534,7 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 	var z float32
 	var fs_input [64]float32
 	var perspective [192]float32
-	var vs_output *float32 = (*float32)(unsafe.Add(unsafe.Pointer(c.Vs_output.Output_buf.A), unsafe.Sizeof(float32(0))*0))
+	var vs_output *float32 = &c.Vs_output.Output_buf.A[0]
 	for i := int64(0); i < c.Vs_output.Size; i++ {
 		perspective[i] = *(*float32)(unsafe.Add(unsafe.Pointer(v0.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) / p0.W
 		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] = *(*float32)(unsafe.Add(unsafe.Pointer(v1.Vs_out), unsafe.Sizeof(float32(0))*uintptr(i))) / p1.W
@@ -5044,26 +5003,26 @@ func init_glVertex_Attrib(v *glVertex_Attrib) {
 	v.Enabled = 0
 	v.Divisor = 0
 }
-func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth int64, Rmask U32, Gmask U32, Bmask U32, Amask U32) int64 {
+func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth int64, Rmask U32, Gmask U32, Bmask U32, Amask U32) int64 {
 	if bitdepth > 32 || back == nil {
 		return 0
 	}
 	context.User_alloced_backbuf = int64(libc.BoolToInt(*back != nil))
 	if *back == nil {
 		var bytes_per_pixel int64 = (bitdepth + 8 - 1) / 8
-		*back = (*U32)(libc.Malloc(int(w * h * bytes_per_pixel)))
+		*back = unsafe.Slice((*U32)(libc.Malloc(int(w*h*bytes_per_pixel))), w*h*bytes_per_pixel)
 		if *back == nil {
 			return 0
 		}
 	}
-	context.Zbuf.Buf = (*u8)(libc.Malloc(int(w * h * int64(unsafe.Sizeof(float32(0))))))
+	context.Zbuf.Buf = make([]u8, w*h*int64(unsafe.Sizeof(float32(0)))) //(*u8)(libc.Malloc(int(w * h * int64(unsafe.Sizeof(float32(0))))))
 	if context.Zbuf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
 			*back = nil
 		}
 		return 0
 	}
-	context.Stencil_buf.Buf = (*u8)(libc.Malloc(int(w * h)))
+	context.Stencil_buf.Buf = make([]u8, w*h) //(*u8)(libc.Malloc(int(w * h)))
 	if context.Stencil_buf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
 			*back = nil
@@ -5077,14 +5036,14 @@ func Init_glContext(context *GlContext, back **U32, w int64, h int64, bitdepth i
 	context.Y_max = uint64(h)
 	context.Zbuf.W = uint64(w)
 	context.Zbuf.H = uint64(h)
-	context.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(context.Zbuf.Buf), (h-1)*w*int64(unsafe.Sizeof(float32(0)))))
+	context.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Zbuf.Buf[0]), (h-1)*w*int64(unsafe.Sizeof(float32(0)))))
 	context.Stencil_buf.W = uint64(w)
 	context.Stencil_buf.H = uint64(h)
-	context.Stencil_buf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(context.Stencil_buf.Buf), (h-1)*w))
+	context.Stencil_buf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Stencil_buf.Buf[0]), (h-1)*w))
 	context.Back_buffer.W = uint64(w)
 	context.Back_buffer.H = uint64(h)
-	context.Back_buffer.Buf = (*u8)(unsafe.Pointer(*back))
-	context.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(context.Back_buffer.Buf), (h-1)*w*int64(unsafe.Sizeof(U32(0)))))
+	context.Back_buffer.Buf = unsafe.Slice((*u8)(unsafe.Pointer(&(*back)[0])), w*h*int64(unsafe.Sizeof(U32(0))))
+	context.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&context.Back_buffer.Buf[0]), (h-1)*w*int64(unsafe.Sizeof(U32(0)))))
 	context.Bitdepth = bitdepth
 	context.Rmask = Rmask
 	context.Gmask = Gmask
@@ -5207,7 +5166,7 @@ func Free_glContext(context *GlContext) {
 	context.Zbuf.Buf = nil
 	context.Stencil_buf.Buf = nil
 	if context.User_alloced_backbuf == 0 {
-		libc.Free(unsafe.Pointer(context.Back_buffer.Buf))
+		context.Back_buffer.Buf = nil
 	}
 	for i = 0; uint64(i) < context.Buffers.Size; i++ {
 		if context.Buffers.A[i].User_owned == 0 {
@@ -5232,8 +5191,8 @@ func Set_glContext(context *GlContext) {
 	c = context
 }
 func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
-	var tmp *u8
-	tmp = (*u8)(libc.Realloc(unsafe.Pointer(c.Zbuf.Buf), int(w*h*uint64(unsafe.Sizeof(float32(0))))))
+	var tmp []u8
+	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Zbuf.Buf[0]), int(w*h*uint64(unsafe.Sizeof(float32(0)))))), int(w*h*uint64(unsafe.Sizeof(float32(0)))))
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -5243,8 +5202,8 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Zbuf.Buf = tmp
 	c.Zbuf.W = w
 	c.Zbuf.H = h
-	c.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(c.Zbuf.Buf), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
-	tmp = (*u8)(libc.Realloc(unsafe.Pointer(c.Back_buffer.Buf), int(w*h*uint64(unsafe.Sizeof(U32(0))))))
+	c.Zbuf.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
+	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Back_buffer.Buf[0]), int(w*h*uint64(unsafe.Sizeof(U32(0)))))), int(w*h*uint64(unsafe.Sizeof(U32(0)))))
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -5254,8 +5213,8 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Back_buffer.Buf = tmp
 	c.Back_buffer.W = w
 	c.Back_buffer.H = h
-	c.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(c.Back_buffer.Buf), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
-	return unsafe.Pointer(tmp)
+	c.Back_buffer.Lastrow = (*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
+	return unsafe.Pointer(&tmp[0])
 }
 func glGetString(name GLenum) *GLubyte {
 	switch name {
@@ -6155,7 +6114,7 @@ func GlClear(mask GLbitfield) {
 	if mask&GLbitfield(GL_COLOR_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Back_buffer.W*c.Back_buffer.H; i++ {
-				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(c.Back_buffer.Buf))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Buf[0]))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
 			}
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
@@ -6168,7 +6127,7 @@ func GlClear(mask GLbitfield) {
 	if mask&GLbitfield(GL_DEPTH_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Zbuf.W*c.Zbuf.H; i++ {
-				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(c.Zbuf.Buf))), unsafe.Sizeof(float32(0))*uintptr(i))) = float32(c.Clear_depth)
+				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Buf[0]))), unsafe.Sizeof(float32(0))*uintptr(i))) = float32(c.Clear_depth)
 			}
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
@@ -6181,7 +6140,7 @@ func GlClear(mask GLbitfield) {
 	if mask&GLbitfield(GL_STENCIL_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Stencil_buf.W*c.Stencil_buf.H; i++ {
-				*(*u8)(unsafe.Add(unsafe.Pointer(c.Stencil_buf.Buf), i)) = u8(int8(c.Clear_stencil))
+				*(*u8)(unsafe.Add(unsafe.Pointer(&c.Stencil_buf.Buf[0]), i)) = u8(int8(c.Clear_stencil))
 			}
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
@@ -7258,7 +7217,7 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 	}
 }
 func pglClearScreen() {
-	libc.MemSet(unsafe.Pointer(c.Back_buffer.Buf), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
+	libc.MemSet(unsafe.Pointer(&c.Back_buffer.Buf[0]), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
 }
 func pglSetInterp(interpolation []GLenum) {
 	n := len(interpolation)

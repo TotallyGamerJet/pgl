@@ -7,6 +7,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"math"
 	"pgl"
+	"runtime/debug"
+	"time"
 	"unsafe"
 )
 
@@ -26,7 +28,7 @@ func sin_cos(x float64, s *float64, c *float64) {
 var window *sdl.Window
 var ren *sdl.Renderer
 var tex *sdl.Texture
-var bbufpix *pgl.U32
+var bbufpix []pgl.U32
 var the_context pgl.GlContext
 var polygon_mode int
 
@@ -56,14 +58,14 @@ var angle pgl.GLfloat = pgl.GLfloat(0.0)
 var ProjectionMatrix [16]pgl.GLfloat
 var uniforms My_Uniforms
 
-func vert(v *GearVertex, x pgl.GLfloat, y pgl.GLfloat, z pgl.GLfloat, n [3]pgl.GLfloat) *GearVertex {
-	v[0] = x
-	v[1] = y
-	v[2] = z
-	v[3] = n[0]
-	v[4] = n[1]
-	v[5] = n[2]
-	return (*GearVertex)(unsafe.Add(unsafe.Pointer(v), unsafe.Sizeof(GearVertex{})*1))
+func vert(v []GearVertex, x pgl.GLfloat, y pgl.GLfloat, z pgl.GLfloat, n [3]pgl.GLfloat) []GearVertex {
+	v[0][0] = x
+	v[0][1] = y
+	v[0][2] = z
+	v[0][3] = n[0]
+	v[0][4] = n[1]
+	v[0][5] = n[2]
+	return v[1:]
 }
 func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.GLfloat, teeth pgl.GLint, tooth_depth pgl.GLfloat) *gear {
 	var (
@@ -71,7 +73,7 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 		r1        pgl.GLfloat
 		r2        pgl.GLfloat
 		da        pgl.GLfloat
-		v         *GearVertex
+		v         []GearVertex
 		gr        *gear
 		s         [5]float64
 		c         [5]float64
@@ -90,7 +92,7 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 	gr.Nstrips = int(STRIPS_PER_TOOTH * teeth)
 	gr.Strips = make([]vertex_strip, gr.Nstrips)
 	gr.Vertices = make([]GearVertex, int(VERTICES_PER_TOOTH*teeth))
-	v = &gr.Vertices[0]
+	v = gr.Vertices
 	var sc_val float64
 	for i = 0; i < int(teeth); i++ {
 		sc_val = float64(i) * 2.0 * math.Pi / float64(teeth)
@@ -104,7 +106,7 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			Y pgl.GLfloat
 		}
 		var p [7]point = [7]point{{X: pgl.GLfloat(float64(r2) * c[1]), Y: pgl.GLfloat(float64(r2) * s[1])}, {X: pgl.GLfloat(float64(r2) * c[2]), Y: pgl.GLfloat(float64(r2) * s[2])}, {X: pgl.GLfloat(float64(r1) * c[0]), Y: pgl.GLfloat(float64(r1) * s[0])}, {X: pgl.GLfloat(float64(r1) * c[3]), Y: pgl.GLfloat(float64(r1) * s[3])}, {X: pgl.GLfloat(float64(r0) * c[0]), Y: pgl.GLfloat(float64(r0) * s[0])}, {X: pgl.GLfloat(float64(r1) * c[4]), Y: pgl.GLfloat(float64(r1) * s[4])}, {X: pgl.GLfloat(float64(r0) * c[4]), Y: pgl.GLfloat(float64(r0) * s[4])}}
-		gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+		gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 
 		normal[0] = 0
 		normal[1] = 0
@@ -118,12 +120,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 		v = vert(v, p[5].X, p[5].Y, pgl.GLfloat(float64(width*(+1))*0.5), normal)
 		v = vert(v, p[6].X, p[6].Y, pgl.GLfloat(float64(width*(+1))*0.5), normal)
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			{
@@ -137,12 +139,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			v = vert(v, p[6].X, p[6].Y, pgl.GLfloat(float64(width*1)*0.5), normal)
 		}
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			normal[0] = 0
@@ -157,12 +159,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 		v = vert(v, p[1].X, p[1].Y, pgl.GLfloat(float64(width*pgl.GLfloat(-1))*0.5), normal)
 		v = vert(v, p[0].X, p[0].Y, pgl.GLfloat(float64(width*pgl.GLfloat(-1))*0.5), normal)
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			{
@@ -176,12 +178,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			v = vert(v, p[2].X, p[2].Y, pgl.GLfloat(float64(width*1)*0.5), normal)
 		}
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			{
@@ -195,12 +197,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			v = vert(v, p[0].X, p[0].Y, pgl.GLfloat(float64(width*1)*0.5), normal)
 		}
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			{
@@ -214,12 +216,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			v = vert(v, p[1].X, p[1].Y, pgl.GLfloat(float64(width*1)*0.5), normal)
 		}
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 		{
-			gr.Strips[cur_strip].First = pgl.GLint(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			gr.Strips[cur_strip].First = pgl.GLint(len(gr.Vertices) - len(v))
 		}
 		{
 			{
@@ -233,12 +235,12 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 			v = vert(v, p[3].X, p[3].Y, pgl.GLfloat(float64(width*1)*0.5), normal)
 		}
 		{
-			var _tmp int = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+			var _tmp int = int(len(gr.Vertices) - len(v))
 			gr.Strips[cur_strip].Count = pgl.GLint(_tmp - int(gr.Strips[cur_strip].First))
 			cur_strip++
 		}
 	}
-	gr.Nvertices = int(int64(uintptr(unsafe.Pointer(v)) - uintptr(unsafe.Pointer(&gr.Vertices[0]))))
+	gr.Nvertices = int(len(gr.Vertices) - len(v))
 	pgl.GlGenBuffers(1, &gr.Vbo)
 	pgl.GlBindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gr.Vbo)
 	pgl.GlBufferData(pgl.GLenum(pgl.GL_ARRAY_BUFFER), pgl.GLsizei(gr.Nvertices*int(unsafe.Sizeof(GearVertex{}))), unsafe.Pointer(&gr.Vertices[0]), pgl.GLenum(pgl.GL_STATIC_DRAW))
@@ -247,17 +249,17 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 func multiply(m []pgl.GLfloat, n []pgl.GLfloat) {
 	var (
 		tmp    [16]pgl.GLfloat
-		row    *pgl.GLfloat
-		column *pgl.GLfloat
+		row    []pgl.GLfloat
+		column []pgl.GLfloat
 		i      int
 		j      int
 	)
 	for i = 0; i < 16; i++ {
 		tmp[i] = 0
-		row = &n[(i/4)*4]
-		column = &m[i%4]
+		row = n[(i/4)*4:]
+		column = m[i%4:]
 		for j = 0; j < 4; j++ {
-			tmp[i] += *(*pgl.GLfloat)(unsafe.Add(unsafe.Pointer(row), unsafe.Sizeof(pgl.GLfloat(0))*uintptr(j))) * *(*pgl.GLfloat)(unsafe.Add(unsafe.Pointer(column), unsafe.Sizeof(pgl.GLfloat(0))*uintptr(j*4)))
+			tmp[i] += row[j] * column[j*4]
 		}
 	}
 	copy(m, tmp[:])
@@ -289,7 +291,7 @@ func transpose(m []pgl.GLfloat) {
 
 func invert(m []pgl.GLfloat) {
 	var t [16]pgl.GLfloat
-	identity(unsafe.Slice(&t[0], 16))
+	identity(t[:])
 	// Extract and invert the translation part 't'. The inverse of a
 	// translation matrix can be calculated by negating the translation
 	// coordinates.
@@ -338,14 +340,14 @@ func draw_gear(gear *gear, transform []pgl.GLfloat, x pgl.GLfloat, y pgl.GLfloat
 	copy(model_view_projection[:], ProjectionMatrix[:])
 	multiply(model_view_projection[:], model_view[:])
 	libc.MemCpy(unsafe.Pointer(&uniforms.Mvp_mat[0]), unsafe.Pointer(&model_view_projection[0]), int(unsafe.Sizeof(pgl.Mat4{})))
-	libc.MemCpy(unsafe.Pointer(&normal_matrix[0]), unsafe.Pointer(&model_view[0]), int(unsafe.Sizeof([16]pgl.GLfloat{})))
+	copy(normal_matrix[:], model_view[:])
 	invert(normal_matrix[:])
 	transpose(normal_matrix[:])
 	libc.MemCpy(unsafe.Pointer(&uniforms.Normal_mat[0]), unsafe.Pointer(&normal_matrix[0]), int(unsafe.Sizeof(pgl.Mat4{})))
 	libc.MemCpy(unsafe.Pointer(&uniforms.Material_color), unsafe.Pointer(&color[0]), int(unsafe.Sizeof(pgl.Vec3{})))
 	pgl.GlBindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gear.Vbo)
-	pgl.GlVertexAttribPointer(0, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(uint32(6*unsafe.Sizeof(pgl.GLfloat(0)))), 0)
-	pgl.GlVertexAttribPointer(1, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(uint32(6*unsafe.Sizeof(pgl.GLfloat(0)))), pgl.GLsizei(uint32(0+3*unsafe.Sizeof(pgl.GLfloat(0)))))
+	pgl.GlVertexAttribPointer(0, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), 0)
+	pgl.GlVertexAttribPointer(1, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), pgl.GLsizei(0+3*unsafe.Sizeof(pgl.GLfloat(0))))
 	pgl.GlEnableVertexAttribArray(0)
 	pgl.GlEnableVertexAttribArray(1)
 	var n int
@@ -373,22 +375,27 @@ func gears_draw() {
 	draw_gear(gear2, transform[:], pgl.GLfloat(3.1), pgl.GLfloat(-2.0), pgl.GLfloat(float64(angle*pgl.GLfloat(-2))-9.0), green)
 	draw_gear(gear3, transform[:], pgl.GLfloat(-3.1), pgl.GLfloat(4.2), pgl.GLfloat(float64(angle*pgl.GLfloat(-2))-25.0), blue)
 }
+
+var ( // static
+	frames int     = 0
+	tRot0  float64 = -1.0
+	tRate0 float64 = -1.0
+)
+
 func gears_idle() {
 	var (
-		frames int     = 0
-		tRot0  float64 = -1.0
-		tRate0 float64 = -1.0
-		dt     float64
-		t      float64 = float64(sdl.GetTicks()) / 1000.0
+		dt float64
+		t  float64 = float64(sdl.GetTicks()) / 1000.0
 	)
 	if tRot0 < 0.0 {
 		tRot0 = t
 	}
 	dt = t - tRot0
 	tRot0 = t
-	angle += pgl.GLfloat(dt * 70.0)
-	if float64(angle) > 3600.0 {
-		angle -= pgl.GLfloat(3600.0)
+	/* advance rotation for next frame */
+	angle += pgl.GLfloat(dt * 70.0) /* 70 degrees per second */
+	if angle > 3600.0 {
+		angle -= 3600.0
 	}
 	frames++
 	if tRate0 < 0.0 {
@@ -406,10 +413,10 @@ func gears_idle() {
 }
 func vertex_shader(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 	var (
-		v_attribs      *pgl.Vec4    = (*pgl.Vec4)(vertex_attribs)
+		v_attribs      []pgl.Vec4   = unsafe.Slice((*pgl.Vec4)(vertex_attribs), 2)
 		vs_out         *pgl.Vec3    = (*pgl.Vec3)(unsafe.Pointer(vs_output))
 		u              *My_Uniforms = (uniforms).(*My_Uniforms)
-		v4             pgl.Vec4     = pgl.Mult_mat4_vec4(u.Normal_mat, *(*pgl.Vec4)(unsafe.Add(unsafe.Pointer(v_attribs), unsafe.Sizeof(pgl.Vec4{})*1)))
+		v4             pgl.Vec4     = pgl.Mult_mat4_vec4(u.Normal_mat, v_attribs[1])
 		v3             pgl.Vec3     = pgl.Vec3{X: v4.X, Y: v4.Y, Z: v4.Z}
 		N              pgl.Vec3     = pgl.Norm_vec3(v3)
 		light_pos      pgl.Vec3     = pgl.Vec3{X: 5.0, Y: 5.0, Z: 10.0}
@@ -423,7 +430,7 @@ func vertex_shader(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *
 		diff_intensity = 0.0
 	}
 	*vs_out = pgl.Scale_vec3(u.Material_color, diff_intensity)
-	builtins.Gl_Position = pgl.Mult_mat4_vec4(u.Mvp_mat, *v_attribs)
+	builtins.Gl_Position = pgl.Mult_mat4_vec4(u.Mvp_mat, v_attribs[0])
 }
 func fragment_shader(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 	var color pgl.Vec3 = *(*pgl.Vec3)(unsafe.Pointer(fs_input))
@@ -431,7 +438,12 @@ func fragment_shader(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms 
 	builtins.Gl_FragColor.Y = color.Y
 	builtins.Gl_FragColor.Z = color.Z
 	builtins.Gl_FragColor.W = 1
+	zero := pgl.Vec3{}
+	if color == zero {
+		panic("")
+	}
 }
+
 func gears_init() {
 	var program pgl.GLuint
 	pgl.GlEnable(pgl.GL_CULL_FACE)
@@ -567,7 +579,22 @@ func handle_events() bool {
 	return false
 }
 
+// measure prints out the last time the gc ran
+func measure() {
+	stats := new(debug.GCStats)
+	var last time.Time
+	for {
+		debug.ReadGCStats(stats)
+		if !last.Equal(stats.LastGC) {
+			fmt.Println(stats.LastGC)
+			last = stats.LastGC
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 func main() {
+	go measure()
 	/* Initialize the window */
 	setup_context()
 	polygon_mode = 2
@@ -579,15 +606,13 @@ func main() {
 
 	/* Initialize the gears */
 	gears_init()
-
 	for {
 		if handle_events() {
 			break
 		}
 		gears_idle()
 		gears_draw()
-
-		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(bbufpix)), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
+		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(&bbufpix[0])), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene
 		ren.Copy(tex, nil, nil)
 		ren.Present()

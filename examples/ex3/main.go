@@ -3,10 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/veandco/go-sdl2/sdl"
-	"log"
-	"os"
 	"pgl"
-	"runtime/pprof"
 	"unsafe"
 )
 
@@ -27,7 +24,7 @@ var (
 	tex    *sdl.Texture
 )
 
-var bbufpix = (*pgl.U32)(nil)
+var bbufpix []pgl.U32
 
 var the_Context pgl.GlContext
 
@@ -37,12 +34,6 @@ type My_Uniforms struct {
 }
 
 func main() {
-	f, err := os.Create("memprof.mprof")
-	if err != nil {
-		log.Fatal(err)
-	}
-	pprof.WriteHeapProfile(f)
-	f.Close()
 	setup_context()
 
 	var smooth = [4]pgl.GLenum{pgl.SMOOTH, pgl.SMOOTH, pgl.SMOOTH, pgl.SMOOTH}
@@ -150,7 +141,7 @@ func main() {
 
 		pgl.GlDrawArrays(pgl.GL_TRIANGLES, 0, 3)
 
-		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(bbufpix)), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
+		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(&bbufpix[0])), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene
 		ren.Copy(tex, nil, nil)
 		ren.Present()
