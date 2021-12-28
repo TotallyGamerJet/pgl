@@ -2,14 +2,68 @@ vcs: https://github.com/TotallyGamerJet/PortableGL.git
 branch: 'master'
 root: ./
 out: ./pgl
+package: pgl
 
 define:
     - name: 'PORTABLEGL_IMPLEMENTATION'
     - name: 'DEBUG'
-
+idents:
+  - name: 'mat4'
+    rename: 'Mat4'
+  - name: 'vec4'
+    rename: 'Vec4'
+  - name: 'u32'
+    rename: 'U32'
+  - name: 'glContext'
+    rename: 'GlContext'
+  - name: 'mult_mat4_vec4'
+    rename: 'Mult_mat4_vec4'
+  - name: 'init_glContext'
+    rename: 'Init_glContext'
+  - name: 'set_glContext'
+    rename: 'Set_glContext'
+  - name: 'free_glContext'
+    rename: 'Free_glContext'
+  - name: 'pglCreateProgram'
+    rename: 'NewProgram'
+  - name: 'pglSetUniform'
+    rename: 'SetUniform'
+    fields:
+      - name: 'uniform'
+        type: iface
+  - name: 'glProgram'
+    fields:
+      - name: 'uniform'
+        type: iface
+  - name: 'vert_func'
+    fields:
+      - name: 'uniforms'
+        type: iface
+  - name: 'frag_func'
+    fields:
+      - name: 'uniforms'
+        type: iface
+  - name: 'default_vs'
+    fields:
+      - name: 'uniforms'
+        type: iface
+  - name: 'default_fs'
+    fields:
+      - name: 'uniforms'
+        type: iface
 files:
     - name: portablegl.h
       replace:
+        - old: 'func gl'
+          new: 'func '
+        - old: 'func _clip'
+          new: 'func gl_clip'
+        - old: 'glStencilFunc'
+          new: 'StencilFunc'
+        - old: 'glStencilOp'
+          new: 'StencilOp'
+        - old: 'glStencilMask'
+          new: 'StencilMask'
         - old: 'line_1:'
           new: '//line_1:'
         - old: 'line_2:'
