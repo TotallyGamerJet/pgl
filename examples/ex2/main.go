@@ -60,10 +60,10 @@ func main() {
 	pgl.EnableVertexAttribArray(4)
 	pgl.VertexAttribPointer(4, 4, pgl.GL_FLOAT, pgl.GL_FALSE, pgl.GLsizei(unsafe.Sizeof(float32(0))*6), pgl.GLsizei(unsafe.Sizeof(float32(0))*3))
 
-	var myshader = pgl.PglCreateProgram(smooth_vs, smooth_fs, 4, smooth[:], pgl.GL_FALSE)
+	var myshader = pgl.NewProgram(smooth_vs, smooth_fs, 4, smooth[:], pgl.GL_FALSE)
 	pgl.UseProgram(myshader)
 
-	pgl.PglSetUniform(&the_uniforms)
+	pgl.SetUniform(&the_uniforms)
 
 	the_uniforms.mvp_map = identity
 

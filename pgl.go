@@ -6,6 +6,59 @@ import (
 	"unsafe"
 )
 
+func NewProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, interpolation []GLenum, fragdepth_or_discard GLboolean) GLuint {
+	if vertex_shader == nil || fragment_shader == nil {
+		return 0
+	}
+	if n > GL_MAX_VERTEX_OUTPUT_COMPONENTS {
+		if c.Error == 0 {
+			c.Error = GLenum(GL_INVALID_VALUE)
+		}
+		return 0
+	}
+	var tmp glProgram = glProgram{Vertex_shader: vertex_shader, Fragment_shader: fragment_shader, Uniform: nil, Vs_output_size: int64(n), Interpolation: [64]GLenum{}, Fragdepth_or_discard: fragdepth_or_discard, Deleted: GL_FALSE}
+	copy(tmp.Interpolation[:], interpolation)
+	for i := int64(1); uint64(i) < c.Programs.Size; i++ {
+		if c.Programs.A[i].Deleted != 0 && i != int64(c.Cur_program) {
+			c.Programs.A[i] = tmp
+			return GLuint(int32(i))
+		}
+	}
+	cvec_push_glProgram(&c.Programs, tmp)
+	return GLuint(c.Programs.Size - 1)
+}
+
+func SetUniform(uniform interface{}) {
+	c.Programs.A[c.Cur_program].Uniform = uniform
+}
+
+func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
+	var tmp []u8
+	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Zbuf.Buf[0]), int(w*h*uint64(unsafe.Sizeof(float32(0)))))), int(w*h*uint64(unsafe.Sizeof(float32(0)))))
+	if tmp == nil {
+		if c.Error == GLenum(GL_NO_ERROR) {
+			c.Error = GLenum(GL_OUT_OF_MEMORY)
+		}
+		return nil
+	}
+	c.Zbuf.Buf = tmp
+	c.Zbuf.W = w
+	c.Zbuf.H = h
+	c.Zbuf.Lastrow = c.Zbuf.Buf[(h-1)*w*uint64(unsafe.Sizeof(float32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
+	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Back_buffer.Buf[0]), int(w*h*uint64(unsafe.Sizeof(U32(0)))))), int(w*h*uint64(unsafe.Sizeof(U32(0)))))
+	if tmp == nil {
+		if c.Error == GLenum(GL_NO_ERROR) {
+			c.Error = GLenum(GL_OUT_OF_MEMORY)
+		}
+		return nil
+	}
+	c.Back_buffer.Buf = tmp
+	c.Back_buffer.W = w
+	c.Back_buffer.H = h
+	c.Back_buffer.Lastrow = c.Back_buffer.Buf[(h-1)*w*uint64(unsafe.Sizeof(U32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
+	return unsafe.Pointer(&tmp[0])
+}
+
 func pglClearScreen() {
 	libc.MemSet(unsafe.Pointer(&c.Back_buffer.Buf[0]), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
 }
@@ -216,7 +269,7 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
 }
 
-func GetBufferData(buffer GLuint, data *unsafe.Pointer) {
+func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
 	if data == nil {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)

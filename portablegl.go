@@ -5188,32 +5188,7 @@ func Free_glContext(context *GlContext) {
 func Set_glContext(context *GlContext) {
 	c = context
 }
-func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
-	var tmp []u8
-	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Zbuf.Buf[0]), int(w*h*uint64(unsafe.Sizeof(float32(0)))))), int(w*h*uint64(unsafe.Sizeof(float32(0)))))
-	if tmp == nil {
-		if c.Error == GLenum(GL_NO_ERROR) {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
-		}
-		return nil
-	}
-	c.Zbuf.Buf = tmp
-	c.Zbuf.W = w
-	c.Zbuf.H = h
-	c.Zbuf.Lastrow = c.Zbuf.Buf[(h-1)*w*uint64(unsafe.Sizeof(float32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
-	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Back_buffer.Buf[0]), int(w*h*uint64(unsafe.Sizeof(U32(0)))))), int(w*h*uint64(unsafe.Sizeof(U32(0)))))
-	if tmp == nil {
-		if c.Error == GLenum(GL_NO_ERROR) {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
-		}
-		return nil
-	}
-	c.Back_buffer.Buf = tmp
-	c.Back_buffer.W = w
-	c.Back_buffer.H = h
-	c.Back_buffer.Lastrow = c.Back_buffer.Buf[(h-1)*w*uint64(unsafe.Sizeof(U32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
-	return unsafe.Pointer(&tmp[0])
-}
+
 func GetString(name GLenum) *GLubyte {
 	switch name {
 	case GL_VENDOR:
@@ -6430,27 +6405,7 @@ func ProvokingVertex(provokeMode GLenum) {
 	}
 	c.Provoking_vert = provokeMode
 }
-func PglCreateProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, interpolation []GLenum, fragdepth_or_discard GLboolean) GLuint {
-	if vertex_shader == nil || fragment_shader == nil {
-		return 0
-	}
-	if n > GL_MAX_VERTEX_OUTPUT_COMPONENTS {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return 0
-	}
-	var tmp glProgram = glProgram{Vertex_shader: vertex_shader, Fragment_shader: fragment_shader, Uniform: nil, Vs_output_size: int64(n), Interpolation: [64]GLenum{}, Fragdepth_or_discard: fragdepth_or_discard, Deleted: GL_FALSE}
-	copy(tmp.Interpolation[:], interpolation)
-	for i := int64(1); uint64(i) < c.Programs.Size; i++ {
-		if c.Programs.A[i].Deleted != 0 && i != int64(c.Cur_program) {
-			c.Programs.A[i] = tmp
-			return GLuint(int32(i))
-		}
-	}
-	cvec_push_glProgram(&c.Programs, tmp)
-	return GLuint(c.Programs.Size - 1)
-}
+
 func DeleteProgram(program GLuint) {
 	if program == 0 {
 		return
@@ -6476,9 +6431,7 @@ func UseProgram(program GLuint) {
 	c.Fragdepth_or_discard = c.Programs.A[program].Fragdepth_or_discard
 	c.Cur_program = program
 }
-func PglSetUniform(uniform interface{}) {
-	c.Programs.A[c.Cur_program].Uniform = uniform
-}
+
 func BlendFunc(sfactor GLenum, dfactor GLenum) {
 	if sfactor < GLenum(GL_ZERO) || sfactor >= GLenum(NUM_BLEND_FUNCS) || dfactor < GLenum(GL_ZERO) || dfactor >= GLenum(NUM_BLEND_FUNCS) {
 		if c.Error == 0 {
@@ -6667,7 +6620,7 @@ func MapBuffer(target GLenum, access GLenum) unsafe.Pointer {
 	}
 	target -= GLenum(GL_ARRAY_BUFFER)
 	var data unsafe.Pointer = nil
-	GetBufferData(c.Bound_buffers[target], &data)
+	pglGetBufferData(c.Bound_buffers[target], &data)
 	return data
 }
 func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
@@ -6678,7 +6631,7 @@ func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
 		return nil
 	}
 	var data unsafe.Pointer = nil
-	GetBufferData(buffer, &data)
+	pglGetBufferData(buffer, &data)
 	return data
 }
 func GetDoublev(pname GLenum, params *GLdouble) {

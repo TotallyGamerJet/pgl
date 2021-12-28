@@ -434,9 +434,9 @@ func gears_init() {
 	pgl.Enable(pgl.GL_CULL_FACE)
 	pgl.Enable(pgl.GL_DEPTH_TEST)
 	var smooth [3]pgl.GLenum = [3]pgl.GLenum{pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH)}
-	program = pgl.PglCreateProgram(vertex_shader, fragment_shader, 3, smooth[:], pgl.GL_FALSE)
+	program = pgl.NewProgram(vertex_shader, fragment_shader, 3, smooth[:], pgl.GL_FALSE)
 	pgl.UseProgram(program)
-	pgl.PglSetUniform(&uniforms)
+	pgl.SetUniform(&uniforms)
 	perspective(ProjectionMatrix[:], pgl.GLfloat(60.0), pgl.GLfloat(int(WIDTH/HEIGHT)), pgl.GLfloat(1.0), pgl.GLfloat(1024.0))
 	pgl.Viewport(0, 0, WIDTH, HEIGHT)
 	gear1 = create_gear(pgl.GLfloat(1.0), pgl.GLfloat(4.0), pgl.GLfloat(1.0), 20, pgl.GLfloat(0.7))
