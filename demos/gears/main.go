@@ -225,9 +225,9 @@ func create_gear(inner_radius pgl.GLfloat, outer_radius pgl.GLfloat, width pgl.G
 		}
 	}
 	gr.Nvertices = int(len(gr.Vertices) - len(v))
-	pgl.GlGenBuffers(1, &gr.Vbo)
-	pgl.GlBindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gr.Vbo)
-	pgl.GlBufferData(pgl.GLenum(pgl.GL_ARRAY_BUFFER), pgl.GLsizei(gr.Nvertices*int(unsafe.Sizeof(GearVertex{}))), unsafe.Pointer(&gr.Vertices[0]), pgl.GLenum(pgl.GL_STATIC_DRAW))
+	pgl.GenBuffers(1, &gr.Vbo)
+	pgl.BindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gr.Vbo)
+	pgl.BufferData(pgl.GLenum(pgl.GL_ARRAY_BUFFER), pgl.GLsizei(gr.Nvertices*int(unsafe.Sizeof(GearVertex{}))), unsafe.Pointer(&gr.Vertices[0]), pgl.GLenum(pgl.GL_STATIC_DRAW))
 	return gr
 }
 func multiply(m, n []float32) {
@@ -334,17 +334,17 @@ func draw_gear(gear *gear, transform []float32, x pgl.GLfloat, y pgl.GLfloat, an
 	transpose(normal_matrix[:])
 	copy(uniforms.Normal_mat[:], normal_matrix[:])
 	uniforms.Material_color = *(*pgl.Vec3)(unsafe.Pointer(&color[0]))
-	pgl.GlBindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gear.Vbo)
-	pgl.GlVertexAttribPointer(0, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), 0)
-	pgl.GlVertexAttribPointer(1, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), pgl.GLsizei(0+3*unsafe.Sizeof(pgl.GLfloat(0))))
-	pgl.GlEnableVertexAttribArray(0)
-	pgl.GlEnableVertexAttribArray(1)
+	pgl.BindBuffer(pgl.GLenum(pgl.GL_ARRAY_BUFFER), gear.Vbo)
+	pgl.VertexAttribPointer(0, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), 0)
+	pgl.VertexAttribPointer(1, 3, pgl.GLenum(pgl.GL_FLOAT), pgl.GL_FALSE, pgl.GLsizei(6*unsafe.Sizeof(pgl.GLfloat(0))), pgl.GLsizei(0+3*unsafe.Sizeof(pgl.GLfloat(0))))
+	pgl.EnableVertexAttribArray(0)
+	pgl.EnableVertexAttribArray(1)
 	var n int
 	for n = 0; n < gear.Nstrips; n++ {
-		pgl.GlDrawArrays(pgl.GLenum(pgl.GL_TRIANGLE_STRIP), gear.Strips[n].First, pgl.GLsizei(gear.Strips[n].Count))
+		pgl.DrawArrays(pgl.GLenum(pgl.GL_TRIANGLE_STRIP), gear.Strips[n].First, pgl.GLsizei(gear.Strips[n].Count))
 	}
-	pgl.GlDisableVertexAttribArray(1)
-	pgl.GlDisableVertexAttribArray(0)
+	pgl.DisableVertexAttribArray(1)
+	pgl.DisableVertexAttribArray(0)
 }
 func gears_draw() {
 	var (
@@ -354,8 +354,8 @@ func gears_draw() {
 		transform [16]float32
 	)
 	identity(transform[:])
-	pgl.GlClearColor(0.0, 0.0, 0.0, 0.0)
-	pgl.GlClear(pgl.GLbitfield(pgl.GL_COLOR_BUFFER_BIT | pgl.GL_DEPTH_BUFFER_BIT))
+	pgl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	pgl.Clear(pgl.GLbitfield(pgl.GL_COLOR_BUFFER_BIT | pgl.GL_DEPTH_BUFFER_BIT))
 	translate(transform[:], 0, 0, pgl.GLfloat(-20))
 	rotate(transform[:], pgl.GLfloat(math.Pi*2*float64(view_rot[0])/360.0), 1, 0, 0)
 	rotate(transform[:], pgl.GLfloat(math.Pi*2*float64(view_rot[1])/360.0), 0, 1, 0)
@@ -431,14 +431,14 @@ func fragment_shader(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms 
 
 func gears_init() {
 	var program pgl.GLuint
-	pgl.GlEnable(pgl.GL_CULL_FACE)
-	pgl.GlEnable(pgl.GL_DEPTH_TEST)
+	pgl.Enable(pgl.GL_CULL_FACE)
+	pgl.Enable(pgl.GL_DEPTH_TEST)
 	var smooth [3]pgl.GLenum = [3]pgl.GLenum{pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH), pgl.GLenum(pgl.SMOOTH)}
 	program = pgl.PglCreateProgram(vertex_shader, fragment_shader, 3, smooth[:], pgl.GL_FALSE)
-	pgl.GlUseProgram(program)
+	pgl.UseProgram(program)
 	pgl.PglSetUniform(&uniforms)
 	perspective(ProjectionMatrix[:], pgl.GLfloat(60.0), pgl.GLfloat(int(WIDTH/HEIGHT)), pgl.GLfloat(1.0), pgl.GLfloat(1024.0))
-	pgl.GlViewport(0, 0, WIDTH, HEIGHT)
+	pgl.Viewport(0, 0, WIDTH, HEIGHT)
 	gear1 = create_gear(pgl.GLfloat(1.0), pgl.GLfloat(4.0), pgl.GLfloat(1.0), 20, pgl.GLfloat(0.7))
 	gear2 = create_gear(pgl.GLfloat(0.5), pgl.GLfloat(2.0), pgl.GLfloat(2.0), 10, pgl.GLfloat(0.7))
 	gear3 = create_gear(pgl.GLfloat(1.3), pgl.GLfloat(2.0), pgl.GLfloat(0.5), 10, pgl.GLfloat(0.7))
@@ -449,7 +449,7 @@ func check_errors(n int, str string) {
 		err   int = 0
 	)
 	for (func() pgl.GLenum {
-		error = pgl.GlGetError()
+		error = pgl.GetError()
 		return error
 	}()) != pgl.GLenum(pgl.GL_NO_ERROR) {
 		switch error {
@@ -530,11 +530,11 @@ func handle_events() bool {
 			case sdl.SCANCODE_P:
 				polygon_mode = (polygon_mode + 1) % 3
 				if polygon_mode == 0 {
-					pgl.GlPolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_POINT)
+					pgl.PolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_POINT)
 				} else if polygon_mode == 1 {
-					pgl.GlPolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_LINE)
+					pgl.PolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_LINE)
 				} else {
-					pgl.GlPolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_FILL)
+					pgl.PolygonMode(pgl.GL_FRONT_AND_BACK, pgl.GL_FILL)
 				}
 			case sdl.SCANCODE_LEFT:
 				view_rot[1] += 5.0
@@ -557,7 +557,7 @@ func handle_events() bool {
 				perspective(ProjectionMatrix[:], 60.0, pgl.GLfloat(float32(width)/float32(height)), 1.0, 1024.0)
 
 				/* Set the viewport */
-				pgl.GlViewport(0, 0, pgl.GLsizei(width), pgl.GLsizei(height))
+				pgl.Viewport(0, 0, pgl.GLsizei(width), pgl.GLsizei(height))
 			}
 		}
 	}
@@ -571,8 +571,8 @@ func main() {
 
 	//no default vao in core profile ...
 	var vao pgl.GLuint
-	pgl.GlGenVertexArrays(1, &vao)
-	pgl.GlBindVertexArray(vao)
+	pgl.GenVertexArrays(1, &vao)
+	pgl.BindVertexArray(vao)
 
 	/* Initialize the gears */
 	gears_init()

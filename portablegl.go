@@ -5214,7 +5214,7 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Back_buffer.Lastrow = c.Back_buffer.Buf[(h-1)*w*uint64(unsafe.Sizeof(U32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Back_buffer.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(U32(0)))))
 	return unsafe.Pointer(&tmp[0])
 }
-func glGetString(name GLenum) *GLubyte {
+func GetString(name GLenum) *GLubyte {
 	switch name {
 	case GL_VENDOR:
 		return (*GLubyte)(libc.CString("Robert Winkler"))
@@ -5231,12 +5231,12 @@ func glGetString(name GLenum) *GLubyte {
 		return nil
 	}
 }
-func GlGetError() GLenum {
+func GetError() GLenum {
 	var err GLenum = c.Error
 	c.Error = GLenum(GL_NO_ERROR)
 	return err
 }
-func GlGenVertexArrays(n GLsizei, arrays *GLuint) {
+func GenVertexArrays(n GLsizei, arrays *GLuint) {
 	a := unsafe.Slice(arrays, n)
 	var tmp glVertex_Array
 	init_glVertex_Array(&tmp)
@@ -5254,7 +5254,7 @@ func GlGenVertexArrays(n GLsizei, arrays *GLuint) {
 		a[n] = GLuint(c.Vertex_arrays.Size - 1)
 	}
 }
-func glDeleteVertexArrays(n GLsizei, arrays *GLuint) {
+func DeleteVertexArrays(n GLsizei, arrays *GLuint) {
 	a := unsafe.Slice(arrays, n)
 	for i := int64(0); i < int64(n); i++ {
 		if a[i] == 0 || uint64(a[i]) >= c.Vertex_arrays.Size {
@@ -5268,7 +5268,7 @@ func glDeleteVertexArrays(n GLsizei, arrays *GLuint) {
 		c.Vertex_arrays.A[a[i]].Deleted = GL_TRUE
 	}
 }
-func GlGenBuffers(n GLsizei, buffers *GLuint) {
+func GenBuffers(n GLsizei, buffers *GLuint) {
 	b := unsafe.Slice(buffers, n)
 	var tmp glBuffer
 	tmp.User_owned = GL_TRUE
@@ -5287,7 +5287,7 @@ func GlGenBuffers(n GLsizei, buffers *GLuint) {
 		b[n] = GLuint(c.Buffers.Size - 1)
 	}
 }
-func glDeleteBuffers(n GLsizei, buffers *GLuint) {
+func DeleteBuffers(n GLsizei, buffers *GLuint) {
 	b := unsafe.Slice(buffers, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
@@ -5304,7 +5304,7 @@ func glDeleteBuffers(n GLsizei, buffers *GLuint) {
 		c.Buffers.A[b[i]].Deleted = GL_TRUE
 	}
 }
-func glGenTextures(n GLsizei, textures *GLuint) {
+func GenTextures(n GLsizei, textures *GLuint) {
 	t := unsafe.Slice(textures, n)
 	var tmp glTexture
 	tmp.Mag_filter = GLenum(GL_LINEAR)
@@ -5332,7 +5332,7 @@ func glGenTextures(n GLsizei, textures *GLuint) {
 		t[n] = GLuint(c.Textures.Size - 1)
 	}
 }
-func glDeleteTextures(n GLsizei, textures *GLuint) {
+func DeleteTextures(n GLsizei, textures *GLuint) {
 	t := unsafe.Slice(textures, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
@@ -5350,14 +5350,14 @@ func glDeleteTextures(n GLsizei, textures *GLuint) {
 		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Deleted = GL_TRUE
 	}
 }
-func GlBindVertexArray(array GLuint) {
+func BindVertexArray(array GLuint) {
 	if uint64(array) < c.Vertex_arrays.Size && c.Vertex_arrays.A[array].Deleted == GL_FALSE {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
 }
-func GlBindBuffer(target GLenum, buffer GLuint) {
+func BindBuffer(target GLenum, buffer GLuint) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5372,7 +5372,7 @@ func GlBindBuffer(target GLenum, buffer GLuint) {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
 }
-func GlBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
+func BufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5402,7 +5402,7 @@ func GlBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum
 		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
-func glBufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Pointer) {
+func BufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Pointer) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5424,7 +5424,7 @@ func glBufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Po
 	}
 	libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[c.Bound_buffers[target]]).Data[0]), offset), data, int(size))
 }
-func glBindTexture(target GLenum, texture GLuint) {
+func BindTexture(target GLenum, texture GLuint) {
 	if target < GLenum(GL_TEXTURE_1D) || target >= GLenum(GL_NUM_TEXTURE_TYPES) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5445,7 +5445,7 @@ func glBindTexture(target GLenum, texture GLuint) {
 		c.Error = GLenum(GL_INVALID_VALUE)
 	}
 }
-func glTexParameteri(target GLenum, pname GLenum, param GLint) {
+func TexParameteri(target GLenum, pname GLenum, param GLint) {
 	if target != GLenum(GL_TEXTURE_1D) && target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5507,7 +5507,7 @@ func glTexParameteri(target GLenum, pname GLenum, param GLint) {
 		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Wrap_r = GLenum(param)
 	}
 }
-func glPixelStorei(pname GLenum, param GLint) {
+func PixelStorei(pname GLenum, param GLint) {
 	if pname != GLenum(GL_UNPACK_ALIGNMENT) && pname != GLenum(GL_PACK_ALIGNMENT) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5526,7 +5526,7 @@ func glPixelStorei(pname GLenum, param GLint) {
 		c.Pack_alignment = param
 	}
 }
-func glGenerateMipmap(target GLenum) {
+func GenerateMipmap(target GLenum) {
 	if target != GLenum(GL_TEXTURE_1D) && target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_CUBE_MAP) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5534,7 +5534,7 @@ func glGenerateMipmap(target GLenum) {
 		return
 	}
 }
-func glTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_1D) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5584,7 +5584,7 @@ func glTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsize
 	}
 	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
 }
-func glTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5698,7 +5698,7 @@ func glTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsize
 		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
 	}
 }
-func glTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5764,7 +5764,7 @@ func glTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsize
 	}
 	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
 }
-func glTexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_1D) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5793,7 +5793,7 @@ func glTexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, f
 	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
 	libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 }
-func glTexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5838,7 +5838,7 @@ func glTexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, w
 		}
 	}
 }
-func glTexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zoffset GLint, width GLsizei, height GLsizei, depth GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
+func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zoffset GLint, width GLsizei, height GLsizei, depth GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5875,7 +5875,7 @@ func glTexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, z
 		}
 	}
 }
-func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLboolean, stride GLsizei, offset GLsizei) {
+func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLboolean, stride GLsizei, offset GLsizei) {
 	if index >= GL_MAX_VERTEX_ATTRIBS || size < 1 || size > 4 || c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER] == 0 && offset != 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_OPERATION)
@@ -5900,13 +5900,13 @@ func GlVertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GL
 	v.Normalized = normalized
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
-func GlEnableVertexAttribArray(index GLuint) {
+func EnableVertexAttribArray(index GLuint) {
 	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_TRUE
 }
-func GlDisableVertexAttribArray(index GLuint) {
+func DisableVertexAttribArray(index GLuint) {
 	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_FALSE
 }
-func glVertexAttribDivisor(index GLuint, divisor GLuint) {
+func VertexAttribDivisor(index GLuint, divisor GLuint) {
 	if index >= GL_MAX_VERTEX_ATTRIBS {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -5923,7 +5923,7 @@ func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v.Size)*unsafe.Sizeof(float32(0))))
 	return tmpvec4
 }
-func GlDrawArrays(mode GLenum, first GLint, count GLsizei) {
+func DrawArrays(mode GLenum, first GLint, count GLsizei) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5941,7 +5941,7 @@ func GlDrawArrays(mode GLenum, first GLint, count GLsizei) {
 	}
 	run_pipeline(mode, first, count, 0, 0, GL_FALSE)
 }
-func glDrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
+func DrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5966,7 +5966,7 @@ func glDrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
 	(c.Buffers.A[(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer]).Type = type_
 	run_pipeline(mode, GLint(offset), count, 0, 0, GL_TRUE)
 }
-func glDrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount GLsizei) {
+func DrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount GLsizei) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -5986,7 +5986,7 @@ func glDrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecoun
 		run_pipeline(mode, first, count, GLsizei(uint32(instance)), 0, GL_FALSE)
 	}
 }
-func glDrawArraysInstancedBaseInstance(mode GLenum, first GLint, count GLsizei, instancecount GLsizei, baseinstance GLuint) {
+func DrawArraysInstancedBaseInstance(mode GLenum, first GLint, count GLsizei, instancecount GLsizei, baseinstance GLuint) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6006,7 +6006,7 @@ func glDrawArraysInstancedBaseInstance(mode GLenum, first GLint, count GLsizei, 
 		run_pipeline(mode, first, count, GLsizei(uint32(instance)), baseinstance, GL_FALSE)
 	}
 }
-func glDrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei) {
+func DrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6033,7 +6033,7 @@ func glDrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GL
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, GL_TRUE)
 	}
 }
-func glDrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei, baseinstance GLuint) {
+func DrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei, baseinstance GLuint) {
 	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6060,7 +6060,7 @@ func glDrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenu
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, GL_TRUE)
 	}
 }
-func GlViewport(x int64, y int64, width GLsizei, height GLsizei) {
+func Viewport(x int64, y int64, width GLsizei, height GLsizei) {
 	if width < 0 || height < 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6073,7 +6073,7 @@ func GlViewport(x int64, y int64, width GLsizei, height GLsizei) {
 	c.X_max = uint64(x + int64(width))
 	c.Y_max = uint64(y + int64(height))
 }
-func GlClearColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
+func ClearColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 	red = GLclampf(clampf_01(float32(red)))
 	green = GLclampf(clampf_01(float32(green)))
 	blue = GLclampf(clampf_01(float32(blue)))
@@ -6081,10 +6081,10 @@ func GlClearColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 	var tmp Vec4 = Vec4{X: float32(red), Y: float32(green), Z: float32(blue), W: float32(alpha)}
 	c.Clear_color = vec4_to_Color(tmp)
 }
-func glClearDepth(depth GLclampf) {
+func ClearDepth(depth GLclampf) {
 	c.Clear_depth = GLfloat(clampf_01(float32(depth)))
 }
-func glDepthFunc(func_ GLenum) {
+func DepthFunc(func_ GLenum) {
 	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6093,14 +6093,14 @@ func glDepthFunc(func_ GLenum) {
 	}
 	c.Depth_func = func_
 }
-func glDepthRange(nearVal GLclampf, farVal GLclampf) {
+func DepthRange(nearVal GLclampf, farVal GLclampf) {
 	c.Depth_range_near = GLfloat(clampf_01(float32(nearVal)))
 	c.Depth_range_far = GLfloat(clampf_01(float32(farVal)))
 }
-func glDepthMask(flag GLboolean) {
+func DepthMask(flag GLboolean) {
 	c.Depth_mask = flag
 }
-func GlClear(mask GLbitfield) {
+func Clear(mask GLbitfield) {
 	if (mask & GLbitfield(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)) == 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6149,7 +6149,7 @@ func GlClear(mask GLbitfield) {
 		}
 	}
 }
-func GlEnable(cap_ GLenum) {
+func Enable(cap_ GLenum) {
 	switch cap_ {
 	case GL_CULL_FACE:
 		c.Cull_face = GL_TRUE
@@ -6174,7 +6174,7 @@ func GlEnable(cap_ GLenum) {
 		}
 	}
 }
-func glDisable(cap_ GLenum) {
+func Disable(cap_ GLenum) {
 	switch cap_ {
 	case GL_CULL_FACE:
 		c.Cull_face = GL_FALSE
@@ -6200,7 +6200,7 @@ func glDisable(cap_ GLenum) {
 		}
 	}
 }
-func glIsEnabled(cap_ GLenum) GLboolean {
+func IsEnabled(cap_ GLenum) GLboolean {
 	switch cap_ {
 	case GL_DEPTH_TEST:
 		return c.Depth_test
@@ -6227,7 +6227,7 @@ func glIsEnabled(cap_ GLenum) GLboolean {
 	}
 	return GL_FALSE
 }
-func glGetBooleanv(pname GLenum, params *GLboolean) {
+func GetBooleanv(pname GLenum, params *GLboolean) {
 	switch pname {
 	case GL_DEPTH_TEST:
 		*params = c.Depth_test
@@ -6253,7 +6253,7 @@ func glGetBooleanv(pname GLenum, params *GLboolean) {
 		}
 	}
 }
-func glGetFloatv(pname GLenum, params *GLfloat) {
+func GetFloatv(pname GLenum, params *GLfloat) {
 	switch pname {
 	case GL_POLYGON_OFFSET_FACTOR:
 		*params = c.Poly_factor
@@ -6272,7 +6272,7 @@ func glGetFloatv(pname GLenum, params *GLfloat) {
 		}
 	}
 }
-func glGetIntegerv(pname GLenum, params *GLint) {
+func GetIntegerv(pname GLenum, params *GLint) {
 	switch pname {
 	case GL_STENCIL_WRITE_MASK:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_writemask)
@@ -6336,7 +6336,7 @@ func glGetIntegerv(pname GLenum, params *GLint) {
 		}
 	}
 }
-func glCullFace(mode GLenum) {
+func CullFace(mode GLenum) {
 	if mode != GLenum(GL_FRONT) && mode != GLenum(GL_BACK) && mode != GLenum(GL_FRONT_AND_BACK) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6345,7 +6345,7 @@ func glCullFace(mode GLenum) {
 	}
 	c.Cull_mode = mode
 }
-func glFrontFace(mode GLenum) {
+func FrontFace(mode GLenum) {
 	if mode != GLenum(GL_CCW) && mode != GLenum(GL_CW) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6354,7 +6354,7 @@ func glFrontFace(mode GLenum) {
 	}
 	c.Front_face = mode
 }
-func GlPolygonMode(face GLenum, mode GLenum) {
+func PolygonMode(face GLenum, mode GLenum) {
 	if face != GLenum(GL_FRONT) && face != GLenum(GL_BACK) && face != GLenum(GL_FRONT_AND_BACK) || mode != GLenum(GL_POINT) && mode != GLenum(GL_LINE) && mode != GLenum(GL_FILL) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6403,7 +6403,7 @@ func GlPolygonMode(face GLenum, mode GLenum) {
 		}
 	}
 }
-func glPointSize(size GLfloat) {
+func PointSize(size GLfloat) {
 	if float64(size) <= 0.0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6412,7 +6412,7 @@ func glPointSize(size GLfloat) {
 	}
 	c.Point_size = size
 }
-func glPointParameteri(pname GLenum, param GLint) {
+func PointParameteri(pname GLenum, param GLint) {
 	if pname != GLenum(GL_POINT_SPRITE_COORD_ORIGIN) || int64(param) != GL_LOWER_LEFT && int64(param) != GL_UPPER_LEFT {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6421,7 +6421,7 @@ func glPointParameteri(pname GLenum, param GLint) {
 	}
 	c.Point_spr_origin = GLenum(param)
 }
-func glProvokingVertex(provokeMode GLenum) {
+func ProvokingVertex(provokeMode GLenum) {
 	if provokeMode != GLenum(GL_FIRST_VERTEX_CONVENTION) && provokeMode != GLenum(GL_LAST_VERTEX_CONVENTION) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6451,7 +6451,7 @@ func PglCreateProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsi
 	cvec_push_glProgram(&c.Programs, tmp)
 	return GLuint(c.Programs.Size - 1)
 }
-func glDeleteProgram(program GLuint) {
+func DeleteProgram(program GLuint) {
 	if program == 0 {
 		return
 	}
@@ -6463,7 +6463,7 @@ func glDeleteProgram(program GLuint) {
 	}
 	c.Programs.A[program].Deleted = GL_TRUE
 }
-func GlUseProgram(program GLuint) {
+func UseProgram(program GLuint) {
 	if uint64(program) >= c.Programs.Size {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6479,7 +6479,7 @@ func GlUseProgram(program GLuint) {
 func PglSetUniform(uniform interface{}) {
 	c.Programs.A[c.Cur_program].Uniform = uniform
 }
-func glBlendFunc(sfactor GLenum, dfactor GLenum) {
+func BlendFunc(sfactor GLenum, dfactor GLenum) {
 	if sfactor < GLenum(GL_ZERO) || sfactor >= GLenum(NUM_BLEND_FUNCS) || dfactor < GLenum(GL_ZERO) || dfactor >= GLenum(NUM_BLEND_FUNCS) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6489,7 +6489,7 @@ func glBlendFunc(sfactor GLenum, dfactor GLenum) {
 	c.Blend_sfactor = sfactor
 	c.Blend_dfactor = dfactor
 }
-func glBlendEquation(mode GLenum) {
+func BlendEquation(mode GLenum) {
 	if mode < GLenum(GL_FUNC_ADD) || mode >= GLenum(NUM_BLEND_EQUATIONS) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6498,7 +6498,7 @@ func glBlendEquation(mode GLenum) {
 	}
 	c.Blend_equation = mode
 }
-func glBlendColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
+func BlendColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 	for {
 		c.Blend_color.X = clampf_01(float32(red))
 		c.Blend_color.Y = clampf_01(float32(green))
@@ -6509,7 +6509,7 @@ func glBlendColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 		}
 	}
 }
-func glLogicOp(opcode GLenum) {
+func LogicOp(opcode GLenum) {
 	if opcode < GLenum(GL_CLEAR) || opcode > GLenum(GL_INVERT) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6518,11 +6518,11 @@ func glLogicOp(opcode GLenum) {
 	}
 	c.Logic_func = opcode
 }
-func glPolygonOffset(factor GLfloat, units GLfloat) {
+func PolygonOffset(factor GLfloat, units GLfloat) {
 	c.Poly_factor = factor
 	c.Poly_units = units
 }
-func glScissor(x GLint, y GLint, width GLsizei, height GLsizei) {
+func Scissor(x GLint, y GLint, width GLsizei, height GLsizei) {
 	if width < 0 || height < 0 {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
@@ -6534,7 +6534,7 @@ func glScissor(x GLint, y GLint, width GLsizei, height GLsizei) {
 	c.Scissor_ux = GLsizei(x + GLint(width))
 	c.Scissor_uy = GLsizei(y + GLint(height))
 }
-func glStencilFunc(func_ GLenum, ref GLint, mask GLuint) {
+func StencilFunc(func_ GLenum, ref GLint, mask GLuint) {
 	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6554,7 +6554,7 @@ func glStencilFunc(func_ GLenum, ref GLint, mask GLuint) {
 	c.Stencil_valuemask = mask
 	c.Stencil_valuemask_back = mask
 }
-func glStencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
+func StencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
 	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6562,7 +6562,7 @@ func glStencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
 		return
 	}
 	if face == GLenum(GL_FRONT_AND_BACK) {
-		glStencilFunc(func_, ref, mask)
+		StencilFunc(func_, ref, mask)
 		return
 	}
 	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
@@ -6587,7 +6587,7 @@ func glStencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
 		c.Stencil_valuemask_back = mask
 	}
 }
-func glStencilOp(sfail GLenum, dpfail GLenum, dppass GLenum) {
+func StencilOp(sfail GLenum, dpfail GLenum, dppass GLenum) {
 	if (sfail < GLenum(GL_INVERT) || sfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dpfail < GLenum(GL_INVERT) || dpfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dppass < GLenum(GL_INVERT) || dppass > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6601,7 +6601,7 @@ func glStencilOp(sfail GLenum, dpfail GLenum, dppass GLenum) {
 	c.Stencil_dpfail_back = dpfail
 	c.Stencil_dppass_back = dppass
 }
-func glStencilOpSeparate(face GLenum, sfail GLenum, dpfail GLenum, dppass GLenum) {
+func StencilOpSeparate(face GLenum, sfail GLenum, dpfail GLenum, dppass GLenum) {
 	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6609,7 +6609,7 @@ func glStencilOpSeparate(face GLenum, sfail GLenum, dpfail GLenum, dppass GLenum
 		return
 	}
 	if face == GLenum(GL_FRONT_AND_BACK) {
-		glStencilOp(sfail, dpfail, dppass)
+		StencilOp(sfail, dpfail, dppass)
 		return
 	}
 	if (sfail < GLenum(GL_INVERT) || sfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dpfail < GLenum(GL_INVERT) || dpfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dppass < GLenum(GL_INVERT) || dppass > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) {
@@ -6628,14 +6628,14 @@ func glStencilOpSeparate(face GLenum, sfail GLenum, dpfail GLenum, dppass GLenum
 		c.Stencil_dppass_back = dppass
 	}
 }
-func glClearStencil(s GLint) {
+func ClearStencil(s GLint) {
 	c.Clear_stencil = s & math.MaxUint8
 }
-func glStencilMask(mask GLuint) {
+func StencilMask(mask GLuint) {
 	c.Stencil_writemask = mask
 	c.Stencil_writemask_back = mask
 }
-func glStencilMaskSeparate(face GLenum, mask GLuint) {
+func StencilMaskSeparate(face GLenum, mask GLuint) {
 	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6643,7 +6643,7 @@ func glStencilMaskSeparate(face GLenum, mask GLuint) {
 		return
 	}
 	if face == GLenum(GL_FRONT_AND_BACK) {
-		glStencilMask(mask)
+		StencilMask(mask)
 		return
 	}
 	if face == GLenum(GL_FRONT) {
@@ -6652,7 +6652,7 @@ func glStencilMaskSeparate(face GLenum, mask GLuint) {
 		c.Stencil_writemask_back = mask
 	}
 }
-func glMapBuffer(target GLenum, access GLenum) unsafe.Pointer {
+func MapBuffer(target GLenum, access GLenum) unsafe.Pointer {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6667,10 +6667,10 @@ func glMapBuffer(target GLenum, access GLenum) unsafe.Pointer {
 	}
 	target -= GLenum(GL_ARRAY_BUFFER)
 	var data unsafe.Pointer = nil
-	pglGetBufferData(c.Bound_buffers[target], &data)
+	GetBufferData(c.Bound_buffers[target], &data)
 	return data
 }
-func glMapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
+func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
 	if access != GLenum(GL_READ_ONLY) && access != GLenum(GL_WRITE_ONLY) && access != GLenum(GL_READ_WRITE) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -6678,122 +6678,122 @@ func glMapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
 		return nil
 	}
 	var data unsafe.Pointer = nil
-	pglGetBufferData(buffer, &data)
+	GetBufferData(buffer, &data)
 	return data
 }
-func glGetDoublev(pname GLenum, params *GLdouble) {
+func GetDoublev(pname GLenum, params *GLdouble) {
 }
-func glGetInteger64v(pname GLenum, params *GLint64) {
+func GetInteger64v(pname GLenum, params *GLint64) {
 }
-func glGetProgramiv(program GLuint, pname GLenum, params *GLint) {
+func GetProgramiv(program GLuint, pname GLenum, params *GLint) {
 }
-func glGetProgramInfoLog(program GLuint, maxLength GLsizei, length *GLsizei, infoLog *byte) {
+func GetProgramInfoLog(program GLuint, maxLength GLsizei, length *GLsizei, infoLog *byte) {
 }
-func glAttachShader(program GLuint, shader GLuint) {
+func AttachShader(program GLuint, shader GLuint) {
 }
-func glCompileShader(shader GLuint) {
+func CompileShader(shader GLuint) {
 }
-func glGetShaderInfoLog(shader GLuint, maxLength GLsizei, length *GLsizei, infoLog *byte) {
+func GetShaderInfoLog(shader GLuint, maxLength GLsizei, length *GLsizei, infoLog *byte) {
 }
-func glLinkProgram(program GLuint) {
+func LinkProgram(program GLuint) {
 }
-func glShaderSource(shader GLuint, count GLsizei, string_ **byte, length *GLint) {
+func ShaderSource(shader GLuint, count GLsizei, string_ **byte, length *GLint) {
 }
-func glGetShaderiv(shader GLuint, pname GLenum, params *GLint) {
+func GetShaderiv(shader GLuint, pname GLenum, params *GLint) {
 }
-func glDeleteShader(shader GLuint) {
+func DeleteShader(shader GLuint) {
 }
-func glDetachShader(program GLuint, shader GLuint) {
+func DetachShader(program GLuint, shader GLuint) {
 }
-func glCreateProgram() GLuint {
+func CreateProgram() GLuint {
 	return 0
 }
-func glCreateShader(shaderType GLenum) GLuint {
+func CreateShader(shaderType GLenum) GLuint {
 	return 0
 }
-func glGetUniformLocation(program GLuint, name *byte) GLint {
+func GetUniformLocation(program GLuint, name *byte) GLint {
 	return 0
 }
-func glGetAttribLocation(program GLuint, name *byte) GLint {
+func GetAttribLocation(program GLuint, name *byte) GLint {
 	return 0
 }
-func glUnmapBuffer(target GLenum) GLboolean {
+func UnmapBuffer(target GLenum) GLboolean {
 	return GL_TRUE
 }
-func glUnmapNamedBuffer(buffer GLuint) GLboolean {
+func UnmapNamedBuffer(buffer GLuint) GLboolean {
 	return GL_TRUE
 }
-func glLineWidth(width GLfloat) {
+func LineWidth(width GLfloat) {
 }
-func glActiveTexture(texture GLenum) {
+func ActiveTexture(texture GLenum) {
 }
-func glTexParameterfv(target GLenum, pname GLenum, params *GLfloat) {
+func TexParameterfv(target GLenum, pname GLenum, params *GLfloat) {
 }
-func glUniform1f(location GLint, v0 GLfloat) {
+func Uniform1f(location GLint, v0 GLfloat) {
 }
-func glUniform2f(location GLint, v0 GLfloat, v1 GLfloat) {
+func Uniform2f(location GLint, v0 GLfloat, v1 GLfloat) {
 }
-func glUniform3f(location GLint, v0 GLfloat, v1 GLfloat, v2 GLfloat) {
+func Uniform3f(location GLint, v0 GLfloat, v1 GLfloat, v2 GLfloat) {
 }
-func glUniform4f(location GLint, v0 GLfloat, v1 GLfloat, v2 GLfloat, v3 GLfloat) {
+func Uniform4f(location GLint, v0 GLfloat, v1 GLfloat, v2 GLfloat, v3 GLfloat) {
 }
-func glUniform1i(location GLint, v0 GLint) {
+func Uniform1i(location GLint, v0 GLint) {
 }
-func glUniform2i(location GLint, v0 GLint, v1 GLint) {
+func Uniform2i(location GLint, v0 GLint, v1 GLint) {
 }
-func glUniform3i(location GLint, v0 GLint, v1 GLint, v2 GLint) {
+func Uniform3i(location GLint, v0 GLint, v1 GLint, v2 GLint) {
 }
-func glUniform4i(location GLint, v0 GLint, v1 GLint, v2 GLint, v3 GLint) {
+func Uniform4i(location GLint, v0 GLint, v1 GLint, v2 GLint, v3 GLint) {
 }
-func glUniform1ui(location GLuint, v0 GLuint) {
+func Uniform1ui(location GLuint, v0 GLuint) {
 }
-func glUniform2ui(location GLuint, v0 GLuint, v1 GLuint) {
+func Uniform2ui(location GLuint, v0 GLuint, v1 GLuint) {
 }
-func glUniform3ui(location GLuint, v0 GLuint, v1 GLuint, v2 GLuint) {
+func Uniform3ui(location GLuint, v0 GLuint, v1 GLuint, v2 GLuint) {
 }
-func glUniform4ui(location GLuint, v0 GLuint, v1 GLuint, v2 GLuint, v3 GLuint) {
+func Uniform4ui(location GLuint, v0 GLuint, v1 GLuint, v2 GLuint, v3 GLuint) {
 }
-func glUniform1fv(location GLint, count GLsizei, value *GLfloat) {
+func Uniform1fv(location GLint, count GLsizei, value *GLfloat) {
 }
-func glUniform2fv(location GLint, count GLsizei, value *GLfloat) {
+func Uniform2fv(location GLint, count GLsizei, value *GLfloat) {
 }
-func glUniform3fv(location GLint, count GLsizei, value *GLfloat) {
+func Uniform3fv(location GLint, count GLsizei, value *GLfloat) {
 }
-func glUniform4fv(location GLint, count GLsizei, value *GLfloat) {
+func Uniform4fv(location GLint, count GLsizei, value *GLfloat) {
 }
-func glUniform1iv(location GLint, count GLsizei, value *GLint) {
+func Uniform1iv(location GLint, count GLsizei, value *GLint) {
 }
-func glUniform2iv(location GLint, count GLsizei, value *GLint) {
+func Uniform2iv(location GLint, count GLsizei, value *GLint) {
 }
-func glUniform3iv(location GLint, count GLsizei, value *GLint) {
+func Uniform3iv(location GLint, count GLsizei, value *GLint) {
 }
-func glUniform4iv(location GLint, count GLsizei, value *GLint) {
+func Uniform4iv(location GLint, count GLsizei, value *GLint) {
 }
-func glUniform1uiv(location GLint, count GLsizei, value *GLuint) {
+func Uniform1uiv(location GLint, count GLsizei, value *GLuint) {
 }
-func glUniform2uiv(location GLint, count GLsizei, value *GLuint) {
+func Uniform2uiv(location GLint, count GLsizei, value *GLuint) {
 }
-func glUniform3uiv(location GLint, count GLsizei, value *GLuint) {
+func Uniform3uiv(location GLint, count GLsizei, value *GLuint) {
 }
-func glUniform4uiv(location GLint, count GLsizei, value *GLuint) {
+func Uniform4uiv(location GLint, count GLsizei, value *GLuint) {
 }
-func glUniformMatrix2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix2x3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix2x3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix3x2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix3x2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix2x4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix2x4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix4x2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix4x2fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix3x4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix3x4fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
-func glUniformMatrix4x3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
+func UniformMatrix4x3fv(location GLint, count GLsizei, transpose GLboolean, value *GLfloat) {
 }
 func clampf_01(f float32) float32 {
 	if float64(f) < 0.0 {
@@ -7214,235 +7214,7 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 		return cij
 	}
 }
-func pglClearScreen() {
-	libc.MemSet(unsafe.Pointer(&c.Back_buffer.Buf[0]), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
-}
-func pglSetInterp(interpolation []GLenum) {
-	n := len(interpolation)
-	c.Programs.A[c.Cur_program].Vs_output_size = int64(n)
-	c.Vs_output.Size = int64(n)
-	copy(c.Programs.A[c.Cur_program].Interpolation[:], interpolation)
-	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(n*MAX_VERTICES))
-	c.Vs_output.Interpolation = c.Programs.A[c.Cur_program].Interpolation[:]
-}
-func pglDrawFrame() {
-	var frag_shader frag_func = c.Programs.A[c.Cur_program].Fragment_shader
-	for y := float32(0.5); y < float32(c.Back_buffer.H); y++ {
-		for x := float32(0.5); x < float32(c.Back_buffer.W); x++ {
-			c.Builtins.Gl_FragCoord.X = x
-			c.Builtins.Gl_FragCoord.Y = y
-			c.Builtins.Discard = GL_FALSE
-			frag_shader(nil, &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
-			if c.Builtins.Discard == 0 {
-				draw_pixel(c.Builtins.Gl_FragColor, int64(x), int64(y))
-			}
-		}
-	}
-}
-func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	target -= GLenum(GL_ARRAY_BUFFER)
-	if c.Bound_buffers[target] == 0 {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
-		}
-		return
-	}
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if (c.Buffers.A[c.Bound_buffers[target]]).User_owned == 0 {
-		c.Buffers.A[c.Bound_buffers[target]].Data = nil
-	}
-	(c.Buffers.A[c.Bound_buffers[target]]).Data = unsafe.Slice((*u8)(data), size)
-	(c.Buffers.A[c.Bound_buffers[target]]).User_owned = GL_TRUE
-	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
-	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
-		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
-	}
-}
-func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_1D) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if border != 0 {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
-		return
-	}
-	var components int64
-	_ = components
-	if format == GLenum(GL_RED) {
-		components = 1
-	} else if format == GLenum(GL_RG) {
-		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
-		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
-		components = 4
-	} else {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-		libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
-}
-func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if border != 0 {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	var components int64
-	_ = components
-	if format == GLenum(GL_RED) {
-		components = 1
-	} else if format == GLenum(GL_RG) {
-		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
-		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
-		components = 4
-	} else {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	var cur_tex int64
-	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
-		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
-	} else {
-	}
-}
-func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if border != 0 {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).D = uint64(depth)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
-		return
-	}
-	var components int64
-	_ = components
-	if format == GLenum(GL_RED) {
-		components = 1
-	} else if format == GLenum(GL_RG) {
-		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
-		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
-		components = 4
-	} else {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-		libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
-}
-func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if buffer != 0 && uint64(buffer) < c.Buffers.Size && (c.Buffers.A[buffer]).Deleted == 0 {
-		*data = unsafe.Pointer(&(c.Buffers.A[buffer]).Data[0])
-	} else if c.Error == 0 {
-		c.Error = GLenum(GL_INVALID_OPERATION)
-	}
-}
-func pglGetTextureData(texture GLuint, data *unsafe.Pointer) {
-	if data == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
-		}
-		return
-	}
-	if uint64(texture) < c.Textures.Size && (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Deleted == 0 {
-		*data = unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Data)
-	} else if c.Error == 0 {
-		c.Error = GLenum(GL_INVALID_OPERATION)
-	}
-}
+
 func put_pixel(color Color, x int64, y int64) {
 	var dest *U32 = (*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x))))
 	_ = dest

@@ -50,14 +50,14 @@ func main() {
 	}
 
 	var triangle pgl.GLuint
-	pgl.GlGenBuffers(1, &triangle)
-	pgl.GlBindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
-	pgl.GlBufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(pgl.GLfloat(0))*9), unsafe.Pointer(&points[0]), pgl.GL_STATIC_DRAW)
-	pgl.GlEnableVertexAttribArray(0)
-	pgl.GlVertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
+	pgl.GenBuffers(1, &triangle)
+	pgl.BindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
+	pgl.BufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(pgl.GLfloat(0))*9), unsafe.Pointer(&points[0]), pgl.GL_STATIC_DRAW)
+	pgl.EnableVertexAttribArray(0)
+	pgl.VertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
 
 	var myshader = pgl.PglCreateProgram(normal_vs, normal_fs, 0, nil, pgl.GL_FALSE)
-	pgl.GlUseProgram(myshader)
+	pgl.UseProgram(myshader)
 
 	pgl.PglSetUniform(&the_uniforms)
 
@@ -104,9 +104,9 @@ func main() {
 			counter = 0
 		}
 
-		pgl.GlClearColor(0, 0, 0, 1)
-		pgl.GlClear(pgl.GL_COLOR_BUFFER_BIT)
-		pgl.GlDrawArrays(pgl.GL_TRIANGLES, 0, 3)
+		pgl.ClearColor(0, 0, 0, 1)
+		pgl.Clear(pgl.GL_COLOR_BUFFER_BIT)
+		pgl.DrawArrays(pgl.GL_TRIANGLES, 0, 3)
 
 		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(&bbufpix[0])), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene
