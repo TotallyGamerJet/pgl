@@ -1,11 +1,11 @@
 package tests
 
 import (
+	"github.com/totallygamerjet/pgl"
 	"image"
 	"image/color"
 	"image/png"
 	"os"
-	"pgl"
 	"testing"
 )
 
@@ -69,9 +69,17 @@ func (b buffer) Bounds() image.Rectangle {
 	return image.Rect(0, 0, WIDTH, HEIGHT)
 }
 
+func min(x, y uint8) uint8 {
+	if x < y {
+		return x
+	}
+	return y
+}
+
 func (buf buffer) At(x, y int) color.Color {
 	c := buf[x+y*WIDTH]
-	return color.RGBA{uint8(c >> 16), uint8(c >> 8), uint8(c), uint8(c >> 24)}
+	a := uint8(c >> 24)
+	return color.RGBA{min(uint8(c>>16), a), min(uint8(c>>8), a), min(uint8(c), a), a}
 }
 
 var bbufpix []pgl.U32
@@ -113,9 +121,6 @@ func Test_Run(t *testing.T) {
 				for j := 0; j < HEIGHT; j++ {
 					r1, g1, b1, a1 := decode.At(i, j).RGBA()
 					r2, g2, b2, a2 := buffer(bbufpix).At(i, j).RGBA()
-					if a1 == a2 && a1 == 0 {
-						continue
-					}
 					if r1 != r2 || g1 != g2 || b1 != b2 || a1 != a2 {
 						t2.Fatalf("%s is not equal at (%d,%d); (%d,%d,%d,%d) != (%d,%d,%d,%d)", n, i, j, r1, g1, b1, a1, r2, g2, b2, a2)
 					}

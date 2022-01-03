@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"pgl"
+	"github.com/totallygamerjet/pgl"
 	"testing"
 	"unsafe"
 )

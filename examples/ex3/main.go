@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/totallygamerjet/pgl"
 	"github.com/veandco/go-sdl2/sdl"
-	"pgl"
 	"unsafe"
 )
 

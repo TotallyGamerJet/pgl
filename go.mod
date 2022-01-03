@@ -1,4 +1,4 @@
-module pgl
+module github.com/totallygamerjet/pgl
 
 go 1.17
 
