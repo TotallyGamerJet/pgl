@@ -35,11 +35,11 @@ package pgl
 
 import (
 	"fmt"
+	"github.com/chewxy/math32"
 	"github.com/gotranspile/cxgo/runtime/cmath"
 	"github.com/gotranspile/cxgo/runtime/libc"
 	"github.com/gotranspile/cxgo/runtime/stdio"
 	"math"
-	"maze.io/x/math32"
 	"unsafe"
 )
 
