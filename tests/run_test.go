@@ -69,17 +69,9 @@ func (b buffer) Bounds() image.Rectangle {
 	return image.Rect(0, 0, WIDTH, HEIGHT)
 }
 
-func min(x, y uint8) uint8 {
-	if x < y {
-		return x
-	}
-	return y
-}
-
 func (buf buffer) At(x, y int) color.Color {
 	c := buf[x+y*WIDTH]
-	a := uint8(c >> 24)
-	return color.RGBA{min(uint8(c>>16), a), min(uint8(c>>8), a), min(uint8(c), a), a}
+	return color.NRGBA{uint8(c >> 16), uint8(c >> 8), uint8(c >> 0), uint8(c >> 24)}
 }
 
 var bbufpix []pgl.U32
