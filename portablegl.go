@@ -55,12 +55,6 @@ const GL_MAX_VERTEX_OUTPUT_COMPONENTS = 64
 const GL_MAX_DRAW_BUFFERS = 8
 const CLIP_EPSILON = 1e-5
 
-type cvector_float struct {
-	A        []float32
-	Size     uint64
-	Capacity uint64
-}
-
 type GLuint uint32
 type GLint int32
 type GLint64 int64
@@ -401,44 +395,20 @@ type glFramebuffer struct {
 type Vertex_Shader_output struct {
 	Size          int64
 	Interpolation []GLenum
-	Output_buf    cvector_float
+	Output_buf    []float32
 }
 type draw_triangle_func func(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64)
-type cvector_glVertex_Array struct {
-	A        []glVertex_Array
-	Size     uint64
-	Capacity uint64
-}
-type cvector_glBuffer struct {
-	A        []glBuffer
-	Size     uint64
-	Capacity uint64
-}
-type cvector_glTexture struct {
-	A        []glTexture
-	Size     uint64
-	Capacity uint64
-}
-type cvector_glProgram struct {
-	A        []glProgram
-	Size     uint64
-	Capacity uint64
-}
-type cvector_glVertex struct {
-	A        []glVertex
-	Size     uint64
-	Capacity uint64
-}
+
 type GlContext struct {
 	Vp_mat                 Mat4
 	X_min                  int64
 	Y_min                  int64
 	X_max                  uint64
 	Y_max                  uint64
-	Vertex_arrays          cvector_glVertex_Array
-	Buffers                cvector_glBuffer
-	Textures               cvector_glTexture
-	Programs               cvector_glProgram
+	Vertex_arrays          []glVertex_Array
+	Buffers                []glBuffer
+	Textures               []glTexture
+	Programs               []glProgram
 	Cur_vertex_array       GLuint
 	Bound_buffers          [9]GLuint
 	Bound_textures         [7]GLuint
@@ -516,7 +486,7 @@ type GlContext struct {
 	Gshift                 int64
 	Bshift                 int64
 	Ashift                 int64
-	Glverts                cvector_glVertex
+	Glverts                []glVertex
 }
 
 func load_rotation_mat3(mat *mat3, v Vec3, angle float32) {
@@ -771,277 +741,13 @@ func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 
 var CVEC_glVertex_Array_SZ uint64 = 50
 
-func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glVertex_Array_SZ
-	}
-	vec.A = make([]glVertex_Array, vec.Capacity)
-	if vec.A == nil {
-		vec.Capacity = 0
-		vec.Size = 0
-		return 0
-	}
-	return 1
-}
-func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int64 {
-	var (
-		tmp    []glVertex_Array
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_free_glVertex_Array(vec unsafe.Pointer) {
-	var tmp *cvector_glVertex_Array = (*cvector_glVertex_Array)(vec)
-	tmp.A = nil
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
-
 var CVEC_glBuffer_SZ uint64 = 50
-
-func cvec_glBuffer(vec *cvector_glBuffer, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glBuffer_SZ
-	}
-	vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity)
-	if vec.A == nil {
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	return 1
-}
-func cvec_push_glBuffer(vec *cvector_glBuffer, a glBuffer) int64 {
-	var (
-		tmp    []glBuffer
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		vec.A[vec.Size] = a
-		vec.Size++
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glBuffer{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.A[vec.Size] = a
-		vec.Size++
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_free_glBuffer(vec unsafe.Pointer) {
-	var tmp *cvector_glBuffer = (*cvector_glBuffer)(vec)
-	tmp.A = nil
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
 
 var CVEC_glTexture_SZ uint64 = 50
 
-func cvec_glTexture(vec *cvector_glTexture, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glTexture_SZ
-	}
-	vec.A = make([]glTexture, vec.Capacity)
-	if vec.A == nil {
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	return 1
-}
-func cvec_push_glTexture(vec *cvector_glTexture, a glTexture) int64 {
-	var (
-		tmp    []glTexture
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		vec.A[func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()] = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		tmp = make([]glTexture, tmp_sz)
-		copy(tmp, vec.A)
-		vec.A = tmp
-		vec.A[func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()] = a
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_free_glTexture(vec unsafe.Pointer) {
-	var tmp *cvector_glTexture = (*cvector_glTexture)(vec)
-	tmp.A = nil
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
-
 var CVEC_glProgram_SZ uint64 = 50
 
-func cvec_glProgram(vec *cvector_glProgram, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glProgram_SZ
-	}
-	vec.A = make([]glProgram, vec.Capacity)
-	if vec.A == nil {
-		vec.Capacity = 0
-		vec.Size = 0
-		return 0
-	}
-	return 1
-}
-func cvec_push_glProgram(vec *cvector_glProgram, a glProgram) int64 {
-	var (
-		tmp    []glProgram
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		vec.A[vec.Size] = a
-		vec.Size++
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		tmp = make([]glProgram, tmp_sz)
-		copy(tmp, vec.A)
-		vec.A = tmp
-		vec.A[vec.Size] = a
-		vec.Size++
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_free_glProgram(vec unsafe.Pointer) {
-	var tmp *cvector_glProgram = (*cvector_glProgram)(vec)
-	tmp.A = nil
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
-
-var CVEC_glVertex_SZ uint64 = 50
-
-func cvec_glVertex(vec *cvector_glVertex, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glVertex_SZ
-	}
-	vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity)
-	if vec.A == nil {
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	return 1
-}
-func cvec_reserve_glVertex(vec *cvector_glVertex, size uint64) int64 {
-	var tmp []glVertex
-	if vec.Capacity < size {
-		if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glVertex_SZ)*uint64(unsafe.Sizeof(glVertex{}))))), size+CVEC_glVertex_SZ); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = size + CVEC_glVertex_SZ
-	}
-	return 1
-}
-func cvec_free_glVertex(vec unsafe.Pointer) {
-	var tmp *cvector_glVertex = (*cvector_glVertex)(vec)
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
-
 var CVEC_float_SZ uint64 = 50
-
-func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_float_SZ
-	}
-	vec.A = make([]float32, vec.Capacity)
-	if vec.A == nil {
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	return 1
-}
-func cvec_reserve_float(vec *cvector_float, size uint64) int64 {
-	var tmp []float32
-	if vec.Capacity < size {
-		tmp = make([]float32, size+CVEC_float_SZ)
-		copy(tmp, vec.A)
-		vec.A = tmp
-		vec.Capacity = size + CVEC_float_SZ
-	}
-	return 1
-}
-func cvec_free_float(vec unsafe.Pointer) {
-	var tmp *cvector_float = (*cvector_float)(vec)
-	tmp.A = nil
-	tmp.Size = 0
-	tmp.Capacity = 0
-}
 
 var c *GlContext
 
@@ -1075,7 +781,7 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 	)
 	for j := int64(0); uint64(j) < num_enabled; j++ {
 		buf = GLuint(v[enabled[j]].Buf)
-		buf_pos = c.Buffers.A[buf].Data[v[enabled[j]].Offset+GLsizei(uint64(v[enabled[j]].Stride)*i):]
+		buf_pos = c.Buffers[buf].Data[v[enabled[j]].Offset+GLsizei(uint64(v[enabled[j]].Stride)*i):]
 		tmpvec4.X = 0.0
 		tmpvec4.Y = 0.0
 		tmpvec4.Z = 0.0
@@ -1083,12 +789,12 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(&buf_pos[0]), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
-	var vs_out *float32 = &c.Vs_output.Output_buf.A[vert*uint64(c.Vs_output.Size)]
-	c.Programs.A[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
-	c.Glverts.A[vert].Vs_out = unsafe.Slice(vs_out, c.Vs_output.Size)
-	c.Glverts.A[vert].Clip_space = c.Builtins.Gl_Position
-	c.Glverts.A[vert].Edge_flag = 1
-	c.Glverts.A[vert].Clip_code = gl_clipcode(c.Builtins.Gl_Position)
+	var vs_out *float32 = &c.Vs_output.Output_buf[vert*uint64(c.Vs_output.Size)]
+	c.Programs[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs[c.Cur_program].Uniform)
+	c.Glverts[vert].Vs_out = unsafe.Slice(vs_out, c.Vs_output.Size)
+	c.Glverts[vert].Clip_space = c.Builtins.Gl_Position
+	c.Glverts[vert].Edge_flag = 1
+	c.Glverts[vert].Clip_code = gl_clipcode(c.Builtins.Gl_Position)
 }
 func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance GLuint, use_elements GLboolean) {
 	var (
@@ -1101,8 +807,8 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		vec4_init   = Vec4{0.0, 0.0, 0.0, 1.0}
 		enabled     [GL_MAX_VERTEX_ATTRIBS]int64
 	)
-	var v []glVertex_Attrib = c.Vertex_arrays.A[c.Cur_vertex_array].Vertex_attribs[:]
-	var elem_buffer GLuint = (c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer
+	var v []glVertex_Attrib = c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[:]
+	var elem_buffer GLuint = (c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer
 	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
 		c.Vertex_attribs_vs[i] = vec4_init
 		if v[i].Enabled != 0 {
@@ -1111,7 +817,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				j++
 			} else if (instance_id % GLsizei(v[i].Divisor)) == 0 {
 				var n int64 = int64(instance_id/GLsizei(v[i].Divisor) + GLsizei(base_instance))
-				buf_pos = c.Buffers.A[v[i].Buf].Data[v[i].Offset+v[i].Stride*GLsizei(n):]
+				buf_pos = c.Buffers[v[i].Buf].Data[v[i].Offset+v[i].Stride*GLsizei(n):]
 				tmpvec4.X = 0.0
 				tmpvec4.Y = 0.0
 				tmpvec4.Z = 0.0
@@ -1122,7 +828,11 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		}
 	}
 	num_enabled = j
-	cvec_reserve_glVertex(&c.Glverts, uint64(count))
+	if GLsizei(len(c.Glverts)) < count {
+		var tmp = make([]glVertex, count)
+		copy(tmp, c.Glverts)
+		c.Glverts = tmp
+	}
 	c.Builtins.Gl_InstanceID = GLint(instance_id)
 	if use_elements == 0 {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
@@ -1130,15 +840,15 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		}
 	} else {
 		var (
-			uint_array   []GLuint   = unsafe.Slice((*GLuint)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
-			ushort_array []GLushort = unsafe.Slice((*GLushort)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
-			ubyte_array  []GLubyte  = unsafe.Slice((*GLubyte)(unsafe.Pointer(&c.Buffers.A[elem_buffer].Data[0])), first+GLint(count))
+			uint_array   []GLuint   = unsafe.Slice((*GLuint)(unsafe.Pointer(&c.Buffers[elem_buffer].Data[0])), first+GLint(count))
+			ushort_array []GLushort = unsafe.Slice((*GLushort)(unsafe.Pointer(&c.Buffers[elem_buffer].Data[0])), first+GLint(count))
+			ubyte_array  []GLubyte  = unsafe.Slice((*GLubyte)(unsafe.Pointer(&c.Buffers[elem_buffer].Data[0])), first+GLint(count))
 		)
-		if c.Buffers.A[elem_buffer].Type == GLenum(GL_UNSIGNED_BYTE) {
+		if c.Buffers[elem_buffer].Type == GLenum(GL_UNSIGNED_BYTE) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
 				do_vertex(v, enabled[:], num_enabled, uint64(ubyte_array[i]), vert)
 			}
-		} else if c.Buffers.A[elem_buffer].Type == GLenum(GL_UNSIGNED_SHORT) {
+		} else if c.Buffers[elem_buffer].Type == GLenum(GL_UNSIGNED_SHORT) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
 				do_vertex(v, enabled[:], num_enabled, uint64(ushort_array[i]), vert)
 			}
@@ -1194,7 +904,7 @@ func draw_point(vert *glVertex) {
 			}
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = point.Z
-			c.Programs.A[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
+			c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(j), int64(i))
 			}
@@ -1211,11 +921,11 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 	vertex_stage(first, count, instance, base_instance, use_elements)
 	if mode == GLenum(GL_POINTS) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)); i, vert = i+1, vert+1 {
-			if c.Glverts.A[vert].Clip_code != 0 {
+			if c.Glverts[vert].Clip_code != 0 {
 				continue
 			}
-			c.Glverts.A[vert].Screen_space = Mult_mat4_vec4(c.Vp_mat, c.Glverts.A[vert].Clip_space)
-			draw_point((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))))
+			c.Glverts[vert].Screen_space = Mult_mat4_vec4(c.Vp_mat, c.Glverts[vert].Clip_space)
+			draw_point((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))))
 		}
 	} else if mode == GLenum(GL_LINES) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
@@ -1225,7 +935,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 				return vert
 			}()
 		}() {
-			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
+			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
 	} else if mode == GLenum(GL_LINE_STRIP) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
@@ -1237,7 +947,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 				return x
 			}()
 		}() {
-			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
+			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
 	} else if mode == GLenum(GL_LINE_LOOP) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
@@ -1249,9 +959,9 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 				return x
 			}()
 		}() {
-			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
+			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
-		draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(count-1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*0)))
+		draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(count-1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*0)))
 	} else if mode == GLenum(GL_TRIANGLES) {
 		if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
 			provoke = 2
@@ -1259,7 +969,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			provoke = 0
 		}
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-2); i, vert = i+3, vert+3 {
-			draw_triangle(&c.Glverts.A[vert], &c.Glverts.A[vert+1], &c.Glverts.A[vert+2], vert+uint64(provoke))
+			draw_triangle(&c.Glverts[vert], &c.Glverts[vert+1], &c.Glverts[vert+2], vert+uint64(provoke))
 		}
 	} else if mode == GLenum(GL_TRIANGLE_STRIP) {
 		var (
@@ -1273,7 +983,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			provoke = -2
 		}
 		for vert = 2; vert < uint64(count); vert++ {
-			draw_triangle(&c.Glverts.A[a], &c.Glverts.A[b], &c.Glverts.A[vert], vert+uint64(provoke))
+			draw_triangle(&c.Glverts[a], &c.Glverts[b], &c.Glverts[vert], vert+uint64(provoke))
 			if toggle == 0 {
 				a = vert
 			} else {
@@ -1288,7 +998,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			provoke = -1
 		}
 		for vert = 2; vert < uint64(count); vert++ {
-			draw_triangle((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*0)), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert-1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), vert+uint64(provoke))
+			draw_triangle((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*0)), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert-1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), vert+uint64(provoke))
 		}
 	}
 }
@@ -1318,7 +1028,7 @@ func depthtest(zval float32, zbufval float32) int64 {
 }
 func setup_fs_input(t float32, v1_out *float32, v2_out *float32, wa float32, wb float32, provoke uint64) {
 	var (
-		vs_output *float32 = &c.Vs_output.Output_buf.A[0]
+		vs_output *float32 = &c.Vs_output.Output_buf[0]
 		inv_wa    float32  = float32(1.0 / float64(wa))
 		inv_wb    float32  = float32(1.0 / float64(wb))
 	)
@@ -1382,9 +1092,9 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 	var v2_out [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
 	var provoke uint64
 	if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
-		provoke = uint64((int64(uintptr(unsafe.Pointer(v2)) - uintptr(unsafe.Pointer(&c.Glverts.A[0])))) / int64(unsafe.Sizeof(glVertex{})))
+		provoke = uint64((int64(uintptr(unsafe.Pointer(v2)) - uintptr(unsafe.Pointer(&c.Glverts[0])))) / int64(unsafe.Sizeof(glVertex{})))
 	} else {
-		provoke = uint64((int64(uintptr(unsafe.Pointer(v1)) - uintptr(unsafe.Pointer(&c.Glverts.A[0])))) / int64(unsafe.Sizeof(glVertex{})))
+		provoke = uint64((int64(uintptr(unsafe.Pointer(v1)) - uintptr(unsafe.Pointer(&c.Glverts[0])))) / int64(unsafe.Sizeof(glVertex{})))
 	}
 	if cc1&cc2 != 0 {
 		return
@@ -1459,9 +1169,9 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 	var sub_p2p1 vec2 = sub_vec2s(p2, p1)
 	var line_length_squared float32 = length_vec2(sub_p2p1)
 	line_length_squared *= line_length_squared
-	var fragment_shader frag_func = c.Programs.A[c.Cur_program].Fragment_shader
-	var uniform interface{} = c.Programs.A[c.Cur_program].Uniform
-	var fragdepth_or_discard int64 = int64(c.Programs.A[c.Cur_program].Fragdepth_or_discard)
+	var fragment_shader frag_func = c.Programs[c.Cur_program].Fragment_shader
+	var uniform interface{} = c.Programs[c.Cur_program].Uniform
+	var fragdepth_or_discard int64 = int64(c.Programs[c.Cur_program].Fragdepth_or_discard)
 	_ = fragdepth_or_discard
 	var i_x1 float32
 	var i_y1 float32
@@ -1628,9 +1338,9 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 	var (
 		tmp                  float32
 		tmp_ptr              *float32
-		fragment_shader      frag_func   = c.Programs.A[c.Cur_program].Fragment_shader
-		uniform              interface{} = c.Programs.A[c.Cur_program].Uniform
-		fragdepth_or_discard int64       = int64(c.Programs.A[c.Cur_program].Fragdepth_or_discard)
+		fragment_shader      frag_func   = c.Programs[c.Cur_program].Fragment_shader
+		uniform              interface{} = c.Programs[c.Cur_program].Uniform
+		fragdepth_or_discard int64       = int64(c.Programs[c.Cur_program].Fragdepth_or_discard)
 		hp1                  Vec3        = vec4_to_vec3h(v1)
 		hp2                  Vec3        = vec4_to_vec3h(v2)
 		x1                   float32     = hp1.X
@@ -2240,11 +1950,11 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 			if c.Vs_output.Interpolation[j] != GLenum(FLAT) {
 				fs_input[j] = vert[i].Vs_out[j]
 			} else {
-				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(&c.Vs_output.Output_buf.A[0]), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
+				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(&c.Vs_output.Output_buf[0]), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
 			}
 		}
 		c.Builtins.Discard = GL_FALSE
-		c.Programs.A[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
+		c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 		if c.Builtins.Discard == 0 {
 			draw_pixel(c.Builtins.Gl_FragColor, int64(point.X), int64(point.Y))
 		}
@@ -2343,7 +2053,7 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 	var z float32
 	var fs_input [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
 	var perspective [GL_MAX_VERTEX_OUTPUT_COMPONENTS * 3]float32
-	var vs_output = &c.Vs_output.Output_buf.A[0]
+	var vs_output = &c.Vs_output.Output_buf[0]
 	for i := int64(0); i < c.Vs_output.Size; i++ {
 		perspective[i] = v0.Vs_out[i] / p0.W
 		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] = v1.Vs_out[i] / p1.W
@@ -2382,7 +2092,7 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 					c.Builtins.Gl_FragCoord.W = tmp2
 					c.Builtins.Discard = GL_FALSE
 					c.Builtins.Gl_FragDepth = z
-					c.Programs.A[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
+					c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 					if c.Builtins.Discard == 0 {
 						draw_pixel(c.Builtins.Gl_FragColor, int64(x), int64(y))
 					}
@@ -2873,12 +2583,12 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 		Amask >>= 1
 		context.Ashift++
 	}
-	cvec_glVertex_Array(&context.Vertex_arrays, 0, 3)
-	cvec_glBuffer(&context.Buffers, 0, 3)
-	cvec_glProgram(&context.Programs, 0, 3)
-	cvec_glTexture(&context.Textures, 0, 1)
-	cvec_glVertex(&context.Glverts, 0, 10)
-	cvec_float(&context.Vs_output.Output_buf, 0, 0)
+	context.Vertex_arrays = make([]glVertex_Array, 0, 3)
+	context.Buffers = make([]glBuffer, 0, 3)
+	context.Programs = make([]glProgram, 0, 3)
+	context.Textures = make([]glTexture, 0, 1)
+	context.Glverts = make([]glVertex, 10)
+	context.Vs_output.Output_buf = make([]float32, CVEC_float_SZ)
 	context.Clear_stencil = 0
 	context.Clear_color = make_Color(0, 0, 0, 0)
 	for {
@@ -2943,11 +2653,11 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Draw_triangle_back = draw_triangle_fill
 	context.Error = GLenum(GL_NO_ERROR)
 	var tmp_prog glProgram = glProgram{Vertex_shader: default_vs, Fragment_shader: default_fs, Uniform: nil, Vs_output_size: GL_FALSE}
-	cvec_push_glProgram(&context.Programs, tmp_prog)
+	context.Programs = append(context.Programs, tmp_prog)
 	context.Cur_program = 0
 	var tmp_va glVertex_Array
 	init_glVertex_Array(&tmp_va)
-	cvec_push_glVertex_Array(&context.Vertex_arrays, tmp_va)
+	context.Vertex_arrays = append(context.Vertex_arrays, tmp_va)
 	context.Cur_vertex_array = 0
 	var tmp_buf glBuffer
 	tmp_buf.User_owned = GL_TRUE
@@ -2961,8 +2671,8 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	tmp_tex.W = 0
 	tmp_tex.H = 0
 	tmp_tex.D = 0
-	cvec_push_glBuffer(&context.Buffers, tmp_buf)
-	cvec_push_glTexture(&context.Textures, tmp_tex)
+	context.Buffers = append(context.Buffers, tmp_buf)
+	context.Textures = append(context.Textures, tmp_tex)
 	return 1
 }
 func Free_glContext(context *GlContext) {
@@ -2972,24 +2682,24 @@ func Free_glContext(context *GlContext) {
 	if context.User_alloced_backbuf == 0 {
 		context.Back_buffer.Buf = nil
 	}
-	for i = 0; uint64(i) < context.Buffers.Size; i++ {
-		if context.Buffers.A[i].User_owned == 0 {
+	for i = 0; uint64(i) < uint64(len(context.Buffers)); i++ {
+		if context.Buffers[i].User_owned == 0 {
 			stdio.Printf("freeing buffer %d\n", i)
-			context.Buffers.A[i].Data = nil
+			context.Buffers[i].Data = nil
 		}
 	}
-	for i = 0; uint64(i) < context.Textures.Size; i++ {
-		if (context.Textures.A[i]).User_owned == 0 {
+	for i = 0; uint64(i) < uint64(len(context.Textures)); i++ {
+		if (context.Textures[i]).User_owned == 0 {
 			stdio.Printf("freeing texture %d\n", i)
-			(context.Textures.A[i]).Data = nil
+			(context.Textures[i]).Data = nil
 		}
 	}
-	cvec_free_glVertex_Array(unsafe.Pointer(&context.Vertex_arrays))
-	cvec_free_glBuffer(unsafe.Pointer(&context.Buffers))
-	cvec_free_glProgram(unsafe.Pointer(&context.Programs))
-	cvec_free_glTexture(unsafe.Pointer(&context.Textures))
-	cvec_free_glVertex(unsafe.Pointer(&context.Glverts))
-	cvec_free_float(unsafe.Pointer(&context.Vs_output.Output_buf))
+	context.Vertex_arrays = nil
+	context.Buffers = nil
+	context.Programs = nil
+	context.Textures = nil
+	context.Glverts = nil
+	context.Vs_output.Output_buf = nil
 }
 func Set_glContext(context *GlContext) {
 	c = context
@@ -3023,29 +2733,29 @@ func GenVertexArrays(n GLsizei, arrays *GLuint) {
 	init_glVertex_Array(&tmp)
 	tmp.Deleted = GL_FALSE
 	n--
-	for i := int64(1); uint64(i) < c.Vertex_arrays.Size && n >= 0; i++ {
-		if (c.Vertex_arrays.A[i]).Deleted != 0 {
-			c.Vertex_arrays.A[i] = tmp
+	for i := int64(1); uint64(i) < uint64(len(c.Vertex_arrays)) && n >= 0; i++ {
+		if (c.Vertex_arrays[i]).Deleted != 0 {
+			c.Vertex_arrays[i] = tmp
 			a[n] = GLuint(int32(i))
 			n--
 		}
 	}
 	for ; n >= 0; n-- {
-		cvec_push_glVertex_Array(&c.Vertex_arrays, tmp)
-		a[n] = GLuint(c.Vertex_arrays.Size - 1)
+		c.Vertex_arrays = append(c.Vertex_arrays, tmp)
+		a[n] = GLuint(len(c.Vertex_arrays) - 1)
 	}
 }
 func DeleteVertexArrays(n GLsizei, arrays *GLuint) {
 	a := unsafe.Slice(arrays, n)
 	for i := int64(0); i < int64(n); i++ {
-		if a[i] == 0 || uint64(a[i]) >= c.Vertex_arrays.Size {
+		if a[i] == 0 || uint64(a[i]) >= uint64(len(c.Vertex_arrays)) {
 			continue
 		}
 		if a[i] == c.Cur_vertex_array {
-			c.Vertex_arrays.A[0] = c.Vertex_arrays.A[a[i]]
+			c.Vertex_arrays[0] = c.Vertex_arrays[a[i]]
 			c.Cur_vertex_array = 0
 		}
-		c.Vertex_arrays.A[a[i]].Deleted = GL_TRUE
+		c.Vertex_arrays[a[i]].Deleted = GL_TRUE
 	}
 }
 func GenBuffers(n GLsizei, buffers *GLuint) {
@@ -3055,33 +2765,33 @@ func GenBuffers(n GLsizei, buffers *GLuint) {
 	tmp.Data = nil
 	tmp.Deleted = GL_FALSE
 	n--
-	for i := int64(1); uint64(i) < c.Buffers.Size && n >= 0; i++ {
-		if (c.Buffers.A[i]).Deleted != 0 {
-			c.Buffers.A[i] = tmp
+	for i := int64(1); uint64(i) < uint64(len(c.Buffers)) && n >= 0; i++ {
+		if (c.Buffers[i]).Deleted != 0 {
+			c.Buffers[i] = tmp
 			b[n] = GLuint(int32(i))
 			n--
 		}
 	}
 	for ; n >= 0; n-- {
-		cvec_push_glBuffer(&c.Buffers, tmp)
-		b[n] = GLuint(c.Buffers.Size - 1)
+		c.Buffers = append(c.Buffers, tmp)
+		b[n] = GLuint(len(c.Buffers) - 1)
 	}
 }
 func DeleteBuffers(n GLsizei, buffers *GLuint) {
 	b := unsafe.Slice(buffers, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
-		if b[i] == 0 || uint64(b[i]) >= c.Buffers.Size {
+		if b[i] == 0 || uint64(b[i]) >= uint64(len(c.Buffers)) {
 			continue
 		}
-		type_ = c.Buffers.A[b[i]].Type
+		type_ = c.Buffers[b[i]].Type
 		if b[i] == c.Bound_buffers[type_] {
 			c.Bound_buffers[type_] = 0
 		}
-		if c.Buffers.A[b[i]].User_owned == 0 {
-			c.Buffers.A[b[i]].Data = nil
+		if c.Buffers[b[i]].User_owned == 0 {
+			c.Buffers[b[i]].Data = nil
 		}
-		c.Buffers.A[b[i]].Deleted = GL_TRUE
+		c.Buffers[b[i]].Deleted = GL_TRUE
 	}
 }
 func GenTextures(n GLsizei, textures *GLuint) {
@@ -3100,37 +2810,37 @@ func GenTextures(n GLsizei, textures *GLuint) {
 	tmp.H = 0
 	tmp.D = 0
 	n--
-	for i := int64(0); uint64(i) < c.Textures.Size && n >= 0; i++ {
-		if (c.Textures.A[i]).Deleted != 0 {
-			c.Textures.A[i] = tmp
+	for i := int64(0); uint64(i) < uint64(len(c.Textures)) && n >= 0; i++ {
+		if (c.Textures[i]).Deleted != 0 {
+			c.Textures[i] = tmp
 			t[n] = GLuint(int32(i))
 			n--
 		}
 	}
 	for ; n >= 0; n-- {
-		cvec_push_glTexture(&c.Textures, tmp)
-		t[n] = GLuint(c.Textures.Size - 1)
+		c.Textures = append(c.Textures, tmp)
+		t[n] = GLuint(len(c.Textures) - 1)
 	}
 }
 func DeleteTextures(n GLsizei, textures *GLuint) {
 	t := unsafe.Slice(textures, n)
 	var type_ GLenum
 	for i := int64(0); i < int64(n); i++ {
-		if t[i] == 0 || uint64(t[i]) >= c.Textures.Size {
+		if t[i] == 0 || uint64(t[i]) >= uint64(len(c.Textures)) {
 			continue
 		}
-		type_ = (c.Textures.A[t[i]]).Type
+		type_ = (c.Textures[t[i]]).Type
 		if t[i] == c.Bound_textures[type_] {
 			c.Bound_textures[type_] = 0
 		}
-		if (c.Textures.A[t[i]]).User_owned == 0 {
-			(c.Textures.A[t[i]]).Data = nil
+		if (c.Textures[t[i]]).User_owned == 0 {
+			(c.Textures[t[i]]).Data = nil
 		}
-		(c.Textures.A[t[i]]).Deleted = GL_TRUE
+		(c.Textures[t[i]]).Deleted = GL_TRUE
 	}
 }
 func BindVertexArray(array GLuint) {
-	if uint64(array) < c.Vertex_arrays.Size && c.Vertex_arrays.A[array].Deleted == GL_FALSE {
+	if uint64(array) < uint64(len(c.Vertex_arrays)) && c.Vertex_arrays[array].Deleted == GL_FALSE {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
@@ -3144,9 +2854,9 @@ func BindBuffer(target GLenum, buffer GLuint) {
 		return
 	}
 	target -= GLenum(GL_ARRAY_BUFFER)
-	if uint64(buffer) < c.Buffers.Size && c.Buffers.A[buffer].Deleted == GL_FALSE {
+	if uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == GL_FALSE {
 		c.Bound_buffers[target] = buffer
-		c.Buffers.A[buffer].Type = target
+		c.Buffers[buffer].Type = target
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
@@ -3165,20 +2875,20 @@ func BufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) 
 		}
 		return
 	}
-	c.Buffers.A[c.Bound_buffers[target]].Data = nil
-	if (c.Buffers.A[c.Bound_buffers[target]]).Data = make([]u8, size); c.Buffers.A[c.Bound_buffers[target]].Data == nil {
+	c.Buffers[c.Bound_buffers[target]].Data = nil
+	if (c.Buffers[c.Bound_buffers[target]]).Data = make([]u8, size); c.Buffers[c.Bound_buffers[target]].Data == nil {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
 		}
 		return
 	}
 	if data != nil {
-		copy(c.Buffers.A[c.Bound_buffers[target]].Data, unsafe.Slice((*u8)(data), size))
+		copy(c.Buffers[c.Bound_buffers[target]].Data, unsafe.Slice((*u8)(data), size))
 	}
-	c.Buffers.A[c.Bound_buffers[target]].User_owned = GL_FALSE
-	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
+	c.Buffers[c.Bound_buffers[target]].User_owned = GL_FALSE
+	(c.Buffers[c.Bound_buffers[target]]).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER-GL_ARRAY_BUFFER) {
-		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
+		(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
 func BufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Pointer) {
@@ -3195,13 +2905,13 @@ func BufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Poin
 		}
 		return
 	}
-	if offset+size > (c.Buffers.A[c.Bound_buffers[target]]).Size {
+	if offset+size > (c.Buffers[c.Bound_buffers[target]]).Size {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[c.Bound_buffers[target]]).Data[0]), offset), data, int(size))
+	libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Buffers[c.Bound_buffers[target]]).Data[0]), offset), data, int(size))
 }
 func BindTexture(target GLenum, texture GLuint) {
 	if target < GLenum(GL_TEXTURE_1D) || target >= GLenum(GL_NUM_TEXTURE_TYPES) {
@@ -3211,11 +2921,11 @@ func BindTexture(target GLenum, texture GLuint) {
 		return
 	}
 	target -= GLenum(GL_TEXTURE_UNBOUND + 1)
-	if uint64(texture) < c.Textures.Size && (c.Textures.A[texture]).Deleted == 0 {
-		if (c.Textures.A[texture]).Type == GLenum(GL_TEXTURE_UNBOUND) {
+	if uint64(texture) < uint64(len(c.Textures)) && (c.Textures[texture]).Deleted == 0 {
+		if (c.Textures[texture]).Type == GLenum(GL_TEXTURE_UNBOUND) {
 			c.Bound_textures[target] = texture
-			(c.Textures.A[texture]).Type = target
-		} else if (c.Textures.A[texture]).Type == target {
+			(c.Textures[texture]).Type = target
+		} else if (c.Textures[texture]).Type == target {
 			c.Bound_textures[target] = texture
 		} else if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_OPERATION)
@@ -3251,7 +2961,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 		if int64(param) == GL_LINEAR_MIPMAP_NEAREST || int64(param) == GL_LINEAR_MIPMAP_LINEAR {
 			param = GLint(GL_LINEAR)
 		}
-		(c.Textures.A[c.Bound_textures[target]]).Min_filter = GLenum(param)
+		(c.Textures[c.Bound_textures[target]]).Min_filter = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_MAG_FILTER) {
 		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR {
 			if c.Error == 0 {
@@ -3259,7 +2969,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(c.Textures.A[c.Bound_textures[target]]).Mag_filter = GLenum(param)
+		(c.Textures[c.Bound_textures[target]]).Mag_filter = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_S) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -3267,7 +2977,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(c.Textures.A[c.Bound_textures[target]]).Wrap_s = GLenum(param)
+		(c.Textures[c.Bound_textures[target]]).Wrap_s = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_T) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -3275,7 +2985,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(c.Textures.A[c.Bound_textures[target]]).Wrap_t = GLenum(param)
+		(c.Textures[c.Bound_textures[target]]).Wrap_t = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_R) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -3283,7 +2993,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(c.Textures.A[c.Bound_textures[target]]).Wrap_r = GLenum(param)
+		(c.Textures[c.Bound_textures[target]]).Wrap_r = GLenum(param)
 	}
 }
 func PixelStorei(pname GLenum, param GLint) {
@@ -3327,7 +3037,7 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(c.Textures.A[cur_tex]).W = uint64(width)
+	(c.Textures[cur_tex]).W = uint64(width)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -3346,10 +3056,10 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	(c.Textures.A[cur_tex]).Data = nil
+	(c.Textures[cur_tex]).Data = nil
 	if (func() *u8 {
-		p := &(c.Textures.A[cur_tex]).Data
-		(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width)*components))), int(int64(width)*components))
+		p := &(c.Textures[cur_tex]).Data
+		(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width)*components))), int(int64(width)*components))
 		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
@@ -3357,11 +3067,11 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
 	if data != nil {
 		libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*0))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
-	(c.Textures.A[cur_tex]).User_owned = GL_FALSE
+	(c.Textures[cur_tex]).User_owned = GL_FALSE
 }
 func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
@@ -3408,12 +3118,12 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	}
 	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		(c.Textures.A[cur_tex]).W = uint64(width)
-		(c.Textures.A[cur_tex]).H = uint64(height)
-		(c.Textures.A[cur_tex]).Data = nil
+		(c.Textures[cur_tex]).W = uint64(width)
+		(c.Textures[cur_tex]).H = uint64(height)
+		(c.Textures[cur_tex]).Data = nil
 		if (func() *u8 {
-			p := &(c.Textures.A[cur_tex]).Data
-			(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(height)*byte_width))), int(int64(height)*byte_width))
+			p := &(c.Textures[cur_tex]).Data
+			(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(height)*byte_width))), int(int64(height)*byte_width))
 			return &(*p)[0]
 		}()) == nil {
 			if c.Error == 0 {
@@ -3423,18 +3133,18 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		if data != nil {
 			if padding_needed == 0 {
-				libc.MemCpy(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]), data, int(int64(height)*byte_width))
+				libc.MemCpy(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]), data, int(int64(height)*byte_width))
 			} else {
 				for i := int64(0); i < int64(height); i++ {
-					libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]), i*byte_width), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+					libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]), i*byte_width), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
 				}
 			}
 		}
-		(c.Textures.A[cur_tex]).User_owned = GL_FALSE
+		(c.Textures[cur_tex]).User_owned = GL_FALSE
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		if (c.Textures.A[cur_tex]).W == 0 {
-			(c.Textures.A[cur_tex]).Data = nil
+		if (c.Textures[cur_tex]).W == 0 {
+			(c.Textures[cur_tex]).Data = nil
 		}
 		if width != height {
 			if c.Error == 0 {
@@ -3443,12 +3153,12 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			return
 		}
 		var mem_size int64 = int64(width*height*6) * components
-		if (c.Textures.A[cur_tex]).W == 0 {
-			(c.Textures.A[cur_tex]).W = uint64(width)
-			(c.Textures.A[cur_tex]).H = uint64(width)
+		if (c.Textures[cur_tex]).W == 0 {
+			(c.Textures[cur_tex]).W = uint64(width)
+			(c.Textures[cur_tex]).H = uint64(width)
 			if (func() *u8 {
-				p := &(c.Textures.A[cur_tex]).Data
-				(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(mem_size))), mem_size)
+				p := &(c.Textures[cur_tex]).Data
+				(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(mem_size))), mem_size)
 				return &(*p)[0]
 			}()) == nil {
 				if c.Error == 0 {
@@ -3456,7 +3166,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 				return
 			}
-		} else if (c.Textures.A[cur_tex]).W != uint64(width) {
+		} else if (c.Textures[cur_tex]).W != uint64(width) {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
 			}
@@ -3464,7 +3174,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = int64(height) * byte_width
-		var texdata *u8 = &(c.Textures.A[cur_tex]).Data[0]
+		var texdata *u8 = &(c.Textures[cur_tex]).Data[0]
 		if data != nil {
 			if padding_needed == 0 {
 				libc.MemCpy(unsafe.Add(unsafe.Pointer(texdata), target*GLenum(p)), data, int(int64(height)*byte_width))
@@ -3474,7 +3184,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 			}
 		}
-		(c.Textures.A[cur_tex]).User_owned = GL_FALSE
+		(c.Textures[cur_tex]).User_owned = GL_FALSE
 	}
 }
 func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -3491,9 +3201,9 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(c.Textures.A[cur_tex]).W = uint64(width)
-	(c.Textures.A[cur_tex]).H = uint64(height)
-	(c.Textures.A[cur_tex]).D = uint64(depth)
+	(c.Textures[cur_tex]).W = uint64(width)
+	(c.Textures[cur_tex]).H = uint64(height)
+	(c.Textures[cur_tex]).D = uint64(depth)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -3520,10 +3230,10 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	} else {
 		padded_row_len = byte_width + int64(c.Unpack_alignment) - padding_needed
 	}
-	(c.Textures.A[cur_tex]).Data = nil
+	(c.Textures[cur_tex]).Data = nil
 	if (func() *u8 {
-		p := &(c.Textures.A[cur_tex]).Data
-		(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width*height*depth)*components))), int(int64(width*height*depth)*components))
+		p := &(c.Textures[cur_tex]).Data
+		(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width*height*depth)*components))), int(int64(width*height*depth)*components))
 		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
@@ -3531,7 +3241,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
 	if data != nil {
 		if padding_needed == 0 {
 			libc.MemCpy(unsafe.Pointer(texdata), data, int(uintptr(width*height*depth)*unsafe.Sizeof(U32(0))))
@@ -3541,7 +3251,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			}
 		}
 	}
-	(c.Textures.A[cur_tex]).User_owned = GL_FALSE
+	(c.Textures[cur_tex]).User_owned = GL_FALSE
 }
 func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_1D) {
@@ -3563,13 +3273,13 @@ func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, for
 		}
 		return
 	}
-	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W {
+	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
 	libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 }
 func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -3595,21 +3305,21 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 	var d *U32 = (*U32)(data)
 	if target == GLenum(GL_TEXTURE_2D) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
-		if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures.A[cur_tex]).H {
+		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+		if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures[cur_tex]).H {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
 			}
 			return
 		}
-		var w int64 = int64((c.Textures.A[cur_tex]).W)
+		var w int64 = int64((c.Textures[cur_tex]).W)
 		for i := int64(0); i < int64(height); i++ {
 			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
 		}
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
-		var w int64 = int64((c.Textures.A[cur_tex]).W)
+		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+		var w int64 = int64((c.Textures[cur_tex]).W)
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = w * w
 		for i := int64(0); i < int64(height); i++ {
@@ -3637,17 +3347,17 @@ func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zof
 		}
 		return
 	}
-	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures.A[cur_tex]).H || zoffset < 0 || uint64(zoffset+GLint(depth)) > (c.Textures.A[cur_tex]).D {
+	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures[cur_tex]).H || zoffset < 0 || uint64(zoffset+GLint(depth)) > (c.Textures[cur_tex]).D {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	var w int64 = int64((c.Textures.A[cur_tex]).W)
-	var h int64 = int64((c.Textures.A[cur_tex]).H)
+	var w int64 = int64((c.Textures[cur_tex]).W)
+	var h int64 = int64((c.Textures[cur_tex]).H)
 	var p int64 = w * h
 	var d *U32 = (*U32)(data)
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
 	for j := int64(0); j < int64(depth); j++ {
 		for i := int64(0); i < int64(height); i++ {
 			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
@@ -3667,7 +3377,7 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 		}
 		return
 	}
-	var v *glVertex_Attrib = &((c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index])
+	var v *glVertex_Attrib = &((c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index])
 	v.Size = size
 	v.Type = type_
 	if stride != 0 {
@@ -3680,10 +3390,10 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
 func EnableVertexAttribArray(index GLuint) {
-	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_TRUE
+	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_TRUE
 }
 func DisableVertexAttribArray(index GLuint) {
-	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_FALSE
+	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_FALSE
 }
 func VertexAttribDivisor(index GLuint, divisor GLuint) {
 	if index >= GL_MAX_VERTEX_ATTRIBS {
@@ -3692,11 +3402,11 @@ func VertexAttribDivisor(index GLuint, divisor GLuint) {
 		}
 		return
 	}
-	(c.Vertex_arrays.A[c.Cur_vertex_array]).Vertex_attribs[index].Divisor = divisor
+	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Divisor = divisor
 }
 func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	var (
-		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers.A[v.Buf]).Data[0]), v.Offset))), v.Stride*i))
+		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers[v.Buf]).Data[0]), v.Offset))), v.Stride*i))
 		tmpvec4 Vec4
 	)
 	libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v.Size)*unsafe.Sizeof(float32(0))))
@@ -3742,7 +3452,7 @@ func DrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
 	if count == 0 {
 		return
 	}
-	(c.Buffers.A[(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer]).Type = type_
+	(c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer]).Type = type_
 	run_pipeline(mode, GLint(offset), count, 0, 0, GL_TRUE)
 }
 func DrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount GLsizei) {
@@ -3807,7 +3517,7 @@ func DrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsi
 	if count == 0 || instancecount == 0 {
 		return
 	}
-	(c.Buffers.A[(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer]).Type = type_
+	(c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer]).Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, GL_TRUE)
 	}
@@ -3834,7 +3544,7 @@ func DrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenum,
 	if count == 0 || instancecount == 0 {
 		return
 	}
-	c.Buffers.A[(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer].Type = type_
+	c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer].Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, GL_TRUE)
 	}
@@ -4214,25 +3924,29 @@ func DeleteProgram(program GLuint) {
 	if program == 0 {
 		return
 	}
-	if uint64(program) >= c.Programs.Size {
+	if uint64(program) >= uint64(len(c.Programs)) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	c.Programs.A[program].Deleted = GL_TRUE
+	c.Programs[program].Deleted = GL_TRUE
 }
 func UseProgram(program GLuint) {
-	if uint64(program) >= c.Programs.Size {
+	if uint64(program) >= uint64(len(c.Programs)) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	c.Vs_output.Size = c.Programs.A[program].Vs_output_size
-	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(c.Vs_output.Size*MAX_VERTICES))
-	c.Vs_output.Interpolation = c.Programs.A[program].Interpolation[:]
-	c.Fragdepth_or_discard = c.Programs.A[program].Fragdepth_or_discard
+	c.Vs_output.Size = c.Programs[program].Vs_output_size
+	if int64(len(c.Vs_output.Output_buf)) < c.Vs_output.Size*MAX_VERTICES {
+		var tmp = make([]float32, c.Vs_output.Size*MAX_VERTICES)
+		copy(tmp, c.Vs_output.Output_buf)
+		c.Vs_output.Output_buf = tmp
+	}
+	c.Vs_output.Interpolation = c.Programs[program].Interpolation[:]
+	c.Fragdepth_or_discard = c.Programs[program].Fragdepth_or_discard
 	c.Cur_program = program
 }
 
@@ -4617,7 +4331,7 @@ func texture1D(tex GLuint, x float32) Vec4 {
 	var (
 		i0      int64
 		i1      int64
-		t       *glTexture = &c.Textures.A[tex]
+		t       *glTexture = &c.Textures[tex]
 		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       float64    = float64(t.W) - EPSILON
 		xw      float64    = float64(x) * w
@@ -4647,7 +4361,7 @@ func texture2D(tex GLuint, x float32, y float32) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = &c.Textures.A[tex]
+		t       *glTexture = &c.Textures[tex]
 		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
@@ -4696,7 +4410,7 @@ func texture3D(tex GLuint, x float32, y float32, z float32) Vec4 {
 		j1      int64
 		k0      int64
 		k1      int64
-		t       *glTexture = &c.Textures.A[tex]
+		t       *glTexture = &c.Textures[tex]
 		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		dw      float64    = float64(t.W) - EPSILON
 		dh      float64    = float64(t.H) - EPSILON
@@ -4766,7 +4480,7 @@ func texture2DArray(tex GLuint, x float32, y float32, z int64) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = &c.Textures.A[tex]
+		t       *glTexture = &c.Textures[tex]
 		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
@@ -4814,7 +4528,7 @@ func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = &c.Textures.A[tex]
+		t       *glTexture = &c.Textures[tex]
 		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
@@ -4855,7 +4569,7 @@ func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 }
 func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 	var (
-		tex     *glTexture = &c.Textures.A[texture]
+		tex     *glTexture = &c.Textures[texture]
 		texdata *Color     = (*Color)(unsafe.Pointer(&tex.Data[0]))
 		x_mag   float32
 	)

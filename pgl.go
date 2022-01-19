@@ -17,18 +17,18 @@ func NewProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, i
 	}
 	var tmp glProgram = glProgram{Vertex_shader: vertex_shader, Fragment_shader: fragment_shader, Uniform: nil, Vs_output_size: int64(n), Interpolation: [64]GLenum{}, Fragdepth_or_discard: fragdepth_or_discard, Deleted: GL_FALSE}
 	copy(tmp.Interpolation[:], interpolation)
-	for i := int64(1); uint64(i) < c.Programs.Size; i++ {
-		if c.Programs.A[i].Deleted != 0 && i != int64(c.Cur_program) {
-			c.Programs.A[i] = tmp
+	for i := int64(1); uint64(i) < uint64(len(c.Programs)); i++ {
+		if c.Programs[i].Deleted != 0 && i != int64(c.Cur_program) {
+			c.Programs[i] = tmp
 			return GLuint(int32(i))
 		}
 	}
-	cvec_push_glProgram(&c.Programs, tmp)
-	return GLuint(c.Programs.Size - 1)
+	c.Programs = append(c.Programs, tmp)
+	return GLuint(len(c.Programs) - 1)
 }
 
 func SetUniform(uniform interface{}) {
-	c.Programs.A[c.Cur_program].Uniform = uniform
+	c.Programs[c.Cur_program].Uniform = uniform
 }
 
 func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
@@ -68,21 +68,21 @@ func pglClearScreen() {
 
 func pglSetInterp(interpolation []GLenum) {
 	n := len(interpolation)
-	c.Programs.A[c.Cur_program].Vs_output_size = int64(n)
+	c.Programs[c.Cur_program].Vs_output_size = int64(n)
 	c.Vs_output.Size = int64(n)
-	copy(c.Programs.A[c.Cur_program].Interpolation[:], interpolation)
-	cvec_reserve_float(&c.Vs_output.Output_buf, uint64(n*MAX_VERTICES))
-	c.Vs_output.Interpolation = c.Programs.A[c.Cur_program].Interpolation[:]
+	copy(c.Programs[c.Cur_program].Interpolation[:], interpolation)
+	c.Vs_output.Output_buf = make([]float32, uint64(n*MAX_VERTICES))
+	c.Vs_output.Interpolation = c.Programs[c.Cur_program].Interpolation[:]
 }
 
 func pglDrawFrame() {
-	var frag_shader frag_func = c.Programs.A[c.Cur_program].Fragment_shader
+	var frag_shader frag_func = c.Programs[c.Cur_program].Fragment_shader
 	for y := float32(0.5); y < float32(c.Back_buffer.H); y++ {
 		for x := float32(0.5); x < float32(c.Back_buffer.W); x++ {
 			c.Builtins.Gl_FragCoord.X = x
 			c.Builtins.Gl_FragCoord.Y = y
 			c.Builtins.Discard = GL_FALSE
-			frag_shader(nil, &c.Builtins, c.Programs.A[c.Cur_program].Uniform)
+			frag_shader(nil, &c.Builtins, c.Programs[c.Cur_program].Uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(x), int64(y))
 			}
@@ -110,14 +110,14 @@ func pglBufferData(target GLenum, size GLsizei, data []u8, usage GLenum) {
 		}
 		return
 	}
-	if (c.Buffers.A[c.Bound_buffers[target]]).User_owned == 0 {
-		c.Buffers.A[c.Bound_buffers[target]].Data = nil
+	if (c.Buffers[c.Bound_buffers[target]]).User_owned == 0 {
+		c.Buffers[c.Bound_buffers[target]].Data = nil
 	}
-	(c.Buffers.A[c.Bound_buffers[target]]).Data = data
-	(c.Buffers.A[c.Bound_buffers[target]]).User_owned = GL_TRUE
-	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
+	(c.Buffers[c.Bound_buffers[target]]).Data = data
+	(c.Buffers[c.Bound_buffers[target]]).User_owned = GL_TRUE
+	(c.Buffers[c.Bound_buffers[target]]).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
-		(c.Vertex_arrays.A[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
+		(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
 
@@ -141,7 +141,7 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	c.Textures.A[cur_tex].W = uint64(width)
+	c.Textures[cur_tex].W = uint64(width)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -161,11 +161,11 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		}
 		return
 	}
-	if c.Textures.A[cur_tex].User_owned == 0 {
-		c.Textures.A[cur_tex].Data = nil
+	if c.Textures[cur_tex].User_owned == 0 {
+		c.Textures[cur_tex].Data = nil
 	}
-	c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width)
-	c.Textures.A[cur_tex].User_owned = GL_TRUE
+	c.Textures[cur_tex].Data = unsafe.Slice((*u8)(data), width)
+	c.Textures[cur_tex].User_owned = GL_TRUE
 }
 
 func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -212,13 +212,13 @@ func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	var cur_tex int64
 	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		c.Textures.A[cur_tex].W = uint64(width)
-		c.Textures.A[cur_tex].H = uint64(height)
-		if c.Textures.A[cur_tex].User_owned == 0 {
-			c.Textures.A[cur_tex].Data = nil
+		c.Textures[cur_tex].W = uint64(width)
+		c.Textures[cur_tex].H = uint64(height)
+		if c.Textures[cur_tex].User_owned == 0 {
+			c.Textures[cur_tex].Data = nil
 		}
-		c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width*height)
-		c.Textures.A[cur_tex].User_owned = GL_TRUE
+		c.Textures[cur_tex].Data = unsafe.Slice((*u8)(data), width*height)
+		c.Textures[cur_tex].User_owned = GL_TRUE
 	} else {
 	}
 }
@@ -243,9 +243,9 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	c.Textures.A[cur_tex].W = uint64(width)
-	c.Textures.A[cur_tex].H = uint64(height)
-	c.Textures.A[cur_tex].D = uint64(depth)
+	c.Textures[cur_tex].W = uint64(width)
+	c.Textures[cur_tex].H = uint64(height)
+	c.Textures[cur_tex].D = uint64(depth)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -265,11 +265,11 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		}
 		return
 	}
-	if c.Textures.A[cur_tex].User_owned == 0 {
-		c.Textures.A[cur_tex].Data = nil
+	if c.Textures[cur_tex].User_owned == 0 {
+		c.Textures[cur_tex].Data = nil
 	}
-	c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width*height*depth)
-	c.Textures.A[cur_tex].User_owned = GL_TRUE
+	c.Textures[cur_tex].Data = unsafe.Slice((*u8)(data), width*height*depth)
+	c.Textures[cur_tex].User_owned = GL_TRUE
 }
 
 func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
@@ -279,8 +279,8 @@ func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
 		}
 		return
 	}
-	if buffer != 0 && uint64(buffer) < c.Buffers.Size && (c.Buffers.A[buffer]).Deleted == 0 {
-		*data = unsafe.Pointer(&(c.Buffers.A[buffer]).Data[0])
+	if buffer != 0 && uint64(buffer) < uint64(len(c.Buffers)) && (c.Buffers[buffer]).Deleted == 0 {
+		*data = unsafe.Pointer(&(c.Buffers[buffer]).Data[0])
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
@@ -293,8 +293,8 @@ func pglGetTextureData(texture GLuint, data *unsafe.Pointer) {
 		}
 		return
 	}
-	if uint64(texture) < c.Textures.Size && c.Textures.A[texture].Deleted == 0 {
-		*data = unsafe.Pointer(&c.Textures.A[texture].Data[0])
+	if uint64(texture) < uint64(len(c.Textures)) && c.Textures[texture].Deleted == 0 {
+		*data = unsafe.Pointer(&c.Textures[texture].Data[0])
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}
