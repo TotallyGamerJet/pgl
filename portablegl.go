@@ -34,11 +34,10 @@ include in the files history information documenting your changes.
 package pgl
 
 import (
+	"encoding/binary"
 	"fmt"
 	"github.com/chewxy/math32"
 	"github.com/gotranspile/cxgo/runtime/cmath"
-	"github.com/gotranspile/cxgo/runtime/libc"
-	"github.com/gotranspile/cxgo/runtime/stdio"
 	"math"
 	"unsafe"
 )
@@ -712,7 +711,7 @@ func make_orthographic_matrix(mat *Mat4, l float32, r float32, b float32, t floa
 }
 func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 	for {
-		libc.MemSet(unsafe.Pointer(&mat[0]), 0, int(unsafe.Sizeof(float32(0))*16))
+		*mat = Mat4{}
 		mat[0] = func() float32 {
 			p := &mat[5]
 			mat[5] = func() float32 {
@@ -751,10 +750,17 @@ var CVEC_float_SZ uint64 = 50
 
 var c *GlContext
 
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 func gl_clipcode(pt Vec4) int64 {
 	var w float32
 	w = float32(float64(pt.W) * (1.0 + 1e-05))
-	return ((int64(libc.BoolToInt(pt.Z < -w)) | int64(libc.BoolToInt(pt.Z > w))<<1) & (int64(libc.BoolToInt(c.Depth_clamp == 0)) | int64(libc.BoolToInt(c.Depth_clamp == 0))<<1)) | int64(libc.BoolToInt(pt.X < -w))<<2 | int64(libc.BoolToInt(pt.X > w))<<3 | int64(libc.BoolToInt(pt.Y < -w))<<4 | int64(libc.BoolToInt(pt.Y > w))<<5
+	return ((int64(boolToInt(pt.Z < -w)) | int64(boolToInt(pt.Z > w))<<1) & (int64(boolToInt(c.Depth_clamp == 0)) | int64(boolToInt(c.Depth_clamp == 0))<<1)) | int64(boolToInt(pt.X < -w))<<2 | int64(boolToInt(pt.X > w))<<3 | int64(boolToInt(pt.Y < -w))<<4 | int64(boolToInt(pt.Y > w))<<5
 }
 func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 	var (
@@ -786,7 +792,11 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 		tmpvec4.Y = 0.0
 		tmpvec4.Z = 0.0
 		tmpvec4.W = 1.0
-		libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(&buf_pos[0]), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
+		var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
+		vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
+		for k := GLint(0); k < v[enabled[j]].Size; k++ {
+			vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+		}
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
 	var vs_out *float32 = &c.Vs_output.Output_buf[vert*uint64(c.Vs_output.Size)]
@@ -822,7 +832,11 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				tmpvec4.Y = 0.0
 				tmpvec4.Z = 0.0
 				tmpvec4.W = 1.0
-				libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(&buf_pos[0]), int(uintptr(v[enabled[j]].Size)*unsafe.Sizeof(float32(0))))
+				var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
+				vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
+				for k := GLint(0); k < v[enabled[j]].Size; k++ {
+					vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+				}
 				c.Vertex_attribs_vs[i] = tmpvec4
 			}
 		}
@@ -868,7 +882,7 @@ func draw_point(vert *glVertex) {
 	if c.Depth_clamp != 0 {
 		point.Z = clampf_01(point.Z)
 	}
-	copy(fs_input[:], vert.Vs_out[:c.Vs_output.Size]) //libc.MemCpy(unsafe.Pointer(&fs_input[0]), unsafe.Pointer(vert.Vs_out), int(c.Vs_output.Size*int64(unsafe.Sizeof(float32(0)))))
+	copy(fs_input[:], vert.Vs_out[:c.Vs_output.Size])
 	var x float32 = float32(float64(point.X) + 0.5)
 	var y float32 = float32(float64(point.Y) + 0.5)
 	var p_size float32 = float32(c.Point_size)
@@ -917,7 +931,9 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 		vert    uint64
 		provoke int64
 	)
-	libc.Assert(count <= MAX_VERTICES)
+	if count > MAX_VERTICES {
+		panic("assert failed")
+	}
 	vertex_stage(first, count, instance, base_instance, use_elements)
 	if mode == GLenum(GL_POINTS) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)); i, vert = i+1, vert+1 {
@@ -989,7 +1005,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			} else {
 				b = vert
 			}
-			toggle = uint64(libc.BoolToInt(toggle == 0))
+			toggle = uint64(boolToInt(toggle == 0))
 		}
 	} else if mode == GLenum(GL_TRIANGLE_FAN) {
 		if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
@@ -1008,17 +1024,17 @@ func depthtest(zval float32, zbufval float32) int64 {
 	}
 	switch c.Depth_func {
 	case GL_LESS:
-		return int64(libc.BoolToInt(zval < zbufval))
+		return int64(boolToInt(zval < zbufval))
 	case GL_LEQUAL:
-		return int64(libc.BoolToInt(zval <= zbufval))
+		return int64(boolToInt(zval <= zbufval))
 	case GL_GREATER:
-		return int64(libc.BoolToInt(zval > zbufval))
+		return int64(boolToInt(zval > zbufval))
 	case GL_GEQUAL:
-		return int64(libc.BoolToInt(zval >= zbufval))
+		return int64(boolToInt(zval >= zbufval))
 	case GL_EQUAL:
-		return int64(libc.BoolToInt(zval == zbufval))
+		return int64(boolToInt(zval == zbufval))
 	case GL_NOTEQUAL:
-		return int64(libc.BoolToInt(zval != zbufval))
+		return int64(boolToInt(zval != zbufval))
 	case GL_ALWAYS:
 		return 1
 	case GL_NEVER:
@@ -1353,7 +1369,7 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 		w2                   float32     = v2.W
 		x                    int64
 		j                    int64
-		steep                int64 = int64(libc.BoolToInt(math32.Abs(y2-y1) > math32.Abs(x2-x1)))
+		steep                int64 = int64(boolToInt(math32.Abs(y2-y1) > math32.Abs(x2-x1)))
 	)
 	if steep != 0 {
 		tmp = x1
@@ -1830,7 +1846,7 @@ func clip_zmax(c *Vec4, a *Vec4, b *Vec4) float32 {
 	return t
 }
 
-var clip_proc [6]*func(*Vec4, *Vec4, *Vec4) float32 = [6]*func(*Vec4, *Vec4, *Vec4) float32{(*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_zmax))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_xmax))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymin))), (*func(*Vec4, *Vec4, *Vec4) float32)(unsafe.Pointer(libc.FuncAddr(clip_ymax)))}
+var clip_proc = [6]func(*Vec4, *Vec4, *Vec4) float32{clip_zmin, clip_zmax, clip_xmin, clip_xmax, clip_ymin, clip_ymax}
 
 func update_clip_pt(q *glVertex, v0 *glVertex, v1 *glVertex, t float32) {
 	for i := int64(0); i < c.Vs_output.Size; i++ {
@@ -1873,10 +1889,10 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 			clip_bit++
 		}
 		if clip_bit == 6 {
-			stdio.Printf("Clipping error:\n")
-			print_vec4(v0.Clip_space, libc.CString("\n"))
-			print_vec4(v1.Clip_space, libc.CString("\n"))
-			print_vec4(v2.Clip_space, libc.CString("\n"))
+			fmt.Printf("Clipping error:\n")
+			print_vec4(v0.Clip_space, "\n")
+			print_vec4(v1.Clip_space, "\n")
+			print_vec4(v2.Clip_space, "\n")
 			return
 		}
 		clip_mask = 1 << clip_bit
@@ -1895,9 +1911,9 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 				q[1] = v0
 				q[2] = v1
 			}
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
+			tt = clip_proc[clip_bit](&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
 			update_clip_pt(&tmp1, q[0], q[1], tt)
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
+			tt = clip_proc[clip_bit](&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
 			update_clip_pt(&tmp2, q[0], q[2], tt)
 			tmp1.Edge_flag = q[0].Edge_flag
 			edge_flag_tmp = q[2].Edge_flag
@@ -1921,9 +1937,9 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 				q[1] = v0
 				q[2] = v1
 			}
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
+			tt = clip_proc[clip_bit](&tmp1.Clip_space, &q[0].Clip_space, &q[1].Clip_space)
 			update_clip_pt(&tmp1, q[0], q[1], tt)
-			tt = libc.AsFunc(clip_proc[clip_bit], (*func(*Vec4, *Vec4, *Vec4) float32)(nil)).(func(*Vec4, *Vec4, *Vec4) float32)(&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
+			tt = clip_proc[clip_bit](&tmp2.Clip_space, &q[0].Clip_space, &q[2].Clip_space)
 			update_clip_pt(&tmp2, q[0], q[2], tt)
 			tmp1.Edge_flag = 1
 			tmp2.Edge_flag = q[2].Edge_flag
@@ -2181,7 +2197,7 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 		Cs.Z = i
 		Cs.W = 1
 	default:
-		stdio.Printf("error unrecognized blend_sfactor!\n")
+		fmt.Printf("error unrecognized blend_sfactor!\n")
 	}
 	switch c.Blend_dfactor {
 	case GL_ZERO:
@@ -2251,7 +2267,7 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 		Cd.Z = i
 		Cd.W = 1
 	default:
-		stdio.Printf("error unrecognized blend_dfactor!\n")
+		fmt.Printf("error unrecognized blend_dfactor!\n")
 	}
 	var result Vec4
 	switch c.Blend_equation {
@@ -2304,7 +2320,7 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 			result.W = dst.W
 		}
 	default:
-		stdio.Printf("error unrecognized blend_equation!\n")
+		fmt.Printf("error unrecognized blend_equation!\n")
 	}
 	return vec4_to_Color(result)
 }
@@ -2366,17 +2382,17 @@ func stencil_test(stencil u8) int64 {
 	case GL_NEVER:
 		return 0
 	case GL_LESS:
-		return int64(libc.BoolToInt((ref & mask) < (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) < (int64(stencil) & mask)))
 	case GL_LEQUAL:
-		return int64(libc.BoolToInt((ref & mask) <= (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) <= (int64(stencil) & mask)))
 	case GL_GREATER:
-		return int64(libc.BoolToInt((ref & mask) > (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) > (int64(stencil) & mask)))
 	case GL_GEQUAL:
-		return int64(libc.BoolToInt((ref & mask) >= (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) >= (int64(stencil) & mask)))
 	case GL_EQUAL:
-		return int64(libc.BoolToInt((ref & mask) == (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) == (int64(stencil) & mask)))
 	case GL_NOTEQUAL:
-		return int64(libc.BoolToInt((ref & mask) != (int64(stencil) & mask)))
+		return int64(boolToInt((ref & mask) != (int64(stencil) & mask)))
 	case GL_ALWAYS:
 		return 1
 	default:
@@ -2482,20 +2498,6 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 	}
 	*dest = U32(src_color.A)<<c.Ashift | U32(src_color.R)<<c.Rshift | U32(src_color.G)<<c.Gshift | U32(src_color.B)<<c.Bshift
 }
-func is_valid(target GLenum, error GLenum, n int64, _rest ...interface{}) int64 {
-	var argptr libc.ArgList
-	argptr.Start(n, _rest)
-	for i := int64(0); i < n; i++ {
-		if target == argptr.Arg().(GLenum) {
-			return 1
-		}
-	}
-	argptr.End()
-	if c.Error == 0 {
-		c.Error = error
-	}
-	return 0
-}
 func default_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms interface{}) {
 	builtins.Gl_Position = *(*Vec4)(unsafe.Add(unsafe.Pointer((*Vec4)(vertex_attribs)), unsafe.Sizeof(Vec4{})*0))
 }
@@ -2521,22 +2523,22 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	if bitdepth > 32 || back == nil {
 		return 0
 	}
-	context.User_alloced_backbuf = int64(libc.BoolToInt(*back != nil))
+	context.User_alloced_backbuf = int64(boolToInt(*back != nil))
 	if *back == nil {
 		var bytes_per_pixel int64 = (bitdepth + 8 - 1) / 8
-		*back = unsafe.Slice((*U32)(libc.Malloc(int(w*h*bytes_per_pixel))), w*h*bytes_per_pixel)
+		*back = make([]U32, w*h*bytes_per_pixel)
 		if *back == nil {
 			return 0
 		}
 	}
-	context.Zbuf.Buf = make([]u8, w*h*int64(unsafe.Sizeof(float32(0)))) //(*u8)(libc.Malloc(int(w * h * int64(unsafe.Sizeof(float32(0))))))
+	context.Zbuf.Buf = make([]u8, w*h*int64(unsafe.Sizeof(float32(0))))
 	if context.Zbuf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
 			*back = nil
 		}
 		return 0
 	}
-	context.Stencil_buf.Buf = make([]u8, w*h) //(*u8)(libc.Malloc(int(w * h)))
+	context.Stencil_buf.Buf = make([]u8, w*h)
 	if context.Stencil_buf.Buf == nil {
 		if context.User_alloced_backbuf == 0 {
 			*back = nil
@@ -2684,13 +2686,13 @@ func Free_glContext(context *GlContext) {
 	}
 	for i = 0; uint64(i) < uint64(len(context.Buffers)); i++ {
 		if context.Buffers[i].User_owned == 0 {
-			stdio.Printf("freeing buffer %d\n", i)
+			fmt.Printf("freeing buffer %d\n", i)
 			context.Buffers[i].Data = nil
 		}
 	}
 	for i = 0; uint64(i) < uint64(len(context.Textures)); i++ {
 		if (context.Textures[i]).User_owned == 0 {
-			stdio.Printf("freeing texture %d\n", i)
+			fmt.Printf("freeing texture %d\n", i)
 			(context.Textures[i]).Data = nil
 		}
 	}
@@ -2708,13 +2710,13 @@ func Set_glContext(context *GlContext) {
 func GetString(name GLenum) *GLubyte {
 	switch name {
 	case GL_VENDOR:
-		return (*GLubyte)(libc.CString("Robert Winkler"))
+		return &[]GLubyte("Robert Winkler\x00")[0]
 	case GL_RENDERER:
-		return (*GLubyte)(libc.CString("PortableGL"))
+		return &[]GLubyte("PortableGL\x00")[0]
 	case GL_VERSION:
-		return (*GLubyte)(libc.CString("OpenGL 3.x-ish PortableGL 0.94"))
+		return &[]GLubyte("OpenGL 3.x-ish PortableGL 0.94\x00")[0]
 	case GL_SHADING_LANGUAGE_VERSION:
-		return (*GLubyte)(libc.CString("Go"))
+		return &[]GLubyte("Go\x00")[0]
 	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -2911,7 +2913,7 @@ func BufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Poin
 		}
 		return
 	}
-	libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Buffers[c.Bound_buffers[target]]).Data[0]), offset), data, int(size))
+	copy(c.Buffers[c.Bound_buffers[target]].Data[offset:], unsafe.Slice((*u8)(data), size))
 }
 func BindTexture(target GLenum, texture GLuint) {
 	if target < GLenum(GL_TEXTURE_1D) || target >= GLenum(GL_NUM_TEXTURE_TYPES) {
@@ -3059,7 +3061,7 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	(c.Textures[cur_tex]).Data = nil
 	if (func() *u8 {
 		p := &(c.Textures[cur_tex]).Data
-		(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width)*components))), int(int64(width)*components))
+		c.Textures[cur_tex].Data = make([]u8, int64(width)*components)
 		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
@@ -3067,9 +3069,9 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+	var texdata = c.Textures[cur_tex].Data
 	if data != nil {
-		libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*0))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
+		copy(texdata, unsafe.Slice((*u8)(data), uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
 	(c.Textures[cur_tex]).User_owned = GL_FALSE
 }
@@ -3123,7 +3125,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		(c.Textures[cur_tex]).Data = nil
 		if (func() *u8 {
 			p := &(c.Textures[cur_tex]).Data
-			(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(height)*byte_width))), int(int64(height)*byte_width))
+			c.Textures[cur_tex].Data = make([]u8, int64(height)*byte_width)
 			return &(*p)[0]
 		}()) == nil {
 			if c.Error == 0 {
@@ -3133,10 +3135,10 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		if data != nil {
 			if padding_needed == 0 {
-				libc.MemCpy(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]), data, int(int64(height)*byte_width))
+				copy(c.Textures[cur_tex].Data, unsafe.Slice((*u8)(data), int64(height)*byte_width))
 			} else {
 				for i := int64(0); i < int64(height); i++ {
-					libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]), i*byte_width), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+					copy(c.Textures[cur_tex].Data[i*byte_width:], unsafe.Slice((*u8)(unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len)), byte_width))
 				}
 			}
 		}
@@ -3158,7 +3160,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			(c.Textures[cur_tex]).H = uint64(width)
 			if (func() *u8 {
 				p := &(c.Textures[cur_tex]).Data
-				(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(mem_size))), mem_size)
+				c.Textures[cur_tex].Data = make([]u8, mem_size)
 				return &(*p)[0]
 			}()) == nil {
 				if c.Error == 0 {
@@ -3174,13 +3176,13 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = int64(height) * byte_width
-		var texdata *u8 = &(c.Textures[cur_tex]).Data[0]
+		var texdata = (c.Textures[cur_tex]).Data
 		if data != nil {
 			if padding_needed == 0 {
-				libc.MemCpy(unsafe.Add(unsafe.Pointer(texdata), target*GLenum(p)), data, int(int64(height)*byte_width))
+				copy(texdata[target*GLenum(p):], unsafe.Slice((*u8)(data), int64(height)*byte_width))
 			} else {
 				for i := int64(0); i < int64(height); i++ {
-					libc.MemCpy(unsafe.Add(unsafe.Pointer(texdata), target*GLenum(p)+GLenum(i*byte_width)), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+					copy(texdata[target*GLenum(p)+GLenum(i*byte_width):], unsafe.Slice((*u8)(unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len)), byte_width))
 				}
 			}
 		}
@@ -3233,7 +3235,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	(c.Textures[cur_tex]).Data = nil
 	if (func() *u8 {
 		p := &(c.Textures[cur_tex]).Data
-		(c.Textures[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width*height*depth)*components))), int(int64(width*height*depth)*components))
+		c.Textures[cur_tex].Data = make([]u8, int64(width*height*depth)*components)
 		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
@@ -3241,13 +3243,13 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+	var texdata = c.Textures[cur_tex].Data
 	if data != nil {
 		if padding_needed == 0 {
-			libc.MemCpy(unsafe.Pointer(texdata), data, int(uintptr(width*height*depth)*unsafe.Sizeof(U32(0))))
+			copy(texdata, unsafe.Slice((*u8)(data), int(uintptr(width*height*depth)*unsafe.Sizeof(U32(0)))))
 		} else {
 			for i := int64(0); i < int64(height*depth); i++ {
-				libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(i*byte_width)))), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+				copy(texdata[unsafe.Sizeof(U32(0))*uintptr(i*byte_width):], unsafe.Slice((*u8)(unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len)), byte_width))
 			}
 		}
 	}
@@ -3279,8 +3281,8 @@ func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, for
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
-	libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
+	var texdata = (c.Textures[cur_tex]).Data
+	copy(texdata[unsafe.Sizeof(U32(0))*uintptr(xoffset):], unsafe.Slice((*u8)(data), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 }
 func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
@@ -3305,7 +3307,7 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 	var d *U32 = (*U32)(data)
 	if target == GLenum(GL_TEXTURE_2D) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+		var texdata = (c.Textures[cur_tex]).Data
 		if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures[cur_tex]).H {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
@@ -3314,16 +3316,16 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 		}
 		var w int64 = int64((c.Textures[cur_tex]).W)
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
+			copy(texdata[unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset)):], unsafe.Slice((*u8)(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width)))))), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 		}
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+		var texdata = c.Textures[cur_tex].Data
 		var w int64 = int64((c.Textures[cur_tex]).W)
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = w * w
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(p*int64(target)+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
+			copy(texdata[unsafe.Sizeof(U32(0))*uintptr(p*int64(target)+(int64(yoffset)+i)*w+int64(xoffset)):], unsafe.Slice((*u8)(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width)))))), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 		}
 	}
 }
@@ -3357,10 +3359,10 @@ func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zof
 	var h int64 = int64((c.Textures[cur_tex]).H)
 	var p int64 = w * h
 	var d *U32 = (*U32)(data)
-	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures[cur_tex]).Data[0]))
+	var texdata = c.Textures[cur_tex].Data
 	for j := int64(0); j < int64(depth); j++ {
 		for i := int64(0); i < int64(height); i++ {
-			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
+			copy(texdata[(int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset):], unsafe.Slice((*u8)(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width)))))), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 		}
 	}
 }
@@ -3409,7 +3411,11 @@ func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 		buf_pos *u8 = (*u8)(unsafe.Add(unsafe.Pointer((*u8)(unsafe.Add(unsafe.Pointer(&(c.Buffers[v.Buf]).Data[0]), v.Offset))), v.Stride*i))
 		tmpvec4 Vec4
 	)
-	libc.MemCpy(unsafe.Pointer(&tmpvec4), unsafe.Pointer(buf_pos), int(uintptr(v.Size)*unsafe.Sizeof(float32(0))))
+	var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
+	vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
+	for k := GLint(0); k < v.Size; k++ {
+		vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+	}
 	return tmpvec4
 }
 func DrawArrays(mode GLenum, first GLint, count GLsizei) {
@@ -3594,7 +3600,7 @@ func Clear(mask GLbitfield) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
-		stdio.Printf("failed to clear\n")
+		fmt.Printf("failed to clear\n")
 		return
 	}
 	var col Color = c.Clear_color
@@ -4323,7 +4329,7 @@ func wrap(i int64, size int64, mode GLenum) int64 {
 		}
 		return tmp
 	default:
-		libc.Assert(false)
+		panic("shouldn't be here")
 		return 0
 	}
 }

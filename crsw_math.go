@@ -1,10 +1,12 @@
 package pgl
 
 import (
+	"fmt"
 	"github.com/chewxy/math32"
 	"github.com/gotranspile/cxgo/runtime/libc"
-	"github.com/gotranspile/cxgo/runtime/stdio"
+	"io"
 	"math"
+	"os"
 )
 
 type u8 uint8
@@ -60,35 +62,35 @@ func negate_vec4(v Vec4) Vec4 {
 	var r Vec4 = Vec4{X: -v.X, Y: -v.Y, Z: -v.Z, W: -v.W}
 	return r
 }
-func fprint_vec2(f *stdio.File, v vec2, append *byte) {
-	stdio.Fprintf(f, "(%f, %f)%s", v.X, v.Y, append)
+func fprint_vec2(f io.Writer, v vec2, append string) {
+	fmt.Fprintf(f, "(%f, %f)%s", v.X, v.Y, append)
 }
-func fprint_vec3(f *stdio.File, v Vec3, append *byte) {
-	stdio.Fprintf(f, "(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
+func fprint_vec3(f io.Writer, v Vec3, append string) {
+	fmt.Fprintf(f, "(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
 }
-func fprint_vec4(f *stdio.File, v Vec4, append *byte) {
-	stdio.Fprintf(f, "(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
+func fprint_vec4(f io.Writer, v Vec4, append string) {
+	fmt.Fprintf(f, "(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
 }
-func print_vec2(v vec2, append *byte) {
-	stdio.Printf("(%f, %f)%s", v.X, v.Y, append)
+func print_vec2(v vec2, append string) {
+	fmt.Printf("(%f, %f)%s", v.X, v.Y, append)
 }
-func print_vec3(v Vec3, append *byte) {
-	stdio.Printf("(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
+func print_vec3(v Vec3, append string) {
+	fmt.Printf("(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
 }
-func print_vec4(v Vec4, append *byte) {
-	stdio.Printf("(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
+func print_vec4(v Vec4, append string) {
+	fmt.Printf("(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
 }
-func fread_vec2(f *stdio.File, v *vec2) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f)", &v.X, &v.Y))
-	return int64(libc.BoolToInt(tmp == 2))
+func fread_vec2(f io.Reader, v *vec2) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%f, %f)", &v.X, &v.Y)
+	return int64(boolToInt(tmp == 2))
 }
-func fread_vec3(f *stdio.File, v *Vec3) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f, %f)", &v.X, &v.Y, &v.Z))
-	return int64(libc.BoolToInt(tmp == 3))
+func fread_vec3(f io.Reader, v *Vec3) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%f, %f, %f)", &v.X, &v.Y, &v.Z)
+	return int64(boolToInt(tmp == 3))
 }
-func fread_vec4(f *stdio.File, v *Vec4) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%f, %f, %f, %f)", &v.X, &v.Y, &v.Z, &v.W))
-	return int64(libc.BoolToInt(tmp == 4))
+func fread_vec4(f io.Reader, v *Vec4) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%f, %f, %f, %f)", &v.X, &v.Y, &v.Z, &v.W)
+	return int64(boolToInt(tmp == 4))
 }
 
 type dvec2 struct {
@@ -107,26 +109,26 @@ type dvec4 struct {
 	W float64
 }
 
-func fprint_dvec2(f *stdio.File, v dvec2, append *byte) {
-	stdio.Fprintf(f, "(%f, %f)%s", v.X, v.Y, append)
+func fprint_dvec2(f io.Writer, v dvec2, append string) {
+	fmt.Fprintf(f, "(%f, %f)%s", v.X, v.Y, append)
 }
-func fprint_dvec3(f *stdio.File, v dvec3, append *byte) {
-	stdio.Fprintf(f, "(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
+func fprint_dvec3(f io.Writer, v dvec3, append string) {
+	fmt.Fprintf(f, "(%f, %f, %f)%s", v.X, v.Y, v.Z, append)
 }
-func fprint_dvec4(f *stdio.File, v dvec4, append *byte) {
-	stdio.Fprintf(f, "(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
+func fprint_dvec4(f io.Writer, v dvec4, append string) {
+	fmt.Fprintf(f, "(%f, %f, %f, %f)%s", v.X, v.Y, v.Z, v.W, append)
 }
-func fread_dvec2(f *stdio.File, v *dvec2) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%lf, %lf)", &v.X, &v.Y))
-	return int64(libc.BoolToInt(tmp == 2))
+func fread_dvec2(f io.Reader, v *dvec2) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%lf, %lf)", &v.X, &v.Y)
+	return int64(boolToInt(tmp == 2))
 }
-func fread_dvec3(f *stdio.File, v *dvec3) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%lf, %lf, %lf)", &v.X, &v.Y, &v.Z))
-	return int64(libc.BoolToInt(tmp == 3))
+func fread_dvec3(f io.Reader, v *dvec3) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%lf, %lf, %lf)", &v.X, &v.Y, &v.Z)
+	return int64(boolToInt(tmp == 3))
 }
-func fread_dvec4(f *stdio.File, v *dvec4) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%lf, %lf, %lf, %lf)", &v.X, &v.Y, &v.Z, &v.W))
-	return int64(libc.BoolToInt(tmp == 4))
+func fread_dvec4(f io.Reader, v *dvec4) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%lf, %lf, %lf, %lf)", &v.X, &v.Y, &v.Z, &v.W)
+	return int64(boolToInt(tmp == 4))
 }
 
 type ivec2 struct {
@@ -157,26 +159,26 @@ func make_ivec4(x int64, y int64, z int64, w int64) ivec4 {
 	var v ivec4 = ivec4{X: x, Y: y, Z: z, W: w}
 	return v
 }
-func fprint_ivec2(f *stdio.File, v ivec2, append *byte) {
-	stdio.Fprintf(f, "(%d, %d)%s", v.X, v.Y, append)
+func fprint_ivec2(f io.Writer, v ivec2, append string) {
+	fmt.Fprintf(f, "(%d, %d)%s", v.X, v.Y, append)
 }
-func fprint_ivec3(f *stdio.File, v ivec3, append *byte) {
-	stdio.Fprintf(f, "(%d, %d, %d)%s", v.X, v.Y, v.Z, append)
+func fprint_ivec3(f io.Writer, v ivec3, append string) {
+	fmt.Fprintf(f, "(%d, %d, %d)%s", v.X, v.Y, v.Z, append)
 }
-func fprint_ivec4(f *stdio.File, v ivec4, append *byte) {
-	stdio.Fprintf(f, "(%d, %d, %d, %d)%s", v.X, v.Y, v.Z, v.W, append)
+func fprint_ivec4(f io.Writer, v ivec4, append string) {
+	fmt.Fprintf(f, "(%d, %d, %d, %d)%s", v.X, v.Y, v.Z, v.W, append)
 }
-func fread_ivec2(f *stdio.File, v *ivec2) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%d, %d)", &v.X, &v.Y))
-	return int64(libc.BoolToInt(tmp == 2))
+func fread_ivec2(f io.Reader, v *ivec2) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%d, %d)", &v.X, &v.Y)
+	return int64(boolToInt(tmp == 2))
 }
-func fread_ivec3(f *stdio.File, v *ivec3) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%d, %d, %d)", &v.X, &v.Y, &v.Z))
-	return int64(libc.BoolToInt(tmp == 3))
+func fread_ivec3(f io.Reader, v *ivec3) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%d, %d, %d)", &v.X, &v.Y, &v.Z)
+	return int64(boolToInt(tmp == 3))
 }
-func fread_ivec4(f *stdio.File, v *ivec4) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%d, %d, %d, %d)", &v.X, &v.Y, &v.Z, &v.W))
-	return int64(libc.BoolToInt(tmp == 4))
+func fread_ivec4(f io.Reader, v *ivec4) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%d, %d, %d, %d)", &v.X, &v.Y, &v.Z, &v.W)
+	return int64(boolToInt(tmp == 4))
 }
 
 type uvec2 struct {
@@ -195,26 +197,26 @@ type uvec4 struct {
 	W uint64
 }
 
-func fprint_uvec2(f *stdio.File, v uvec2, append *byte) {
-	stdio.Fprintf(f, "(%u, %u)%s", v.X, v.Y, append)
+func fprint_uvec2(f io.Writer, v uvec2, append string) {
+	fmt.Fprintf(f, "(%u, %u)%s", v.X, v.Y, append)
 }
-func fprint_uvec3(f *stdio.File, v uvec3, append *byte) {
-	stdio.Fprintf(f, "(%u, %u, %u)%s", v.X, v.Y, v.Z, append)
+func fprint_uvec3(f io.Writer, v uvec3, append string) {
+	fmt.Fprintf(f, "(%u, %u, %u)%s", v.X, v.Y, v.Z, append)
 }
-func fprint_uvec4(f *stdio.File, v uvec4, append *byte) {
-	stdio.Fprintf(f, "(%u, %u, %u, %u)%s", v.X, v.Y, v.Z, v.W, append)
+func fprint_uvec4(f io.Writer, v uvec4, append string) {
+	fmt.Fprintf(f, "(%u, %u, %u, %u)%s", v.X, v.Y, v.Z, v.W, append)
 }
-func fread_uvec2(f *stdio.File, v *uvec2) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%u, %u)", &v.X, &v.Y))
-	return int64(libc.BoolToInt(tmp == 2))
+func fread_uvec2(f io.Reader, v *uvec2) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%u, %u)", &v.X, &v.Y)
+	return int64(boolToInt(tmp == 2))
 }
-func fread_uvec3(f *stdio.File, v *uvec3) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%u, %u, %u)", &v.X, &v.Y, &v.Z))
-	return int64(libc.BoolToInt(tmp == 3))
+func fread_uvec3(f io.Reader, v *uvec3) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%u, %u, %u)", &v.X, &v.Y, &v.Z)
+	return int64(boolToInt(tmp == 3))
 }
-func fread_uvec4(f *stdio.File, v *uvec4) int64 {
-	var tmp int64 = int64(stdio.Fscanf(f, " (%u, %u, %u, %u)", &v.X, &v.Y, &v.Z, &v.W))
-	return int64(libc.BoolToInt(tmp == 4))
+func fread_uvec4(f io.Reader, v *uvec4) int64 {
+	var tmp, _ = fmt.Fscanf(f, " (%u, %u, %u, %u)", &v.X, &v.Y, &v.Z, &v.W)
+	return int64(boolToInt(tmp == 4))
 }
 func length_vec2(a vec2) float32 {
 	return float32(math.Sqrt(float64(a.X*a.X + a.Y*a.Y)))
@@ -317,22 +319,22 @@ func scale_vec4(a Vec4, s float32) Vec4 {
 	return b
 }
 func equal_vec2s(a vec2, b vec2) int64 {
-	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y))
+	return int64(boolToInt(a.X == b.X && a.Y == b.Y))
 }
 func equal_vec3s(a Vec3, b Vec3) int64 {
-	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z))
+	return int64(boolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z))
 }
 func equal_vec4s(a Vec4, b Vec4) int64 {
-	return int64(libc.BoolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z && a.W == b.W))
+	return int64(boolToInt(a.X == b.X && a.Y == b.Y && a.Z == b.Z && a.W == b.W))
 }
 func equal_epsilon_vec2s(a vec2, b vec2, epsilon float32) int64 {
-	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon)))
+	return int64(boolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon)))
 }
 func equal_epsilon_vec3s(a Vec3, b Vec3, epsilon float32) int64 {
-	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon)))
+	return int64(boolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon)))
 }
 func equal_epsilon_vec4s(a Vec4, b Vec4, epsilon float32) int64 {
-	return int64(libc.BoolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon) && math.Abs(float64(a.W-b.W)) < float64(epsilon)))
+	return int64(boolToInt(math.Abs(float64(a.X-b.X)) < float64(epsilon) && math.Abs(float64(a.Y-b.Y)) < float64(epsilon) && math.Abs(float64(a.Z-b.Z)) < float64(epsilon) && math.Abs(float64(a.W-b.W)) < float64(epsilon)))
 }
 func vec4_to_vec2(a Vec4) vec2 {
 	var v vec2 = vec2{X: a.X, Y: a.Y}
@@ -561,23 +563,23 @@ func setw_mat4v4(m *Mat4, v Vec4) {
 	m[11] = v.Z
 	m[15] = v.W
 }
-func fprint_mat2(f *stdio.File, m mat2, append *byte) {
-	stdio.Fprintf(f, "[(%f, %f)\n (%f, %f)]%s", m[0], m[2], m[1], m[3], append)
+func fprint_mat2(f io.Writer, m mat2, append string) {
+	fmt.Fprintf(f, "[(%f, %f)\n (%f, %f)]%s", m[0], m[2], m[1], m[3], append)
 }
-func fprint_mat3(f *stdio.File, m mat3, append *byte) {
-	stdio.Fprintf(f, "[(%f, %f, %f)\n (%f, %f, %f)\n (%f, %f, %f)]%s", m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8], append)
+func fprint_mat3(f io.Writer, m mat3, append string) {
+	fmt.Fprintf(f, "[(%f, %f, %f)\n (%f, %f, %f)\n (%f, %f, %f)]%s", m[0], m[3], m[6], m[1], m[4], m[7], m[2], m[5], m[8], append)
 }
-func fprint_mat4(f *stdio.File, m Mat4, append *byte) {
-	stdio.Fprintf(f, "[(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)]%s", m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15], append)
+func fprint_mat4(f io.Writer, m Mat4, append string) {
+	fmt.Fprintf(f, "[(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)\n(%f, %f, %f, %f)]%s", m[0], m[4], m[8], m[12], m[1], m[5], m[9], m[13], m[2], m[6], m[10], m[14], m[3], m[7], m[11], m[15], append)
 }
-func print_mat2(m mat2, append *byte) {
-	fprint_mat2(stdio.Stdout(), m, append)
+func print_mat2(m mat2, append string) {
+	fprint_mat2(os.Stdout, m, append)
 }
-func print_mat3(m mat3, append *byte) {
-	fprint_mat3(stdio.Stdout(), m, append)
+func print_mat3(m mat3, append string) {
+	fprint_mat3(os.Stdout, m, append)
 }
-func print_mat4(m Mat4, append *byte) {
-	fprint_mat4(stdio.Stdout(), m, append)
+func print_mat4(m Mat4, append string) {
+	fprint_mat4(os.Stdout, m, append)
 }
 func mult_mat2_vec2(m mat2, v vec2) vec2 {
 	var r vec2
@@ -891,8 +893,8 @@ func make_Color(red u8, green u8, blue u8, alpha u8) Color {
 	var c Color = Color{R: red, G: green, B: blue, A: alpha}
 	return c
 }
-func print_Color(c Color, append *byte) {
-	stdio.Printf("(%d, %d, %d, %d)%s", c.R, c.G, c.B, c.A, append)
+func print_Color(c Color, append string) {
+	fmt.Printf("(%d, %d, %d, %d)%s", c.R, c.G, c.B, c.A, append)
 }
 func vec4_to_Color(v Vec4) Color {
 	var c Color
