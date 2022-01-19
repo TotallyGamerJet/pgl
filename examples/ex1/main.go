@@ -13,9 +13,9 @@ const (
 )
 
 var (
-	Red   = pgl.Vec4{1.0, 0.0, 0.0, 0.0}
-	Green = pgl.Vec4{0.0, 1.0, 0.0, 0.0}
-	Blue  = pgl.Vec4{0.0, 0.0, 1.0, 0.0}
+	Red   = pgl.Vec4{1.0, 0.0, 0.0, 1.0}
+	Green = pgl.Vec4{0.0, 1.0, 0.0, 1.0}
+	Blue  = pgl.Vec4{0.0, 0.0, 1.0, 1.0}
 )
 
 var (
@@ -65,6 +65,8 @@ func main() {
 
 	the_uniforms.mvp_mat = identity
 
+	pgl.ClearColor(0, 0, 0, 1)
+
 	var (
 		e    sdl.Event
 		quit = 0
@@ -104,7 +106,6 @@ func main() {
 			counter = 0
 		}
 
-		pgl.ClearColor(0, 0, 0, 1)
 		pgl.Clear(pgl.GL_COLOR_BUFFER_BIT)
 		pgl.DrawArrays(pgl.GL_TRIANGLES, 0, 3)
 

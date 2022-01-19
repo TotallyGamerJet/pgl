@@ -1,7 +1,7 @@
 /* Package pgl is a cpu implementation of OpenGL 3.3ish written entirely in Go
 
 MIT License
-Copyright (c) 2011-2021 Robert Winkler
+Copyright (c) 2011-2022 Robert Winkler
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 documentation files (the "Software"), to deal in the Software without restriction, including without limitation
 the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
@@ -383,7 +383,7 @@ type glTexture struct {
 	Type       GLenum
 	Deleted    GLboolean
 	User_owned GLboolean
-	Data       *u8
+	Data       []u8
 }
 type glVertex struct {
 	Clip_space   Vec4
@@ -415,7 +415,7 @@ type cvector_glBuffer struct {
 	Capacity uint64
 }
 type cvector_glTexture struct {
-	A        *glTexture
+	A        []glTexture
 	Size     uint64
 	Capacity uint64
 }
@@ -771,47 +771,6 @@ func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 
 var CVEC_glVertex_Array_SZ uint64 = 50
 
-func cvec_glVertex_Array_heap(size uint64, capacity uint64) *cvector_glVertex_Array {
-	var vec *cvector_glVertex_Array
-	if (func() *cvector_glVertex_Array {
-		vec = new(cvector_glVertex_Array)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glVertex_Array_SZ
-	}
-	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_glVertex_Array_heap(vals *glVertex_Array, num uint64) *cvector_glVertex_Array {
-	var vec *cvector_glVertex_Array
-	if (func() *cvector_glVertex_Array {
-		vec = new(cvector_glVertex_Array)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_glVertex_Array_SZ
-	vec.Size = num
-	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	return vec
-}
 func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -819,49 +778,12 @@ func cvec_glVertex_Array(vec *cvector_glVertex_Array, size uint64, capacity uint
 	} else {
 		vec.Capacity = vec.Size + CVEC_glVertex_Array_SZ
 	}
-	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
-		libc.Assert(vec.A != nil)
+	vec.A = make([]glVertex_Array, vec.Capacity)
+	if vec.A == nil {
 		vec.Capacity = 0
 		vec.Size = 0
 		return 0
 	}
-	return 1
-}
-func cvec_init_glVertex_Array(vec *cvector_glVertex_Array, vals *glVertex_Array, num uint64) int64 {
-	vec.Capacity = num + CVEC_glVertex_Array_SZ
-	vec.Size = num
-	if vec.A = make([]glVertex_Array, vec.Capacity); /*(*glVertex_Array)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glVertex_Array{})))))*/ vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	return 1
-}
-func cvec_copyc_glVertex_Array(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_glVertex_Array = (*cvector_glVertex_Array)(dest)
-		vec2 *cvector_glVertex_Array = (*cvector_glVertex_Array)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_glVertex_Array(vec1, vec2)
-}
-func cvec_copy_glVertex_Array(dest *cvector_glVertex_Array, src *cvector_glVertex_Array) int64 {
-	var tmp []glVertex_Array = nil
-	if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glVertex_Array{}))))), src.Capacity); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int64 {
@@ -893,182 +815,15 @@ func cvec_push_glVertex_Array(vec *cvector_glVertex_Array, a glVertex_Array) int
 	}
 	return 1
 }
-func cvec_pop_glVertex_Array(vec *cvector_glVertex_Array) glVertex_Array {
-	return *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_glVertex_Array(vec *cvector_glVertex_Array) *glVertex_Array {
-	return (*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(vec.Size-1)))
-}
-func cvec_extend_glVertex_Array(vec *cvector_glVertex_Array, num uint64) int64 {
-	var (
-		tmp    []glVertex_Array
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glVertex_Array_SZ
-		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a glVertex_Array) int64 {
-	var (
-		tmp    []glVertex_Array
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+1)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a *glVertex_Array, num uint64) int64 {
-	var (
-		tmp    []glVertex_Array
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glVertex_Array_SZ
-		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex_Array{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i+num)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_glVertex_Array(vec *cvector_glVertex_Array, i uint64, a glVertex_Array) glVertex_Array {
-	var tmp glVertex_Array = *(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i)))
-	*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_glVertex_Array(vec *cvector_glVertex_Array, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(start)))), unsafe.Pointer((*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glVertex_Array{}))))
-	vec.Size -= d
-}
-func cvec_reserve_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64 {
-	var tmp []glVertex_Array
-	if vec.Capacity < size {
-		if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glVertex_Array_SZ)*uint64(unsafe.Sizeof(glVertex_Array{}))))), size+CVEC_glVertex_Array_SZ); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = size + CVEC_glVertex_Array_SZ
-	}
-	return 1
-}
-func cvec_set_cap_glVertex_Array(vec *cvector_glVertex_Array, size uint64) int64 {
-	var tmp []glVertex_Array
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if tmp = unsafe.Slice((*glVertex_Array)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glVertex_Array{}))))), size); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_glVertex_Array(vec *cvector_glVertex_Array, val glVertex_Array) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_glVertex_Array(vec *cvector_glVertex_Array, val glVertex_Array) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*glVertex_Array)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex_Array{})*uintptr(i))) = val
-	}
-}
-func cvec_clear_glVertex_Array(vec *cvector_glVertex_Array) {
-	vec.Size = 0
-}
-func cvec_free_glVertex_Array_heap(vec unsafe.Pointer) {
-	var tmp *cvector_glVertex_Array = (*cvector_glVertex_Array)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	libc.Free(unsafe.Pointer(tmp))
-}
 func cvec_free_glVertex_Array(vec unsafe.Pointer) {
 	var tmp *cvector_glVertex_Array = (*cvector_glVertex_Array)(vec)
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
+	tmp.A = nil
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
 
 var CVEC_glBuffer_SZ uint64 = 50
 
-func cvec_glBuffer_heap(size uint64, capacity uint64) *cvector_glBuffer {
-	var vec *cvector_glBuffer
-	if (func() *cvector_glBuffer {
-		vec = new(cvector_glBuffer)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glBuffer_SZ
-	}
-	if vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_glBuffer_heap(vals *glBuffer, num uint64) *cvector_glBuffer {
-	var vec *cvector_glBuffer
-	if (func() *cvector_glBuffer {
-		vec = new(cvector_glBuffer)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_glBuffer_SZ
-	vec.Size = num
-	if vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glBuffer{}))))
-	return vec
-}
 func cvec_glBuffer(vec *cvector_glBuffer, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -1076,8 +831,8 @@ func cvec_glBuffer(vec *cvector_glBuffer, size uint64, capacity uint64) int64 {
 	} else {
 		vec.Capacity = vec.Size + CVEC_glBuffer_SZ
 	}
-	if vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
+	vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity)
+	if vec.A == nil {
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
 			vec.Capacity = 0
@@ -1085,43 +840,6 @@ func cvec_glBuffer(vec *cvector_glBuffer, size uint64, capacity uint64) int64 {
 		}()
 		return 0
 	}
-	return 1
-}
-func cvec_init_glBuffer(vec *cvector_glBuffer, vals *glBuffer, num uint64) int64 {
-	vec.Capacity = num + CVEC_glBuffer_SZ
-	vec.Size = num
-	if vec.A = unsafe.Slice((*glBuffer)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glBuffer{}))))
-	return 1
-}
-func cvec_copyc_glBuffer(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_glBuffer = (*cvector_glBuffer)(dest)
-		vec2 *cvector_glBuffer = (*cvector_glBuffer)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_glBuffer(vec1, vec2)
-}
-func cvec_copy_glBuffer(dest *cvector_glBuffer, src *cvector_glBuffer) int64 {
-	var tmp []glBuffer = nil
-	if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glBuffer{}))))), src.Capacity); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(glBuffer{}))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_glBuffer(vec *cvector_glBuffer, a glBuffer) int64 {
@@ -1145,132 +863,6 @@ func cvec_push_glBuffer(vec *cvector_glBuffer, a glBuffer) int64 {
 	}
 	return 1
 }
-func cvec_pop_glBuffer(vec *cvector_glBuffer) glBuffer {
-	return *(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_glBuffer(vec *cvector_glBuffer) *glBuffer {
-	return (*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(vec.Size-1)))
-}
-func cvec_extend_glBuffer(vec *cvector_glBuffer, num uint64) int64 {
-	var (
-		tmp    []glBuffer
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glBuffer_SZ
-		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glBuffer{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_glBuffer(vec *cvector_glBuffer, i uint64, a glBuffer) int64 {
-	var (
-		tmp    []glBuffer
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i+1)))), unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glBuffer{}))))
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glBuffer{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i+1)))), unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glBuffer{}))))
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_glBuffer(vec *cvector_glBuffer, i uint64, a *glBuffer, num uint64) int64 {
-	var (
-		tmp    []glBuffer
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glBuffer_SZ
-		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glBuffer{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i+num)))), unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glBuffer{}))))
-	libc.MemMove(unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glBuffer{}))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_glBuffer(vec *cvector_glBuffer, i uint64, a glBuffer) glBuffer {
-	var tmp glBuffer = *(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i)))
-	*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_glBuffer(vec *cvector_glBuffer, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(start)))), unsafe.Pointer((*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glBuffer{}))))
-	vec.Size -= d
-}
-func cvec_reserve_glBuffer(vec *cvector_glBuffer, size uint64) int64 {
-	var tmp []glBuffer
-	if vec.Capacity < size {
-		if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glBuffer_SZ)*uint64(unsafe.Sizeof(glBuffer{}))))), size+CVEC_glBuffer_SZ); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = size + CVEC_glBuffer_SZ
-	}
-	return 1
-}
-func cvec_set_cap_glBuffer(vec *cvector_glBuffer, size uint64) int64 {
-	var tmp []glBuffer
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if tmp = unsafe.Slice((*glBuffer)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glBuffer{}))))), size); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_glBuffer(vec *cvector_glBuffer, val glBuffer) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_glBuffer(vec *cvector_glBuffer, val glBuffer) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*glBuffer)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glBuffer{})*uintptr(i))) = val
-	}
-}
-func cvec_clear_glBuffer(vec *cvector_glBuffer) {
-	vec.Size = 0
-}
-func cvec_free_glBuffer_heap(vec unsafe.Pointer) {
-	var tmp *cvector_glBuffer = (*cvector_glBuffer)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	libc.Free(unsafe.Pointer(tmp))
-}
 func cvec_free_glBuffer(vec unsafe.Pointer) {
 	var tmp *cvector_glBuffer = (*cvector_glBuffer)(vec)
 	tmp.A = nil
@@ -1280,55 +872,6 @@ func cvec_free_glBuffer(vec unsafe.Pointer) {
 
 var CVEC_glTexture_SZ uint64 = 50
 
-func cvec_glTexture_heap(size uint64, capacity uint64) *cvector_glTexture {
-	var vec *cvector_glTexture
-	if (func() *cvector_glTexture {
-		vec = new(cvector_glTexture)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glTexture_SZ
-	}
-	if (func() *glTexture {
-		p := &vec.A
-		vec.A = (*glTexture)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glTexture{})))))
-		return *p
-	}()) == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_glTexture_heap(vals *glTexture, num uint64) *cvector_glTexture {
-	var vec *cvector_glTexture
-	if (func() *cvector_glTexture {
-		vec = new(cvector_glTexture)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_glTexture_SZ
-	vec.Size = num
-	if (func() *glTexture {
-		p := &vec.A
-		vec.A = (*glTexture)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glTexture{})))))
-		return *p
-	}()) == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glTexture{}))))
-	return vec
-}
 func cvec_glTexture(vec *cvector_glTexture, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -1336,12 +879,8 @@ func cvec_glTexture(vec *cvector_glTexture, size uint64, capacity uint64) int64 
 	} else {
 		vec.Capacity = vec.Size + CVEC_glTexture_SZ
 	}
-	if (func() *glTexture {
-		p := &vec.A
-		vec.A = (*glTexture)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glTexture{})))))
-		return *p
-	}()) == nil {
-		libc.Assert(vec.A != nil)
+	vec.A = make([]glTexture, vec.Capacity)
+	if vec.A == nil {
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
 			vec.Capacity = 0
@@ -1349,272 +888,44 @@ func cvec_glTexture(vec *cvector_glTexture, size uint64, capacity uint64) int64 
 		}()
 		return 0
 	}
-	return 1
-}
-func cvec_init_glTexture(vec *cvector_glTexture, vals *glTexture, num uint64) int64 {
-	vec.Capacity = num + CVEC_glTexture_SZ
-	vec.Size = num
-	if (func() *glTexture {
-		p := &vec.A
-		vec.A = (*glTexture)(libc.Malloc(int(vec.Capacity * uint64(unsafe.Sizeof(glTexture{})))))
-		return *p
-	}()) == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(vec.A), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glTexture{}))))
-	return 1
-}
-func cvec_copyc_glTexture(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_glTexture = (*cvector_glTexture)(dest)
-		vec2 *cvector_glTexture = (*cvector_glTexture)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_glTexture(vec1, vec2)
-}
-func cvec_copy_glTexture(dest *cvector_glTexture, src *cvector_glTexture) int64 {
-	var tmp *glTexture = nil
-	if (func() *glTexture {
-		tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(dest.A), int(src.Capacity*uint64(unsafe.Sizeof(glTexture{})))))
-		return tmp
-	}()) == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(dest.A), unsafe.Pointer(src.A), int(src.Size*uint64(unsafe.Sizeof(glTexture{}))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_glTexture(vec *cvector_glTexture, a glTexture) int64 {
 	var (
-		tmp    *glTexture
+		tmp    []glTexture
 		tmp_sz uint64
 	)
 	if vec.Capacity > vec.Size {
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(func() uint64 {
+		vec.A[func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
 			return x
-		}()))) = a
+		}()] = a
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *glTexture {
-			tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glTexture{})))))
-			return tmp
-		}()) == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
+		tmp = make([]glTexture, tmp_sz)
+		copy(tmp, vec.A)
 		vec.A = tmp
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(func() uint64 {
+		vec.A[func() uint64 {
 			p := &vec.Size
 			x := *p
 			*p++
 			return x
-		}()))) = a
+		}()] = a
 		vec.Capacity = tmp_sz
 	}
 	return 1
-}
-func cvec_pop_glTexture(vec *cvector_glTexture) glTexture {
-	return *(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_glTexture(vec *cvector_glTexture) *glTexture {
-	return (*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(vec.Size-1)))
-}
-func cvec_extend_glTexture(vec *cvector_glTexture, num uint64) int64 {
-	var (
-		tmp    *glTexture
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glTexture_SZ
-		if (func() *glTexture {
-			tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glTexture{})))))
-			return tmp
-		}()) == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_glTexture(vec *cvector_glTexture, i uint64, a glTexture) int64 {
-	var (
-		tmp    *glTexture
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i+1)))), unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glTexture{}))))
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if (func() *glTexture {
-			tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glTexture{})))))
-			return tmp
-		}()) == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i+1)))), unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glTexture{}))))
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_glTexture(vec *cvector_glTexture, i uint64, a *glTexture, num uint64) int64 {
-	var (
-		tmp    *glTexture
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glTexture_SZ
-		if (func() *glTexture {
-			tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int(tmp_sz*uint64(unsafe.Sizeof(glTexture{})))))
-			return tmp
-		}()) == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i+num)))), unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glTexture{}))))
-	libc.MemMove(unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glTexture{}))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_glTexture(vec *cvector_glTexture, i uint64, a glTexture) glTexture {
-	var tmp glTexture = *(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i)))
-	*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_glTexture(vec *cvector_glTexture, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(start)))), unsafe.Pointer((*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glTexture{}))))
-	vec.Size -= d
-}
-func cvec_reserve_glTexture(vec *cvector_glTexture, size uint64) int64 {
-	var tmp *glTexture
-	if vec.Capacity < size {
-		if (func() *glTexture {
-			tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int((size+CVEC_glTexture_SZ)*uint64(unsafe.Sizeof(glTexture{})))))
-			return tmp
-		}()) == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = size + CVEC_glTexture_SZ
-	}
-	return 1
-}
-func cvec_set_cap_glTexture(vec *cvector_glTexture, size uint64) int64 {
-	var tmp *glTexture
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if (func() *glTexture {
-		tmp = (*glTexture)(libc.Realloc(unsafe.Pointer(vec.A), int(size*uint64(unsafe.Sizeof(glTexture{})))))
-		return tmp
-	}()) == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_glTexture(vec *cvector_glTexture, val glTexture) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_glTexture(vec *cvector_glTexture, val glTexture) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*glTexture)(unsafe.Add(unsafe.Pointer(vec.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = val
-	}
-}
-func cvec_clear_glTexture(vec *cvector_glTexture) {
-	vec.Size = 0
-}
-func cvec_free_glTexture_heap(vec unsafe.Pointer) {
-	var tmp *cvector_glTexture = (*cvector_glTexture)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(tmp.A))
-	libc.Free(unsafe.Pointer(tmp))
 }
 func cvec_free_glTexture(vec unsafe.Pointer) {
 	var tmp *cvector_glTexture = (*cvector_glTexture)(vec)
-	libc.Free(unsafe.Pointer(tmp.A))
+	tmp.A = nil
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
 
 var CVEC_glProgram_SZ uint64 = 50
 
-func cvec_glProgram_heap(size uint64, capacity uint64) *cvector_glProgram {
-	var vec *cvector_glProgram
-	if vec = new(cvector_glProgram); vec == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glProgram_SZ
-	}
-	if vec.A = make([]glProgram, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_glProgram_heap(vals *glProgram, num uint64) *cvector_glProgram {
-	var vec *cvector_glProgram
-	if (func() *cvector_glProgram {
-		vec = new(cvector_glProgram)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_glProgram_SZ
-	vec.Size = num
-	if vec.A = make([]glProgram, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glProgram{}))))
-	return vec
-}
 func cvec_glProgram(vec *cvector_glProgram, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -1622,52 +933,12 @@ func cvec_glProgram(vec *cvector_glProgram, size uint64, capacity uint64) int64 
 	} else {
 		vec.Capacity = vec.Size + CVEC_glProgram_SZ
 	}
-	if vec.A = make([]glProgram, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
+	vec.A = make([]glProgram, vec.Capacity)
+	if vec.A == nil {
+		vec.Capacity = 0
+		vec.Size = 0
 		return 0
 	}
-	return 1
-}
-func cvec_init_glProgram(vec *cvector_glProgram, vals *glProgram, num uint64) int64 {
-	vec.Capacity = num + CVEC_glProgram_SZ
-	vec.Size = num
-	if vec.A = make([]glProgram, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glProgram{}))))
-	return 1
-}
-func cvec_copyc_glProgram(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_glProgram = (*cvector_glProgram)(dest)
-		vec2 *cvector_glProgram = (*cvector_glProgram)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_glProgram(vec1, vec2)
-}
-func cvec_copy_glProgram(dest *cvector_glProgram, src *cvector_glProgram) int64 {
-	var tmp []glProgram = nil
-	if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glProgram{}))))), src.Capacity); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(glProgram{}))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
 	return 1
 }
 func cvec_push_glProgram(vec *cvector_glProgram, a glProgram) int64 {
@@ -1680,10 +951,8 @@ func cvec_push_glProgram(vec *cvector_glProgram, a glProgram) int64 {
 		vec.Size++
 	} else {
 		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
+		tmp = make([]glProgram, tmp_sz)
+		copy(tmp, vec.A)
 		vec.A = tmp
 		vec.A[vec.Size] = a
 		vec.Size++
@@ -1691,182 +960,15 @@ func cvec_push_glProgram(vec *cvector_glProgram, a glProgram) int64 {
 	}
 	return 1
 }
-func cvec_pop_glProgram(vec *cvector_glProgram) glProgram {
-	return *(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_glProgram(vec *cvector_glProgram) *glProgram {
-	return (*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(vec.Size-1)))
-}
-func cvec_extend_glProgram(vec *cvector_glProgram, num uint64) int64 {
-	var (
-		tmp    []glProgram
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glProgram_SZ
-		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_glProgram(vec *cvector_glProgram, i uint64, a glProgram) int64 {
-	var (
-		tmp    []glProgram
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i+1)))), unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glProgram{}))))
-		*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i+1)))), unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glProgram{}))))
-		*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_glProgram(vec *cvector_glProgram, i uint64, a *glProgram, num uint64) int64 {
-	var (
-		tmp    []glProgram
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glProgram_SZ
-		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glProgram{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i+num)))), unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glProgram{}))))
-	libc.MemMove(unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glProgram{}))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_glProgram(vec *cvector_glProgram, i uint64, a glProgram) glProgram {
-	var tmp glProgram = *(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i)))
-	*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_glProgram(vec *cvector_glProgram, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(start)))), unsafe.Pointer((*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glProgram{}))))
-	vec.Size -= d
-}
-func cvec_reserve_glProgram(vec *cvector_glProgram, size uint64) int64 {
-	var tmp []glProgram
-	if vec.Capacity < size {
-		if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_glProgram_SZ)*uint64(unsafe.Sizeof(glProgram{}))))), size+CVEC_glProgram_SZ); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = size + CVEC_glProgram_SZ
-	}
-	return 1
-}
-func cvec_set_cap_glProgram(vec *cvector_glProgram, size uint64) int64 {
-	var tmp []glProgram
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if tmp = unsafe.Slice((*glProgram)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glProgram{}))))), size); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_glProgram(vec *cvector_glProgram, val glProgram) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_glProgram(vec *cvector_glProgram, val glProgram) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*glProgram)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glProgram{})*uintptr(i))) = val
-	}
-}
-func cvec_clear_glProgram(vec *cvector_glProgram) {
-	vec.Size = 0
-}
-func cvec_free_glProgram_heap(vec unsafe.Pointer) {
-	var tmp *cvector_glProgram = (*cvector_glProgram)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	libc.Free(unsafe.Pointer(tmp))
-}
 func cvec_free_glProgram(vec unsafe.Pointer) {
 	var tmp *cvector_glProgram = (*cvector_glProgram)(vec)
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
+	tmp.A = nil
 	tmp.Size = 0
 	tmp.Capacity = 0
 }
 
 var CVEC_glVertex_SZ uint64 = 50
 
-func cvec_glVertex_heap(size uint64, capacity uint64) *cvector_glVertex {
-	var vec *cvector_glVertex
-	if (func() *cvector_glVertex {
-		vec = new(cvector_glVertex)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_glVertex_SZ
-	}
-	if vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_glVertex_heap(vals *glVertex, num uint64) *cvector_glVertex {
-	var vec *cvector_glVertex
-	if (func() *cvector_glVertex {
-		vec = new(cvector_glVertex)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_glVertex_SZ
-	vec.Size = num
-	if vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex{}))))
-	return vec
-}
 func cvec_glVertex(vec *cvector_glVertex, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -1874,8 +976,8 @@ func cvec_glVertex(vec *cvector_glVertex, size uint64, capacity uint64) int64 {
 	} else {
 		vec.Capacity = vec.Size + CVEC_glVertex_SZ
 	}
-	if vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
+	vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity)
+	if vec.A == nil {
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
 			vec.Capacity = 0
@@ -1884,150 +986,6 @@ func cvec_glVertex(vec *cvector_glVertex, size uint64, capacity uint64) int64 {
 		return 0
 	}
 	return 1
-}
-func cvec_init_glVertex(vec *cvector_glVertex, vals *glVertex, num uint64) int64 {
-	vec.Capacity = num + CVEC_glVertex_SZ
-	vec.Size = num
-	if vec.A = unsafe.Slice((*glVertex)(libc.Malloc(int(vec.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(glVertex{}))))
-	return 1
-}
-func cvec_copyc_glVertex(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_glVertex = (*cvector_glVertex)(dest)
-		vec2 *cvector_glVertex = (*cvector_glVertex)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_glVertex(vec1, vec2)
-}
-func cvec_copy_glVertex(dest *cvector_glVertex, src *cvector_glVertex) int64 {
-	var tmp []glVertex = nil
-	if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(glVertex{}))))), src.Capacity); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(glVertex{}))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
-	return 1
-}
-func cvec_push_glVertex(vec *cvector_glVertex, a glVertex) int64 {
-	var (
-		tmp    []glVertex
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_pop_glVertex(vec *cvector_glVertex) glVertex {
-	return *(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_glVertex(vec *cvector_glVertex) *glVertex {
-	return (*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(vec.Size-1)))
-}
-func cvec_extend_glVertex(vec *cvector_glVertex, num uint64) int64 {
-	var (
-		tmp    []glVertex
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glVertex_SZ
-		if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_glVertex(vec *cvector_glVertex, i uint64, a glVertex) int64 {
-	var (
-		tmp    []glVertex
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i+1)))), unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex{}))))
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i+1)))), unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex{}))))
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_glVertex(vec *cvector_glVertex, i uint64, a *glVertex, num uint64) int64 {
-	var (
-		tmp    []glVertex
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_glVertex_SZ
-		if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(glVertex{}))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i+num)))), unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(glVertex{}))))
-	libc.MemMove(unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(glVertex{}))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_glVertex(vec *cvector_glVertex, i uint64, a glVertex) glVertex {
-	var tmp glVertex = *(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i)))
-	*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_glVertex(vec *cvector_glVertex, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(start)))), unsafe.Pointer((*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(glVertex{}))))
-	vec.Size -= d
 }
 func cvec_reserve_glVertex(vec *cvector_glVertex, size uint64) int64 {
 	var tmp []glVertex
@@ -2041,42 +999,6 @@ func cvec_reserve_glVertex(vec *cvector_glVertex, size uint64) int64 {
 	}
 	return 1
 }
-func cvec_set_cap_glVertex(vec *cvector_glVertex, size uint64) int64 {
-	var tmp []glVertex
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if tmp = unsafe.Slice((*glVertex)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(glVertex{}))))), size); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_glVertex(vec *cvector_glVertex, val glVertex) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_glVertex(vec *cvector_glVertex, val glVertex) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*glVertex)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(glVertex{})*uintptr(i))) = val
-	}
-}
-func cvec_clear_glVertex(vec *cvector_glVertex) {
-	vec.Size = 0
-}
-func cvec_free_glVertex_heap(vec unsafe.Pointer) {
-	var tmp *cvector_glVertex = (*cvector_glVertex)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	libc.Free(unsafe.Pointer(tmp))
-}
 func cvec_free_glVertex(vec unsafe.Pointer) {
 	var tmp *cvector_glVertex = (*cvector_glVertex)(vec)
 	libc.Free(unsafe.Pointer(&tmp.A[0]))
@@ -2086,47 +1008,6 @@ func cvec_free_glVertex(vec unsafe.Pointer) {
 
 var CVEC_float_SZ uint64 = 50
 
-func cvec_float_heap(size uint64, capacity uint64) *cvector_float {
-	var vec *cvector_float
-	if (func() *cvector_float {
-		vec = new(cvector_float)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Size = size
-	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
-		vec.Capacity = capacity
-	} else {
-		vec.Capacity = vec.Size + CVEC_float_SZ
-	}
-	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	return vec
-}
-func cvec_init_float_heap(vals *float32, num uint64) *cvector_float {
-	var vec *cvector_float
-	if (func() *cvector_float {
-		vec = new(cvector_float)
-		return vec
-	}()) == nil {
-		libc.Assert(vec != nil)
-		return nil
-	}
-	vec.Capacity = num + CVEC_float_SZ
-	vec.Size = num
-	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		libc.Free(unsafe.Pointer(vec))
-		return nil
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
-	return vec
-}
 func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
 	vec.Size = size
 	if capacity > vec.Size || vec.Size != 0 && capacity == vec.Size {
@@ -2134,8 +1015,8 @@ func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
 	} else {
 		vec.Capacity = vec.Size + CVEC_float_SZ
 	}
-	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
+	vec.A = make([]float32, vec.Capacity)
+	if vec.A == nil {
 		vec.Size = func() uint64 {
 			p := &vec.Capacity
 			vec.Capacity = 0
@@ -2144,198 +1025,16 @@ func cvec_float(vec *cvector_float, size uint64, capacity uint64) int64 {
 		return 0
 	}
 	return 1
-}
-func cvec_init_float(vec *cvector_float, vals *float32, num uint64) int64 {
-	vec.Capacity = num + CVEC_float_SZ
-	vec.Size = num
-	if vec.A = make([]float32, vec.Capacity); vec.A == nil {
-		libc.Assert(vec.A != nil)
-		vec.Size = func() uint64 {
-			p := &vec.Capacity
-			vec.Capacity = 0
-			return *p
-		}()
-		return 0
-	}
-	libc.MemMove(unsafe.Pointer(&vec.A[0]), unsafe.Pointer(vals), int(num*uint64(unsafe.Sizeof(float32(0)))))
-	return 1
-}
-func cvec_copyc_float(dest unsafe.Pointer, src unsafe.Pointer) int64 {
-	var (
-		vec1 *cvector_float = (*cvector_float)(dest)
-		vec2 *cvector_float = (*cvector_float)(src)
-	)
-	vec1.A = nil
-	vec1.Size = 0
-	vec1.Capacity = 0
-	return cvec_copy_float(vec1, vec2)
-}
-func cvec_copy_float(dest *cvector_float, src *cvector_float) int64 {
-	var tmp []float32 = nil
-	if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&dest.A[0]), int(src.Capacity*uint64(unsafe.Sizeof(float32(0)))))), src.Capacity); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	dest.A = tmp
-	libc.MemMove(unsafe.Pointer(&dest.A[0]), unsafe.Pointer(&src.A[0]), int(src.Size*uint64(unsafe.Sizeof(float32(0)))))
-	dest.Size = src.Size
-	dest.Capacity = src.Capacity
-	return 1
-}
-func cvec_push_float(vec *cvector_float, a float32) int64 {
-	var (
-		tmp    []float32
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), vec.Capacity); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
-			p := &vec.Size
-			x := *p
-			*p++
-			return x
-		}()))) = a
-		vec.Capacity = tmp_sz
-	}
-	return 1
-}
-func cvec_pop_float(vec *cvector_float) float32 {
-	return *(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(func() uint64 {
-		p := &vec.Size
-		*p--
-		return *p
-	}())))
-}
-func cvec_back_float(vec *cvector_float) *float32 {
-	return (*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(vec.Size-1)))
-}
-func cvec_extend_float(vec *cvector_float, num uint64) int64 {
-	var (
-		tmp    []float32
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_float_SZ
-		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	vec.Size += num
-	return 1
-}
-func cvec_insert_float(vec *cvector_float, i uint64, a float32) int64 {
-	var (
-		tmp    []float32
-		tmp_sz uint64
-	)
-	if vec.Capacity > vec.Size {
-		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
-	} else {
-		tmp_sz = (vec.Capacity + 1) * 2
-		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+1)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
-		vec.Capacity = tmp_sz
-	}
-	vec.Size++
-	return 1
-}
-func cvec_insert_array_float(vec *cvector_float, i uint64, a *float32, num uint64) int64 {
-	var (
-		tmp    []float32
-		tmp_sz uint64
-	)
-	if vec.Capacity < vec.Size+num {
-		tmp_sz = vec.Capacity + num + CVEC_float_SZ
-		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(tmp_sz*uint64(unsafe.Sizeof(float32(0)))))), tmp_sz); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
-		vec.A = tmp
-		vec.Capacity = tmp_sz
-	}
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i+num)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), int((vec.Size-i)*uint64(unsafe.Sizeof(float32(0)))))
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))), unsafe.Pointer(a), int(num*uint64(unsafe.Sizeof(float32(0)))))
-	vec.Size += num
-	return 1
-}
-func cvec_replace_float(vec *cvector_float, i uint64, a float32) float32 {
-	var tmp float32 = *(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i)))
-	*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = a
-	return tmp
-}
-func cvec_erase_float(vec *cvector_float, start uint64, end uint64) {
-	var d uint64 = end - start + 1
-	libc.MemMove(unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(start)))), unsafe.Pointer((*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(end+1)))), int((vec.Size-1-end)*uint64(unsafe.Sizeof(float32(0)))))
-	vec.Size -= d
 }
 func cvec_reserve_float(vec *cvector_float, size uint64) int64 {
 	var tmp []float32
 	if vec.Capacity < size {
-		if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int((size+CVEC_float_SZ)*uint64(unsafe.Sizeof(float32(0)))))), size+CVEC_float_SZ); tmp == nil {
-			libc.Assert(tmp != nil)
-			return 0
-		}
+		tmp = make([]float32, size+CVEC_float_SZ)
+		copy(tmp, vec.A)
 		vec.A = tmp
 		vec.Capacity = size + CVEC_float_SZ
 	}
 	return 1
-}
-func cvec_set_cap_float(vec *cvector_float, size uint64) int64 {
-	var tmp []float32
-	if size < vec.Size {
-		vec.Size = size
-	}
-	if tmp = unsafe.Slice((*float32)(libc.Realloc(unsafe.Pointer(&vec.A[0]), int(size*uint64(unsafe.Sizeof(float32(0)))))), size); tmp == nil {
-		libc.Assert(tmp != nil)
-		return 0
-	}
-	vec.A = tmp
-	vec.Capacity = size
-	return 1
-}
-func cvec_set_val_sz_float(vec *cvector_float, val float32) {
-	var i uint64
-	for i = 0; i < vec.Size; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = val
-	}
-}
-func cvec_set_val_cap_float(vec *cvector_float, val float32) {
-	var i uint64
-	for i = 0; i < vec.Capacity; i++ {
-		*(*float32)(unsafe.Add(unsafe.Pointer(&vec.A[0]), unsafe.Sizeof(float32(0))*uintptr(i))) = val
-	}
-}
-func cvec_clear_float(vec *cvector_float) {
-	vec.Size = 0
-}
-func cvec_free_float_heap(vec unsafe.Pointer) {
-	var tmp *cvector_float = (*cvector_float)(vec)
-	if tmp == nil {
-		return
-	}
-	libc.Free(unsafe.Pointer(&tmp.A[0]))
-	libc.Free(unsafe.Pointer(tmp))
 }
 func cvec_free_float(vec unsafe.Pointer) {
 	var tmp *cvector_float = (*cvector_float)(vec)
@@ -4071,7 +2770,7 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 	if c.Logic_ops != 0 {
 		src_color = logic_ops_pixel(src_color, dest_color)
 	}
-	*dest = U32(int32(int64(src_color.A)<<c.Ashift | int64(src_color.R)<<c.Rshift | int64(src_color.G)<<c.Gshift | int64(src_color.B)<<c.Bshift))
+	*dest = U32(src_color.A)<<c.Ashift | U32(src_color.R)<<c.Rshift | U32(src_color.G)<<c.Gshift | U32(src_color.B)<<c.Bshift
 }
 func is_valid(target GLenum, error GLenum, n int64, _rest ...interface{}) int64 {
 	var argptr libc.ArgList
@@ -4280,9 +2979,9 @@ func Free_glContext(context *GlContext) {
 		}
 	}
 	for i = 0; uint64(i) < context.Textures.Size; i++ {
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(context.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i)))).User_owned == 0 {
+		if (context.Textures.A[i]).User_owned == 0 {
 			stdio.Printf("freeing texture %d\n", i)
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(context.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i)))).Data))
+			(context.Textures.A[i]).Data = nil
 		}
 	}
 	cvec_free_glVertex_Array(unsafe.Pointer(&context.Vertex_arrays))
@@ -4343,8 +3042,7 @@ func DeleteVertexArrays(n GLsizei, arrays *GLuint) {
 			continue
 		}
 		if a[i] == c.Cur_vertex_array {
-			//TODO check if memcpy isn't enough
-			libc.MemCpy(unsafe.Pointer(&c.Vertex_arrays.A[0]), unsafe.Pointer(&c.Vertex_arrays.A[a[i]]), int(unsafe.Sizeof(glVertex_Array{})))
+			c.Vertex_arrays.A[0] = c.Vertex_arrays.A[a[i]]
 			c.Cur_vertex_array = 0
 		}
 		c.Vertex_arrays.A[a[i]].Deleted = GL_TRUE
@@ -4403,8 +3101,8 @@ func GenTextures(n GLsizei, textures *GLuint) {
 	tmp.D = 0
 	n--
 	for i := int64(0); uint64(i) < c.Textures.Size && n >= 0; i++ {
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i)))).Deleted != 0 {
-			*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(i))) = tmp
+		if (c.Textures.A[i]).Deleted != 0 {
+			c.Textures.A[i] = tmp
 			t[n] = GLuint(int32(i))
 			n--
 		}
@@ -4421,15 +3119,14 @@ func DeleteTextures(n GLsizei, textures *GLuint) {
 		if t[i] == 0 || uint64(t[i]) >= c.Textures.Size {
 			continue
 		}
-		type_ = (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Type
+		type_ = (c.Textures.A[t[i]]).Type
 		if t[i] == c.Bound_textures[type_] {
 			c.Bound_textures[type_] = 0
 		}
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).User_owned == 0 {
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Data))
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Data = nil
+		if (c.Textures.A[t[i]]).User_owned == 0 {
+			(c.Textures.A[t[i]]).Data = nil
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(t[i])))).Deleted = GL_TRUE
+		(c.Textures.A[t[i]]).Deleted = GL_TRUE
 	}
 }
 func BindVertexArray(array GLuint) {
@@ -4514,11 +3211,11 @@ func BindTexture(target GLenum, texture GLuint) {
 		return
 	}
 	target -= GLenum(GL_TEXTURE_UNBOUND + 1)
-	if uint64(texture) < c.Textures.Size && (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Deleted == 0 {
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Type == GLenum(GL_TEXTURE_UNBOUND) {
+	if uint64(texture) < c.Textures.Size && (c.Textures.A[texture]).Deleted == 0 {
+		if (c.Textures.A[texture]).Type == GLenum(GL_TEXTURE_UNBOUND) {
 			c.Bound_textures[target] = texture
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Type = target
-		} else if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Type == target {
+			(c.Textures.A[texture]).Type = target
+		} else if (c.Textures.A[texture]).Type == target {
 			c.Bound_textures[target] = texture
 		} else if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_OPERATION)
@@ -4554,7 +3251,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 		if int64(param) == GL_LINEAR_MIPMAP_NEAREST || int64(param) == GL_LINEAR_MIPMAP_LINEAR {
 			param = GLint(GL_LINEAR)
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Min_filter = GLenum(param)
+		(c.Textures.A[c.Bound_textures[target]]).Min_filter = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_MAG_FILTER) {
 		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR {
 			if c.Error == 0 {
@@ -4562,7 +3259,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Mag_filter = GLenum(param)
+		(c.Textures.A[c.Bound_textures[target]]).Mag_filter = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_S) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -4570,7 +3267,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Wrap_s = GLenum(param)
+		(c.Textures.A[c.Bound_textures[target]]).Wrap_s = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_T) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -4578,7 +3275,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Wrap_t = GLenum(param)
+		(c.Textures.A[c.Bound_textures[target]]).Wrap_t = GLenum(param)
 	} else if pname == GLenum(GL_TEXTURE_WRAP_R) {
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
@@ -4586,7 +3283,7 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 			}
 			return
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(c.Bound_textures[target])))).Wrap_r = GLenum(param)
+		(c.Textures.A[c.Bound_textures[target]]).Wrap_r = GLenum(param)
 	}
 }
 func PixelStorei(pname GLenum, param GLint) {
@@ -4630,7 +3327,7 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
+	(c.Textures.A[cur_tex]).W = uint64(width)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -4649,22 +3346,22 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		return
 	}
-	libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	(c.Textures.A[cur_tex]).Data = nil
 	if (func() *u8 {
-		p := &(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(libc.Malloc(int(int64(width) * components)))
-		return *p
+		p := &(c.Textures.A[cur_tex]).Data
+		(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width)*components))), int(int64(width)*components))
+		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
 	if data != nil {
 		libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*0))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
+	(c.Textures.A[cur_tex]).User_owned = GL_FALSE
 }
 func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
@@ -4711,13 +3408,13 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	}
 	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-		libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+		(c.Textures.A[cur_tex]).W = uint64(width)
+		(c.Textures.A[cur_tex]).H = uint64(height)
+		(c.Textures.A[cur_tex]).Data = nil
 		if (func() *u8 {
-			p := &(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(libc.Malloc(int(int64(height) * byte_width)))
-			return *p
+			p := &(c.Textures.A[cur_tex]).Data
+			(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(height)*byte_width))), int(int64(height)*byte_width))
+			return &(*p)[0]
 		}()) == nil {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -4726,18 +3423,18 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		if data != nil {
 			if padding_needed == 0 {
-				libc.MemCpy(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data), data, int(int64(height)*byte_width))
+				libc.MemCpy(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]), data, int(int64(height)*byte_width))
 			} else {
 				for i := int64(0); i < int64(height); i++ {
-					libc.MemCpy(unsafe.Add(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data), i*byte_width), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
+					libc.MemCpy(unsafe.Add(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]), i*byte_width), unsafe.Add(unsafe.Pointer((*u8)(data)), i*padded_row_len), int(byte_width))
 				}
 			}
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
+		(c.Textures.A[cur_tex]).User_owned = GL_FALSE
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W == 0 {
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+		if (c.Textures.A[cur_tex]).W == 0 {
+			(c.Textures.A[cur_tex]).Data = nil
 		}
 		if width != height {
 			if c.Error == 0 {
@@ -4746,20 +3443,20 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			return
 		}
 		var mem_size int64 = int64(width*height*6) * components
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W == 0 {
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-			(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(width)
+		if (c.Textures.A[cur_tex]).W == 0 {
+			(c.Textures.A[cur_tex]).W = uint64(width)
+			(c.Textures.A[cur_tex]).H = uint64(width)
 			if (func() *u8 {
-				p := &(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data
-				(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(libc.Malloc(int(mem_size)))
-				return *p
+				p := &(c.Textures.A[cur_tex]).Data
+				(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(mem_size))), mem_size)
+				return &(*p)[0]
 			}()) == nil {
 				if c.Error == 0 {
 					c.Error = GLenum(GL_OUT_OF_MEMORY)
 				}
 				return
 			}
-		} else if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W != uint64(width) {
+		} else if (c.Textures.A[cur_tex]).W != uint64(width) {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
 			}
@@ -4767,7 +3464,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		}
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = int64(height) * byte_width
-		var texdata *u8 = (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data
+		var texdata *u8 = &(c.Textures.A[cur_tex]).Data[0]
 		if data != nil {
 			if padding_needed == 0 {
 				libc.MemCpy(unsafe.Add(unsafe.Pointer(texdata), target*GLenum(p)), data, int(int64(height)*byte_width))
@@ -4777,7 +3474,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 			}
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
+		(c.Textures.A[cur_tex]).User_owned = GL_FALSE
 	}
 }
 func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -4794,9 +3491,9 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).D = uint64(depth)
+	(c.Textures.A[cur_tex]).W = uint64(width)
+	(c.Textures.A[cur_tex]).H = uint64(height)
+	(c.Textures.A[cur_tex]).D = uint64(depth)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -4823,18 +3520,18 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	} else {
 		padded_row_len = byte_width + int64(c.Unpack_alignment) - padding_needed
 	}
-	libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	(c.Textures.A[cur_tex]).Data = nil
 	if (func() *u8 {
-		p := &(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(libc.Malloc(int(int64(width*height*depth) * components)))
-		return *p
+		p := &(c.Textures.A[cur_tex]).Data
+		(c.Textures.A[cur_tex]).Data = unsafe.Slice((*u8)(libc.Malloc(int(int64(width*height*depth)*components))), int(int64(width*height*depth)*components))
+		return &(*p)[0]
 	}()) == nil {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
 	if data != nil {
 		if padding_needed == 0 {
 			libc.MemCpy(unsafe.Pointer(texdata), data, int(uintptr(width*height*depth)*unsafe.Sizeof(U32(0))))
@@ -4844,7 +3541,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			}
 		}
 	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_FALSE
+	(c.Textures.A[cur_tex]).User_owned = GL_FALSE
 }
 func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_1D) {
@@ -4866,13 +3563,13 @@ func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, for
 		}
 		return
 	}
-	if xoffset < 0 || uint64(xoffset+GLint(width)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W {
+	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
 	libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr(xoffset)))), data, int(uintptr(width)*unsafe.Sizeof(U32(0))))
 }
 func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -4898,21 +3595,21 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 	var d *U32 = (*U32)(data)
 	if target == GLenum(GL_TEXTURE_2D) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-		if xoffset < 0 || uint64(xoffset+GLint(width)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H {
+		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+		if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures.A[cur_tex]).H {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_VALUE)
 			}
 			return
 		}
-		var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
+		var w int64 = int64((c.Textures.A[cur_tex]).W)
 		for i := int64(0); i < int64(height); i++ {
 			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
 		}
 	} else {
 		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
-		var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
-		var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
+		var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
+		var w int64 = int64((c.Textures.A[cur_tex]).W)
 		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = w * w
 		for i := int64(0); i < int64(height); i++ {
@@ -4940,17 +3637,17 @@ func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zof
 		}
 		return
 	}
-	if xoffset < 0 || uint64(xoffset+GLint(width)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H || zoffset < 0 || uint64(zoffset+GLint(depth)) > (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).D {
+	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures.A[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures.A[cur_tex]).H || zoffset < 0 || uint64(zoffset+GLint(depth)) > (c.Textures.A[cur_tex]).D {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
 		return
 	}
-	var w int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W)
-	var h int64 = int64((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H)
+	var w int64 = int64((c.Textures.A[cur_tex]).W)
+	var h int64 = int64((c.Textures.A[cur_tex]).H)
 	var p int64 = w * h
 	var d *U32 = (*U32)(data)
-	var texdata *U32 = (*U32)(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	var texdata *U32 = (*U32)(unsafe.Pointer(&(c.Textures.A[cur_tex]).Data[0]))
 	for j := int64(0); j < int64(depth); j++ {
 		for i := int64(0); i < int64(height); i++ {
 			libc.MemCpy(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(U32(0))*uintptr((int64(zoffset)+j)*p+(int64(yoffset)+i)*w+int64(xoffset))))), unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(j*int64(width)*int64(height)+i*int64(width))))), int(uintptr(width)*unsafe.Sizeof(U32(0))))
@@ -5194,12 +3891,12 @@ func Clear(mask GLbitfield) {
 	if mask&GLbitfield(GL_COLOR_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Back_buffer.W*c.Back_buffer.H; i++ {
-				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Buf[0]))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Buf[0]))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(col.A)<<c.Ashift | U32(col.R)<<c.Rshift | U32(col.G)<<c.Gshift | U32(col.B)<<c.Bshift
 			}
 		} else {
 			for y := int64(int64(c.Scissor_ly)); y < int64(c.Scissor_uy); y++ {
 				for x := int64(int64(c.Scissor_lx)); x < int64(c.Scissor_ux); x++ {
-					*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = U32(int32(int64(col.A)<<c.Ashift | int64(col.R)<<c.Rshift | int64(col.G)<<c.Gshift | int64(col.B)<<c.Bshift))
+					*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Lastrow[0]))), unsafe.Sizeof(U32(0))*uintptr(uint64(-y)*c.Back_buffer.W+uint64(x)))) = U32(col.A)<<c.Ashift | U32(col.R)<<c.Rshift | U32(col.G)<<c.Gshift | U32(col.B)<<c.Bshift
 				}
 			}
 		}
@@ -5920,8 +4617,8 @@ func texture1D(tex GLuint, x float32) Vec4 {
 	var (
 		i0      int64
 		i1      int64
-		t       *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(tex)))
-		texdata *Color     = (*Color)(unsafe.Pointer(t.Data))
+		t       *glTexture = &c.Textures.A[tex]
+		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       float64    = float64(t.W) - EPSILON
 		xw      float64    = float64(x) * w
 	)
@@ -5950,8 +4647,8 @@ func texture2D(tex GLuint, x float32, y float32) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(tex)))
-		texdata *Color     = (*Color)(unsafe.Pointer(t.Data))
+		t       *glTexture = &c.Textures.A[tex]
+		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
 		dw      float64    = float64(w) - EPSILON
@@ -5999,8 +4696,8 @@ func texture3D(tex GLuint, x float32, y float32, z float32) Vec4 {
 		j1      int64
 		k0      int64
 		k1      int64
-		t       *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(tex)))
-		texdata *Color     = (*Color)(unsafe.Pointer(t.Data))
+		t       *glTexture = &c.Textures.A[tex]
+		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		dw      float64    = float64(t.W) - EPSILON
 		dh      float64    = float64(t.H) - EPSILON
 		dd      float64    = float64(t.D) - EPSILON
@@ -6069,8 +4766,8 @@ func texture2DArray(tex GLuint, x float32, y float32, z int64) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(tex)))
-		texdata *Color     = (*Color)(unsafe.Pointer(t.Data))
+		t       *glTexture = &c.Textures.A[tex]
+		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
 		dw      float64    = float64(w) - EPSILON
@@ -6117,8 +4814,8 @@ func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 		j0      int64
 		i1      int64
 		j1      int64
-		t       *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(tex)))
-		texdata *Color     = (*Color)(unsafe.Pointer(t.Data))
+		t       *glTexture = &c.Textures.A[tex]
+		texdata *Color     = (*Color)(unsafe.Pointer(&t.Data[0]))
 		w       int64      = int64(t.W)
 		h       int64      = int64(t.H)
 		xw      float64    = float64(x)
@@ -6158,8 +4855,8 @@ func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 }
 func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 	var (
-		tex     *glTexture = (*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))
-		texdata *Color     = (*Color)(unsafe.Pointer(tex.Data))
+		tex     *glTexture = &c.Textures.A[texture]
+		texdata *Color     = (*Color)(unsafe.Pointer(&tex.Data[0]))
 		x_mag   float32
 	)
 	if x < 0 {

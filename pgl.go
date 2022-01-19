@@ -1,7 +1,6 @@
 package pgl
 
 import (
-	"github.com/gotranspile/cxgo/runtime/libc"
 	"math"
 	"unsafe"
 )
@@ -34,7 +33,8 @@ func SetUniform(uniform interface{}) {
 
 func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	var tmp []u8
-	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Zbuf.Buf[0]), int(w*h*uint64(unsafe.Sizeof(float32(0)))))), int(w*h*uint64(unsafe.Sizeof(float32(0)))))
+	tmp = make([]u8, w*h*uint64(unsafe.Sizeof(float32(0))))
+	copy(tmp, c.Zbuf.Buf)
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -45,7 +45,8 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 	c.Zbuf.W = w
 	c.Zbuf.H = h
 	c.Zbuf.Lastrow = c.Zbuf.Buf[(h-1)*w*uint64(unsafe.Sizeof(float32(0))):] //(*u8)(unsafe.Add(unsafe.Pointer(&c.Zbuf.Buf[0]), (h-1)*w*uint64(unsafe.Sizeof(float32(0)))))
-	tmp = unsafe.Slice((*u8)(libc.Realloc(unsafe.Pointer(&c.Back_buffer.Buf[0]), int(w*h*uint64(unsafe.Sizeof(U32(0)))))), int(w*h*uint64(unsafe.Sizeof(U32(0)))))
+	tmp = make([]u8, w*h*uint64(unsafe.Sizeof(U32(0))))
+	copy(tmp, c.Back_buffer.Buf)
 	if tmp == nil {
 		if c.Error == GLenum(GL_NO_ERROR) {
 			c.Error = GLenum(GL_OUT_OF_MEMORY)
@@ -60,7 +61,9 @@ func pglResizeFramebuffer(w uint64, h uint64) unsafe.Pointer {
 }
 
 func pglClearScreen() {
-	libc.MemSet(unsafe.Pointer(&c.Back_buffer.Buf[0]), math.MaxUint8, int(c.Back_buffer.W*c.Back_buffer.H*4))
+	for i := range c.Back_buffer.Buf {
+		c.Back_buffer.Buf[i] = math.MaxUint8
+	}
 }
 
 func pglSetInterp(interpolation []GLenum) {
@@ -87,7 +90,7 @@ func pglDrawFrame() {
 	}
 }
 
-func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
+func pglBufferData(target GLenum, size GLsizei, data []u8, usage GLenum) {
 	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
@@ -110,7 +113,7 @@ func pglBufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenu
 	if (c.Buffers.A[c.Bound_buffers[target]]).User_owned == 0 {
 		c.Buffers.A[c.Bound_buffers[target]].Data = nil
 	}
-	(c.Buffers.A[c.Bound_buffers[target]]).Data = unsafe.Slice((*u8)(data), size)
+	(c.Buffers.A[c.Bound_buffers[target]]).Data = data
 	(c.Buffers.A[c.Bound_buffers[target]]).User_owned = GL_TRUE
 	(c.Buffers.A[c.Bound_buffers[target]]).Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
@@ -138,7 +141,7 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
+	c.Textures.A[cur_tex].W = uint64(width)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -158,11 +161,11 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		}
 		return
 	}
-	if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-		libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	if c.Textures.A[cur_tex].User_owned == 0 {
+		c.Textures.A[cur_tex].Data = nil
 	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
+	c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width)
+	c.Textures.A[cur_tex].User_owned = GL_TRUE
 }
 
 func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -209,13 +212,13 @@ func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	var cur_tex int64
 	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-		if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-			libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+		c.Textures.A[cur_tex].W = uint64(width)
+		c.Textures.A[cur_tex].H = uint64(height)
+		if c.Textures.A[cur_tex].User_owned == 0 {
+			c.Textures.A[cur_tex].Data = nil
 		}
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-		(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
+		c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width*height)
+		c.Textures.A[cur_tex].User_owned = GL_TRUE
 	} else {
 	}
 }
@@ -240,9 +243,9 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).W = uint64(width)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).H = uint64(height)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).D = uint64(depth)
+	c.Textures.A[cur_tex].W = uint64(width)
+	c.Textures.A[cur_tex].H = uint64(height)
+	c.Textures.A[cur_tex].D = uint64(depth)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
@@ -262,11 +265,11 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		}
 		return
 	}
-	if (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned == 0 {
-		libc.Free(unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data))
+	if c.Textures.A[cur_tex].User_owned == 0 {
+		c.Textures.A[cur_tex].Data = nil
 	}
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).Data = (*u8)(data)
-	(*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(cur_tex)))).User_owned = GL_TRUE
+	c.Textures.A[cur_tex].Data = unsafe.Slice((*u8)(data), width*height*depth)
+	c.Textures.A[cur_tex].User_owned = GL_TRUE
 }
 
 func pglGetBufferData(buffer GLuint, data *unsafe.Pointer) {
@@ -290,8 +293,8 @@ func pglGetTextureData(texture GLuint, data *unsafe.Pointer) {
 		}
 		return
 	}
-	if uint64(texture) < c.Textures.Size && (*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Deleted == 0 {
-		*data = unsafe.Pointer((*(*glTexture)(unsafe.Add(unsafe.Pointer(c.Textures.A), unsafe.Sizeof(glTexture{})*uintptr(texture)))).Data)
+	if uint64(texture) < c.Textures.Size && c.Textures.A[texture].Deleted == 0 {
+		*data = unsafe.Pointer(&c.Textures.A[texture].Data[0])
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 	}

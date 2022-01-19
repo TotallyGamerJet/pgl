@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/totallygamerjet/pgl"
 	"github.com/veandco/go-sdl2/sdl"
 	"math"
 	"os"
-	"pgl"
 	"unsafe"
 )
 

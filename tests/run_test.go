@@ -14,6 +14,7 @@ var test_suite = map[string]func(t *testing.T){
 	"hello_indexing":      hello_indexing,
 	"hello_interpolation": hello_interpolation,
 	"blend_test":          blend_test,
+	"stencil_test":        stencil_test,
 	//	{ "stencil_test", stencil_test },
 	//	{ "primitives_test", primitives_test },
 	//	{ "zbuf_depthoff", zbuf_test },

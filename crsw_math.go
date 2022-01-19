@@ -1,10 +1,10 @@
 package pgl
 
 import (
+	"github.com/chewxy/math32"
 	"github.com/gotranspile/cxgo/runtime/libc"
 	"github.com/gotranspile/cxgo/runtime/stdio"
 	"math"
-	"maze.io/x/math32"
 )
 
 type u8 uint8
@@ -611,7 +611,7 @@ func scale_mat3(m *mat3, x float32, y float32, z float32) {
 	m[5] = 0
 	m[8] = z
 }
-func scale_mat4(m *Mat4, x float32, y float32, z float32) {
+func Scale_mat4(m *Mat4, x float32, y float32, z float32) {
 	m[0] = x
 	m[4] = 0
 	m[8] = 0
