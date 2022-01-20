@@ -793,9 +793,18 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 		tmpvec4.Z = 0.0
 		tmpvec4.W = 1.0
 		var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
-		vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
-		for k := GLint(0); k < v[enabled[j]].Size; k++ {
-			vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+		switch v[enabled[j]].Size {
+		case 4:
+			tmpvec4.W = math.Float32frombits(binary.LittleEndian.Uint32(b[12:]))
+			fallthrough
+		case 3:
+			tmpvec4.Z = math.Float32frombits(binary.LittleEndian.Uint32(b[8:]))
+			fallthrough
+		case 2:
+			tmpvec4.Y = math.Float32frombits(binary.LittleEndian.Uint32(b[4:]))
+			fallthrough
+		case 1:
+			tmpvec4.X = math.Float32frombits(binary.LittleEndian.Uint32(b))
 		}
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
@@ -833,9 +842,18 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				tmpvec4.Z = 0.0
 				tmpvec4.W = 1.0
 				var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
-				vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
-				for k := GLint(0); k < v[enabled[j]].Size; k++ {
-					vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+				switch v[enabled[j]].Size {
+				case 4:
+					tmpvec4.W = math.Float32frombits(binary.LittleEndian.Uint32(b[12:]))
+					fallthrough
+				case 3:
+					tmpvec4.Z = math.Float32frombits(binary.LittleEndian.Uint32(b[8:]))
+					fallthrough
+				case 2:
+					tmpvec4.Y = math.Float32frombits(binary.LittleEndian.Uint32(b[4:]))
+					fallthrough
+				case 1:
+					tmpvec4.X = math.Float32frombits(binary.LittleEndian.Uint32(b))
 				}
 				c.Vertex_attribs_vs[i] = tmpvec4
 			}
@@ -3412,9 +3430,18 @@ func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 		tmpvec4 Vec4
 	)
 	var b = *(*[]byte)(unsafe.Pointer(&buf_pos))
-	vecSlice := unsafe.Slice((*float32)(unsafe.Pointer(&tmpvec4)), 4)
-	for k := GLint(0); k < v.Size; k++ {
-		vecSlice[k] = math.Float32frombits(binary.LittleEndian.Uint32(b[k*4:]))
+	switch v.Size {
+	case 4:
+		tmpvec4.W = math.Float32frombits(binary.LittleEndian.Uint32(b[12:]))
+		fallthrough
+	case 3:
+		tmpvec4.Z = math.Float32frombits(binary.LittleEndian.Uint32(b[8:]))
+		fallthrough
+	case 2:
+		tmpvec4.Y = math.Float32frombits(binary.LittleEndian.Uint32(b[4:]))
+		fallthrough
+	case 1:
+		tmpvec4.X = math.Float32frombits(binary.LittleEndian.Uint32(b))
 	}
 	return tmpvec4
 }
