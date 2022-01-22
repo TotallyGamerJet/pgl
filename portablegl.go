@@ -4170,9 +4170,8 @@ func MapBuffer(target GLenum, access GLenum) unsafe.Pointer {
 		return nil
 	}
 	target -= GLenum(GL_ARRAY_BUFFER)
-	var data unsafe.Pointer = nil
-	pglGetBufferData(c.Bound_buffers[target], &data)
-	return data
+	var data = pglGetBufferData(c.Bound_buffers[target])
+	return unsafe.Pointer(&data[0])
 }
 func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
 	if access != GLenum(GL_READ_ONLY) && access != GLenum(GL_WRITE_ONLY) && access != GLenum(GL_READ_WRITE) {
@@ -4181,9 +4180,8 @@ func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
 		}
 		return nil
 	}
-	var data unsafe.Pointer = nil
-	pglGetBufferData(buffer, &data)
-	return data
+	var data = pglGetBufferData(buffer)
+	return unsafe.Pointer(&data[0])
 }
 func GetDoublev(pname GLenum, params *GLdouble) {
 }
