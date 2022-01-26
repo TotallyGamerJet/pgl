@@ -151,15 +151,16 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	}
 	var components int64
 	_ = components
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GL_RED:
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GL_RG:
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GL_RGB, GL_BGR:
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GL_RGBA, GL_BGRA:
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
@@ -202,15 +203,16 @@ func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	}
 	var components int64
 	_ = components
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GL_RED:
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GL_RG:
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GL_RGB, GL_BGR:
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GL_RGBA, GL_BGRA:
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
@@ -261,15 +263,16 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 	}
 	var components int64
 	_ = components
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GL_RED:
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GL_RG:
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GL_RGB, GL_BGR:
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GL_RGBA, GL_BGRA:
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
