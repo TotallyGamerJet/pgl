@@ -344,23 +344,23 @@ type glBuffer struct {
 	Size       GLsizei
 	Type       GLenum
 	Data       []u8
-	Deleted    GLboolean
-	User_owned GLboolean
+	Deleted    bool
+	User_owned bool
 }
 type glVertex_Attrib struct {
 	Size       GLint
 	Type       GLenum
 	Stride     GLsizei
 	Offset     GLsizei
-	Normalized GLboolean
+	Normalized bool
 	Buf        uint64
-	Enabled    GLboolean
+	Enabled    bool
 	Divisor    GLuint
 }
 type glVertex_Array struct {
 	Vertex_attribs [GL_MAX_VERTEX_ATTRIBS]glVertex_Attrib
 	Element_buffer GLuint
-	Deleted        GLboolean
+	Deleted        bool
 }
 type glTexture struct {
 	W          uint64
@@ -807,7 +807,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 	var elem_buffer = c.Vertex_arrays[c.Cur_vertex_array].Element_buffer
 	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
 		c.Vertex_attribs_vs[i] = vec4_init
-		if v[i].Enabled != 0 {
+		if v[i].Enabled {
 			if v[i].Divisor == 0 {
 				enabled[j] = int64(i)
 				j++
@@ -2449,14 +2449,14 @@ func default_fs(_ *float32, builtins *Shader_Builtins, _ interface{}) {
 	}
 }
 func init_glVertex_Array(v *glVertex_Array) {
-	v.Deleted = GL_FALSE
+	v.Deleted = false
 	for i := int64(0); i < GL_MAX_VERTEX_ATTRIBS; i++ {
 		init_glVertex_Attrib(&v.Vertex_attribs[i])
 	}
 }
 func init_glVertex_Attrib(v *glVertex_Attrib) {
 	v.Buf = 0
-	v.Enabled = 0
+	v.Enabled = false
 	v.Divisor = 0
 }
 func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth int64, Rmask U32, Gmask U32, Bmask U32, Amask U32) int64 {
@@ -2597,8 +2597,8 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Vertex_arrays = append(context.Vertex_arrays, tmp_va)
 	context.Cur_vertex_array = 0
 	var tmp_buf glBuffer
-	tmp_buf.User_owned = GL_TRUE
-	tmp_buf.Deleted = GL_FALSE
+	tmp_buf.User_owned = true
+	tmp_buf.Deleted = false
 	var tmp_tex glTexture
 	tmp_tex.User_owned = GL_TRUE
 	tmp_tex.Deleted = GL_FALSE
@@ -2620,7 +2620,7 @@ func Free_glContext(context *GlContext) {
 		context.Back_buffer.Buf = nil
 	}
 	for i = 0; uint64(i) < uint64(len(context.Buffers)); i++ {
-		if context.Buffers[i].User_owned == 0 {
+		if context.Buffers[i].User_owned == false {
 			fmt.Printf("freeing buffer %d\n", i)
 			context.Buffers[i].Data = nil
 		}
@@ -2668,10 +2668,10 @@ func GenVertexArrays(n GLsizei, arrays *GLuint) {
 	a := unsafe.Slice(arrays, n)
 	var tmp glVertex_Array
 	init_glVertex_Array(&tmp)
-	tmp.Deleted = GL_FALSE
+	tmp.Deleted = false
 	n--
 	for i := int64(1); uint64(i) < uint64(len(c.Vertex_arrays)) && n >= 0; i++ {
-		if (c.Vertex_arrays[i]).Deleted != 0 {
+		if c.Vertex_arrays[i].Deleted != false {
 			c.Vertex_arrays[i] = tmp
 			a[n] = GLuint(int32(i))
 			n--
@@ -2692,18 +2692,18 @@ func DeleteVertexArrays(n GLsizei, arrays *GLuint) {
 			c.Vertex_arrays[0] = c.Vertex_arrays[a[i]]
 			c.Cur_vertex_array = 0
 		}
-		c.Vertex_arrays[a[i]].Deleted = GL_TRUE
+		c.Vertex_arrays[a[i]].Deleted = true
 	}
 }
 func GenBuffers(n GLsizei, buffers *GLuint) {
 	b := unsafe.Slice(buffers, n)
 	var tmp glBuffer
-	tmp.User_owned = GL_TRUE
+	tmp.User_owned = true
 	tmp.Data = nil
-	tmp.Deleted = GL_FALSE
+	tmp.Deleted = false
 	n--
 	for i := int64(1); uint64(i) < uint64(len(c.Buffers)) && n >= 0; i++ {
-		if (c.Buffers[i]).Deleted != 0 {
+		if c.Buffers[i].Deleted {
 			c.Buffers[i] = tmp
 			b[n] = GLuint(int32(i))
 			n--
@@ -2725,10 +2725,10 @@ func DeleteBuffers(n GLsizei, buffers *GLuint) {
 		if b[i] == c.Bound_buffers[type_] {
 			c.Bound_buffers[type_] = 0
 		}
-		if c.Buffers[b[i]].User_owned == 0 {
+		if c.Buffers[b[i]].User_owned == false {
 			c.Buffers[b[i]].Data = nil
 		}
-		c.Buffers[b[i]].Deleted = GL_TRUE
+		c.Buffers[b[i]].Deleted = true
 	}
 }
 func GenTextures(n GLsizei, textures *GLuint) {
@@ -2777,7 +2777,7 @@ func DeleteTextures(n GLsizei, textures *GLuint) {
 	}
 }
 func BindVertexArray(array GLuint) {
-	if uint64(array) < uint64(len(c.Vertex_arrays)) && c.Vertex_arrays[array].Deleted == GL_FALSE {
+	if uint64(array) < uint64(len(c.Vertex_arrays)) && c.Vertex_arrays[array].Deleted == false {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
 		c.Error = GLenum(GL_INVALID_OPERATION)
@@ -2791,7 +2791,7 @@ func BindBuffer(target GLenum, buffer GLuint) {
 		return
 	}
 	target -= GLenum(GL_ARRAY_BUFFER)
-	if uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == GL_FALSE {
+	if uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == false {
 		c.Bound_buffers[target] = buffer
 		c.Buffers[buffer].Type = target
 	} else if c.Error == 0 {
@@ -2822,8 +2822,8 @@ func BufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) 
 	if data != nil {
 		copy(c.Buffers[c.Bound_buffers[target]].Data, unsafe.Slice((*u8)(data), size))
 	}
-	c.Buffers[c.Bound_buffers[target]].User_owned = GL_FALSE
-	(c.Buffers[c.Bound_buffers[target]]).Size = size
+	c.Buffers[c.Bound_buffers[target]].User_owned = false
+	c.Buffers[c.Bound_buffers[target]].Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER-GL_ARRAY_BUFFER) {
 		(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
@@ -3292,7 +3292,7 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 		}
 		return
 	}
-	var v *glVertex_Attrib = &((c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index])
+	var v = &((c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index])
 	v.Size = size
 	v.Type = type_
 	if stride != 0 {
@@ -3301,14 +3301,14 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 		v.Stride = GLsizei(uint32(uintptr(size) * unsafe.Sizeof(GLfloat(0))))
 	}
 	v.Offset = offset
-	v.Normalized = normalized
+	v.Normalized = normalized != 0
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
 func EnableVertexAttribArray(index GLuint) {
-	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = GL_TRUE
+	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = true
 }
 func DisableVertexAttribArray(index GLuint) {
-	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = GL_FALSE
+	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = false
 }
 func VertexAttribDivisor(index GLuint, divisor GLuint) {
 	if index >= GL_MAX_VERTEX_ATTRIBS {
@@ -3317,7 +3317,7 @@ func VertexAttribDivisor(index GLuint, divisor GLuint) {
 		}
 		return
 	}
-	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Divisor = divisor
+	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Divisor = divisor
 }
 func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	var (

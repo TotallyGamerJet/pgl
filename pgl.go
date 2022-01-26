@@ -114,14 +114,14 @@ func pglBufferData(target GLenum, size GLsizei, data []u8, usage GLenum) {
 		}
 		return
 	}
-	if (c.Buffers[c.Bound_buffers[target]]).User_owned == 0 {
+	if c.Buffers[c.Bound_buffers[target]].User_owned == false {
 		c.Buffers[c.Bound_buffers[target]].Data = nil
 	}
-	(c.Buffers[c.Bound_buffers[target]]).Data = data
-	(c.Buffers[c.Bound_buffers[target]]).User_owned = GL_TRUE
-	(c.Buffers[c.Bound_buffers[target]]).Size = size
+	c.Buffers[c.Bound_buffers[target]].Data = data
+	c.Buffers[c.Bound_buffers[target]].User_owned = true
+	c.Buffers[c.Bound_buffers[target]].Size = size
 	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
-		(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
+		c.Vertex_arrays[c.Cur_vertex_array].Element_buffer = c.Bound_buffers[target]
 	}
 }
 
@@ -286,7 +286,7 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 }
 
 func pglGetBufferData(buffer GLuint) []u8 {
-	if !(buffer != 0 && uint64(buffer) < uint64(len(c.Buffers)) && (c.Buffers[buffer]).Deleted == 0) {
+	if !(buffer != 0 && uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == false) {
 		c.Error = GLenum(GL_INVALID_OPERATION)
 		return nil
 	}
