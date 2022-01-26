@@ -414,7 +414,6 @@ type GlContext struct {
 	Cur_texture2D          GLuint
 	Cur_program            GLuint
 	Error                  GLenum
-	Uniform                unsafe.Pointer
 	Vertex_attribs_vs      [GL_MAX_VERTEX_ATTRIBS]Vec4
 	Builtins               Shader_Builtins
 	Vs_output              Vertex_Shader_output
@@ -710,25 +709,11 @@ func make_orthographic_matrix(mat *Mat4, l float32, r float32, b float32, t floa
 	mat[15] = 1
 }
 func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
-	for {
-		*mat = Mat4{}
-		mat[0] = func() float32 {
-			p := &mat[5]
-			mat[5] = func() float32 {
-				p := &mat[10]
-				mat[10] = func() float32 {
-					p := &mat[15]
-					mat[15] = 1
-					return *p
-				}()
-				return *p
-			}()
-			return *p
-		}()
-		if true {
-			break
-		}
-	}
+	*mat = Mat4{}
+	mat[0] = 1
+	mat[5] = 1
+	mat[10] = 1
+	mat[15] = 1
 	var f Vec3 = Norm_vec3(sub_vec3s(center, eye))
 	var s Vec3 = Norm_vec3(cross_product(f, up))
 	var u Vec3 = cross_product(s, f)
@@ -738,15 +723,7 @@ func lookAt(mat *Mat4, eye Vec3, center Vec3, up Vec3) {
 	setc4_mat4v3(mat, make_vec3(-Dot_vec3s(s, eye), -Dot_vec3s(u, eye), Dot_vec3s(f, eye)))
 }
 
-var CVEC_glVertex_Array_SZ uint64 = 50
-
-var CVEC_glBuffer_SZ uint64 = 50
-
-var CVEC_glTexture_SZ uint64 = 50
-
-var CVEC_glProgram_SZ uint64 = 50
-
-var CVEC_float_SZ uint64 = 50
+const CVEC_float_SZ uint64 = 50
 
 var c *GlContext
 
@@ -765,10 +742,10 @@ func gl_clipcode(pt Vec4) int64 {
 func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 	var (
 		normal  Vec3
-		tmpvec3 Vec3 = Vec3{X: 0, Y: 0, Z: 1}
-		p0      Vec3 = vec4_to_vec3h(v0.Screen_space)
-		p1      Vec3 = vec4_to_vec3h(v1.Screen_space)
-		p2      Vec3 = vec4_to_vec3h(v2.Screen_space)
+		tmpvec3 = Vec3{X: 0, Y: 0, Z: 1}
+		p0      = vec4_to_vec3h(v0.Screen_space)
+		p1      = vec4_to_vec3h(v1.Screen_space)
+		p2      = vec4_to_vec3h(v2.Screen_space)
 	)
 	normal = cross_product(sub_vec3s(p1, p0), sub_vec3s(p2, p0))
 	if c.Front_face == GLenum(GL_CW) {
@@ -808,7 +785,7 @@ func do_vertex(v []glVertex_Attrib, enabled []int64, num_enabled uint64, i uint6
 		}
 		c.Vertex_attribs_vs[enabled[j]] = tmpvec4
 	}
-	var vs_out *float32 = &c.Vs_output.Output_buf[vert*uint64(c.Vs_output.Size)]
+	var vs_out = &c.Vs_output.Output_buf[vert*uint64(c.Vs_output.Size)]
 	c.Programs[c.Cur_program].Vertex_shader(vs_out, unsafe.Pointer(&c.Vertex_attribs_vs[0]), &c.Builtins, c.Programs[c.Cur_program].Uniform)
 	c.Glverts[vert].Vs_out = unsafe.Slice(vs_out, c.Vs_output.Size)
 	c.Glverts[vert].Clip_space = c.Builtins.Gl_Position
@@ -826,8 +803,8 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		vec4_init   = Vec4{0.0, 0.0, 0.0, 1.0}
 		enabled     [GL_MAX_VERTEX_ATTRIBS]int64
 	)
-	var v []glVertex_Attrib = c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[:]
-	var elem_buffer GLuint = (c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer
+	var v = c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[:]
+	var elem_buffer = c.Vertex_arrays[c.Cur_vertex_array].Element_buffer
 	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
 		c.Vertex_attribs_vs[i] = vec4_init
 		if v[i].Enabled != 0 {
@@ -835,7 +812,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 				enabled[j] = int64(i)
 				j++
 			} else if (instance_id % GLsizei(v[i].Divisor)) == 0 {
-				var n int64 = int64(instance_id/GLsizei(v[i].Divisor) + GLsizei(base_instance))
+				var n = int64(instance_id/GLsizei(v[i].Divisor) + GLsizei(base_instance))
 				buf_pos = c.Buffers[v[i].Buf].Data[v[i].Offset+v[i].Stride*GLsizei(n):]
 				tmpvec4.X = 0.0
 				tmpvec4.Y = 0.0
@@ -925,15 +902,12 @@ func draw_point(vert *glVertex) {
 			}
 			c.Builtins.Gl_PointCoord.X = float32((float64(int64(j))+0.5-float64(point.X))/float64(p_size) + 0.5)
 			c.Builtins.Gl_PointCoord.Y = float32(float64(origin)*(float64(int64(i))+0.5-float64(point.Y))/float64(p_size) + 0.5)
-			for {
-				c.Builtins.Gl_FragCoord.X = j
-				c.Builtins.Gl_FragCoord.Y = i
-				c.Builtins.Gl_FragCoord.Z = point.Z
-				c.Builtins.Gl_FragCoord.W = 1 / vert.Screen_space.W
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = j
+			c.Builtins.Gl_FragCoord.Y = i
+			c.Builtins.Gl_FragCoord.Z = point.Z
+			c.Builtins.Gl_FragCoord.W = 1 / vert.Screen_space.W
+
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = point.Z
 			c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
@@ -1162,16 +1136,16 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 	var (
 		tmp     float32
 		tmp_ptr *float32
-		hp1     Vec3    = vec4_to_vec3h(v1)
-		hp2     Vec3    = vec4_to_vec3h(v2)
-		w1      float32 = v1.W
-		w2      float32 = v2.W
-		x1      float32 = hp1.X
-		x2      float32 = hp2.X
-		y1      float32 = hp1.Y
-		y2      float32 = hp2.Y
-		z1      float32 = hp1.Z
-		z2      float32 = hp2.Z
+		hp1     = vec4_to_vec3h(v1)
+		hp2     = vec4_to_vec3h(v2)
+		w1      = v1.W
+		w2      = v2.W
+		x1      = hp1.X
+		x2      = hp2.X
+		y1      = hp1.Y
+		y2      = hp2.Y
+		z1      = hp1.Z
+		z2      = hp2.Z
 	)
 	if x2 < x1 {
 		tmp = x1
@@ -1243,15 +1217,10 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			t = dot_vec2s(sub_vec2s(pr, p1), sub_p2p1) / line_length_squared
 			z = (1-t)*z1 + t*z2
 			w = (1-t)*w1 + t*w2
-			for {
-				c.Builtins.Gl_FragCoord.X = x
-				c.Builtins.Gl_FragCoord.Y = y
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+			c.Builtins.Gl_FragCoord.X = x
+			c.Builtins.Gl_FragCoord.Y = y
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
@@ -1277,15 +1246,12 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			t = dot_vec2s(sub_vec2s(pr, p1), sub_p2p1) / line_length_squared
 			z = (1-t)*z1 + t*z2
 			w = (1-t)*w1 + t*w2
-			for {
-				c.Builtins.Gl_FragCoord.X = x
-				c.Builtins.Gl_FragCoord.Y = y
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = x
+			c.Builtins.Gl_FragCoord.Y = y
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
@@ -1311,15 +1277,12 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			t = dot_vec2s(sub_vec2s(pr, p1), sub_p2p1) / line_length_squared
 			z = (1-t)*z1 + t*z2
 			w = (1-t)*w1 + t*w2
-			for {
-				c.Builtins.Gl_FragCoord.X = x
-				c.Builtins.Gl_FragCoord.Y = y
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = x
+			c.Builtins.Gl_FragCoord.Y = y
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
@@ -1345,15 +1308,12 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			t = dot_vec2s(sub_vec2s(pr, p1), sub_p2p1) / line_length_squared
 			z = (1-t)*z1 + t*z2
 			w = (1-t)*w1 + t*w2
-			for {
-				c.Builtins.Gl_FragCoord.X = x
-				c.Builtins.Gl_FragCoord.Y = y
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = x
+			c.Builtins.Gl_FragCoord.Y = y
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			c.Builtins.Discard = GL_FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
@@ -1431,29 +1391,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1))))) = z1
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl1))*c.Zbuf.W+uint64(int64(ypxl1+1))))) = z1
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = ypxl1
-				c.Builtins.Gl_FragCoord.Y = xpxl1
-				c.Builtins.Gl_FragCoord.Z = z1
-				c.Builtins.Gl_FragCoord.W = 1 / w1
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = ypxl1
+			c.Builtins.Gl_FragCoord.Y = xpxl1
+			c.Builtins.Gl_FragCoord.Z = z1
+			c.Builtins.Gl_FragCoord.W = 1 / w1
+
 			setup_fs_input(0, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(ypxl1), int64(xpxl1))
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = ypxl1 + 1
-				c.Builtins.Gl_FragCoord.Y = xpxl1
-				c.Builtins.Gl_FragCoord.Z = z1
-				c.Builtins.Gl_FragCoord.W = 1 / w1
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = ypxl1 + 1
+			c.Builtins.Gl_FragCoord.Y = xpxl1
+			c.Builtins.Gl_FragCoord.Z = z1
+			c.Builtins.Gl_FragCoord.W = 1 / w1
+
 			setup_fs_input(0, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -1466,29 +1420,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl1+1))*c.Zbuf.W+uint64(int64(xpxl1))))) = z1
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = xpxl1
-				c.Builtins.Gl_FragCoord.Y = ypxl1
-				c.Builtins.Gl_FragCoord.Z = z1
-				c.Builtins.Gl_FragCoord.W = 1 / w1
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = xpxl1
+			c.Builtins.Gl_FragCoord.Y = ypxl1
+			c.Builtins.Gl_FragCoord.Z = z1
+			c.Builtins.Gl_FragCoord.W = 1 / w1
+
 			setup_fs_input(0, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(xpxl1), int64(ypxl1))
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = xpxl1
-				c.Builtins.Gl_FragCoord.Y = ypxl1 + 1
-				c.Builtins.Gl_FragCoord.Z = z1
-				c.Builtins.Gl_FragCoord.W = 1 / w1
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = xpxl1
+			c.Builtins.Gl_FragCoord.Y = ypxl1 + 1
+			c.Builtins.Gl_FragCoord.Z = z1
+			c.Builtins.Gl_FragCoord.W = 1 / w1
+
 			setup_fs_input(0, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -1510,29 +1458,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2))))) = z2
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(xpxl2))*c.Zbuf.W+uint64(int64(ypxl2+1))))) = z2
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = ypxl2
-				c.Builtins.Gl_FragCoord.Y = xpxl2
-				c.Builtins.Gl_FragCoord.Z = z2
-				c.Builtins.Gl_FragCoord.W = 1 / w2
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = ypxl2
+			c.Builtins.Gl_FragCoord.Y = xpxl2
+			c.Builtins.Gl_FragCoord.Z = z2
+			c.Builtins.Gl_FragCoord.W = 1 / w2
+
 			setup_fs_input(1, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(ypxl2), int64(xpxl2))
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = ypxl2 + 1
-				c.Builtins.Gl_FragCoord.Y = xpxl2
-				c.Builtins.Gl_FragCoord.Z = z2
-				c.Builtins.Gl_FragCoord.W = 1 / w2
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = ypxl2 + 1
+			c.Builtins.Gl_FragCoord.Y = xpxl2
+			c.Builtins.Gl_FragCoord.Z = z2
+			c.Builtins.Gl_FragCoord.W = 1 / w2
+
 			setup_fs_input(1, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -1545,29 +1487,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(ypxl2+1))*c.Zbuf.W+uint64(int64(xpxl2))))) = z2
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = xpxl2
-				c.Builtins.Gl_FragCoord.Y = ypxl2
-				c.Builtins.Gl_FragCoord.Z = z2
-				c.Builtins.Gl_FragCoord.W = 1 / w2
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = xpxl2
+			c.Builtins.Gl_FragCoord.Y = ypxl2
+			c.Builtins.Gl_FragCoord.Z = z2
+			c.Builtins.Gl_FragCoord.W = 1 / w2
+
 			setup_fs_input(1, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(xpxl2), int64(ypxl2))
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = xpxl2
-				c.Builtins.Gl_FragCoord.Y = ypxl2 + 1
-				c.Builtins.Gl_FragCoord.Z = z2
-				c.Builtins.Gl_FragCoord.W = 1 / w2
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = xpxl2
+			c.Builtins.Gl_FragCoord.Y = ypxl2 + 1
+			c.Builtins.Gl_FragCoord.Z = z2
+			c.Builtins.Gl_FragCoord.W = 1 / w2
+
 			setup_fs_input(1, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -1605,29 +1541,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-x)*c.Zbuf.W+uint64(int64(intery+1))))) = z
 				}
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = intery
-				c.Builtins.Gl_FragCoord.Y = float32(x)
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = intery
+			c.Builtins.Gl_FragCoord.Y = float32(x)
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(intery), x)
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = intery + 1
-				c.Builtins.Gl_FragCoord.Y = float32(x)
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = intery + 1
+			c.Builtins.Gl_FragCoord.Y = float32(x)
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -1642,29 +1572,23 @@ func draw_line_smooth_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32,
 					*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Lastrow[0]))), unsafe.Sizeof(float32(0))*uintptr(uint64(-int64(intery+1))*c.Zbuf.W+uint64(x)))) = z
 				}
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = float32(x)
-				c.Builtins.Gl_FragCoord.Y = intery
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = float32(x)
+			c.Builtins.Gl_FragCoord.Y = intery
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, x, int64(intery))
 			}
-			for {
-				c.Builtins.Gl_FragCoord.X = float32(x)
-				c.Builtins.Gl_FragCoord.Y = intery + 1
-				c.Builtins.Gl_FragCoord.Z = z
-				c.Builtins.Gl_FragCoord.W = 1 / w
-				if true {
-					break
-				}
-			}
+
+			c.Builtins.Gl_FragCoord.X = float32(x)
+			c.Builtins.Gl_FragCoord.Y = intery + 1
+			c.Builtins.Gl_FragCoord.Z = z
+			c.Builtins.Gl_FragCoord.W = 1 / w
+
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
 			if c.Builtins.Discard == 0 {
@@ -2516,15 +2440,13 @@ func draw_pixel(cf Vec4, x int64, y int64) {
 	}
 	*dest = U32(src_color.A)<<c.Ashift | U32(src_color.R)<<c.Rshift | U32(src_color.G)<<c.Gshift | U32(src_color.B)<<c.Bshift
 }
-func default_vs(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, uniforms interface{}) {
+func default_vs(_ *float32, vertex_attribs unsafe.Pointer, builtins *Shader_Builtins, _ interface{}) {
 	builtins.Gl_Position = *(*Vec4)(unsafe.Add(unsafe.Pointer((*Vec4)(vertex_attribs)), unsafe.Sizeof(Vec4{})*0))
 }
-func default_fs(fs_input *float32, builtins *Shader_Builtins, uniforms interface{}) {
-	var fragcolor *Vec4 = &builtins.Gl_FragColor
-	fragcolor.X = 1.0
-	fragcolor.Y = 0.0
-	fragcolor.Z = 0.0
-	fragcolor.W = 1.0
+func default_fs(_ *float32, builtins *Shader_Builtins, _ interface{}) {
+	builtins.Gl_FragColor = Vec4{
+		X: 1, Y: 0, Z: 0, W: 1,
+	}
 }
 func init_glVertex_Array(v *glVertex_Array) {
 	v.Deleted = GL_FALSE
@@ -2611,15 +2533,10 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Vs_output.Output_buf = make([]float32, CVEC_float_SZ)
 	context.Clear_stencil = 0
 	context.Clear_color = make_Color(0, 0, 0, 0)
-	for {
-		context.Blend_color.X = 0
-		context.Blend_color.Y = 0
-		context.Blend_color.Z = 0
-		context.Blend_color.W = 0
-		if true {
-			break
-		}
-	}
+	context.Blend_color.X = 0
+	context.Blend_color.Y = 0
+	context.Blend_color.Z = 0
+	context.Blend_color.W = 0
 	context.Point_size = GLfloat(1.0)
 	context.Clear_depth = GLfloat(1.0)
 	context.Depth_range_near = GLfloat(0.0)
@@ -2955,20 +2872,17 @@ func BindTexture(target GLenum, texture GLuint) {
 	}
 }
 func TexParameteri(target GLenum, pname GLenum, param GLint) {
-	if target != GLenum(GL_TEXTURE_1D) && target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP) {
+	switch target {
+	case GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_RECTANGLE, GL_TEXTURE_CUBE_MAP:
+		target -= GLenum(GL_TEXTURE_UNBOUND + 1)
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_TEXTURE_UNBOUND + 1)
-	if pname != GLenum(GL_TEXTURE_MIN_FILTER) && pname != GLenum(GL_TEXTURE_MAG_FILTER) && pname != GLenum(GL_TEXTURE_WRAP_S) && pname != GLenum(GL_TEXTURE_WRAP_T) && pname != GLenum(GL_TEXTURE_WRAP_R) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if pname == GLenum(GL_TEXTURE_MIN_FILTER) {
+	switch pname {
+	case GLenum(GL_TEXTURE_MIN_FILTER):
 		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR && int64(param) != GL_NEAREST_MIPMAP_NEAREST && int64(param) != GL_NEAREST_MIPMAP_LINEAR && int64(param) != GL_LINEAR_MIPMAP_NEAREST && int64(param) != GL_LINEAR_MIPMAP_LINEAR {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_ENUM)
@@ -2981,39 +2895,44 @@ func TexParameteri(target GLenum, pname GLenum, param GLint) {
 		if int64(param) == GL_LINEAR_MIPMAP_NEAREST || int64(param) == GL_LINEAR_MIPMAP_LINEAR {
 			param = GLint(GL_LINEAR)
 		}
-		(c.Textures[c.Bound_textures[target]]).Min_filter = GLenum(param)
-	} else if pname == GLenum(GL_TEXTURE_MAG_FILTER) {
+		c.Textures[c.Bound_textures[target]].Min_filter = GLenum(param)
+	case GLenum(GL_TEXTURE_MAG_FILTER):
 		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_ENUM)
 			}
 			return
 		}
-		(c.Textures[c.Bound_textures[target]]).Mag_filter = GLenum(param)
-	} else if pname == GLenum(GL_TEXTURE_WRAP_S) {
+		c.Textures[c.Bound_textures[target]].Mag_filter = GLenum(param)
+	case GLenum(GL_TEXTURE_WRAP_S):
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_ENUM)
 			}
 			return
 		}
-		(c.Textures[c.Bound_textures[target]]).Wrap_s = GLenum(param)
-	} else if pname == GLenum(GL_TEXTURE_WRAP_T) {
+		c.Textures[c.Bound_textures[target]].Wrap_s = GLenum(param)
+	case GLenum(GL_TEXTURE_WRAP_T):
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_ENUM)
 			}
 			return
 		}
-		(c.Textures[c.Bound_textures[target]]).Wrap_t = GLenum(param)
-	} else if pname == GLenum(GL_TEXTURE_WRAP_R) {
+		c.Textures[c.Bound_textures[target]].Wrap_t = GLenum(param)
+	case GLenum(GL_TEXTURE_WRAP_R):
 		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
 			if c.Error == 0 {
 				c.Error = GLenum(GL_INVALID_ENUM)
 			}
 			return
 		}
-		(c.Textures[c.Bound_textures[target]]).Wrap_r = GLenum(param)
+		c.Textures[c.Bound_textures[target]].Wrap_r = GLenum(param)
+	default:
+		if c.Error == 0 {
+			c.Error = GLenum(GL_INVALID_ENUM)
+		}
+		return
 	}
 }
 func PixelStorei(pname GLenum, param GLint) {
@@ -3023,7 +2942,10 @@ func PixelStorei(pname GLenum, param GLint) {
 		}
 		return
 	}
-	if param != 1 && param != 2 && param != 4 && param != 8 {
+	switch param {
+	case 1, 2, 4, 8:
+	// all good here
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_VALUE)
 		}
@@ -3062,36 +2984,27 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var components int64
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GL_RED:
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GL_RG:
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GL_RGB, GL_BGR:
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GL_RGBA, GL_BGRA:
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
 		return
 	}
-	(c.Textures[cur_tex]).Data = nil
-	if (func() *u8 {
-		p := &(c.Textures[cur_tex]).Data
-		c.Textures[cur_tex].Data = make([]u8, int64(width)*components)
-		return &(*p)[0]
-	}()) == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
-		}
-		return
-	}
+	c.Textures[cur_tex].Data = make([]u8, int64(width)*components)
 	var texdata = c.Textures[cur_tex].Data
 	if data != nil {
 		copy(texdata, unsafe.Slice((*u8)(data), uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
-	(c.Textures[cur_tex]).User_owned = GL_FALSE
+	c.Textures[cur_tex].User_owned = GL_FALSE
 }
 func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
@@ -3113,15 +3026,16 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var components int64
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GLenum(GL_RED):
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GLenum(GL_RG):
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GLenum(GL_RGB), GLenum(GL_BGR):
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GLenum(GL_RGBA), GLenum(GL_BGRA):
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
@@ -3138,19 +3052,9 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	}
 	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
 		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-		(c.Textures[cur_tex]).W = uint64(width)
-		(c.Textures[cur_tex]).H = uint64(height)
-		(c.Textures[cur_tex]).Data = nil
-		if (func() *u8 {
-			p := &(c.Textures[cur_tex]).Data
-			c.Textures[cur_tex].Data = make([]u8, int64(height)*byte_width)
-			return &(*p)[0]
-		}()) == nil {
-			if c.Error == 0 {
-				c.Error = GLenum(GL_OUT_OF_MEMORY)
-			}
-			return
-		}
+		c.Textures[cur_tex].W = uint64(width)
+		c.Textures[cur_tex].H = uint64(height)
+		c.Textures[cur_tex].Data = make([]u8, int64(height)*byte_width)
 		if data != nil {
 			if padding_needed == 0 {
 				copy(c.Textures[cur_tex].Data, unsafe.Slice((*u8)(data), int64(height)*byte_width))
@@ -3204,7 +3108,7 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 			}
 		}
-		(c.Textures[cur_tex]).User_owned = GL_FALSE
+		c.Textures[cur_tex].User_owned = GL_FALSE
 	}
 }
 func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
@@ -3221,22 +3125,23 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 		return
 	}
 	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	(c.Textures[cur_tex]).W = uint64(width)
-	(c.Textures[cur_tex]).H = uint64(height)
-	(c.Textures[cur_tex]).D = uint64(depth)
+	c.Textures[cur_tex].W = uint64(width)
+	c.Textures[cur_tex].H = uint64(height)
+	c.Textures[cur_tex].D = uint64(depth)
 	if type_ != GLenum(GL_UNSIGNED_BYTE) {
 		return
 	}
 	var components int64
-	if format == GLenum(GL_RED) {
+	switch format {
+	case GLenum(GL_RED):
 		components = 1
-	} else if format == GLenum(GL_RG) {
+	case GLenum(GL_RG):
 		components = 2
-	} else if format == GLenum(GL_RGB) || format == GLenum(GL_BGR) {
+	case GLenum(GL_RGB), GLenum(GL_BGR):
 		components = 3
-	} else if format == GLenum(GL_RGBA) || format == GLenum(GL_BGRA) {
+	case GLenum(GL_RGBA), GLenum(GL_BGRA):
 		components = 4
-	} else {
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
@@ -3250,17 +3155,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	} else {
 		padded_row_len = byte_width + int64(c.Unpack_alignment) - padding_needed
 	}
-	(c.Textures[cur_tex]).Data = nil
-	if (func() *u8 {
-		p := &(c.Textures[cur_tex]).Data
-		c.Textures[cur_tex].Data = make([]u8, int64(width*height*depth)*components)
-		return &(*p)[0]
-	}()) == nil {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
-		}
-		return
-	}
+	c.Textures[cur_tex].Data = make([]u8, int64(width*height*depth)*components)
 	var texdata = c.Textures[cur_tex].Data
 	if data != nil {
 		if padding_needed == 0 {
@@ -3271,7 +3166,7 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			}
 		}
 	}
-	(c.Textures[cur_tex]).User_owned = GL_FALSE
+	c.Textures[cur_tex].User_owned = GL_FALSE
 }
 func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
 	if target != GLenum(GL_TEXTURE_1D) {
@@ -3410,10 +3305,10 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
 }
 func EnableVertexAttribArray(index GLuint) {
-	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_TRUE
+	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = GL_TRUE
 }
 func DisableVertexAttribArray(index GLuint) {
-	(c.Vertex_arrays[c.Cur_vertex_array]).Vertex_attribs[index].Enabled = GL_FALSE
+	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = GL_FALSE
 }
 func VertexAttribDivisor(index GLuint, divisor GLuint) {
 	if index >= GL_MAX_VERTEX_ATTRIBS {
@@ -3550,7 +3445,7 @@ func DrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsi
 	if count == 0 || instancecount == 0 {
 		return
 	}
-	(c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer]).Type = type_
+	c.Buffers[c.Vertex_arrays[c.Cur_vertex_array].Element_buffer].Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
 		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, GL_TRUE)
 	}
@@ -3859,71 +3754,94 @@ func GetIntegerv(pname GLenum, params *GLint) {
 	}
 }
 func CullFace(mode GLenum) {
-	if mode != GLenum(GL_FRONT) && mode != GLenum(GL_BACK) && mode != GLenum(GL_FRONT_AND_BACK) {
+	switch mode {
+	case GL_FRONT, GL_BACK, GL_FRONT_AND_BACK:
+		c.Cull_mode = mode
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
 		return
 	}
-	c.Cull_mode = mode
 }
 func FrontFace(mode GLenum) {
-	if mode != GLenum(GL_CCW) && mode != GLenum(GL_CW) {
+	switch mode {
+	case GL_CCW, GL_CW:
+		c.Front_face = mode
+	default:
 		if c.Error == 0 {
 			c.Error = GLenum(GL_INVALID_ENUM)
 		}
 		return
 	}
-	c.Front_face = mode
 }
 func PolygonMode(face GLenum, mode GLenum) {
-	if face != GLenum(GL_FRONT) && face != GLenum(GL_BACK) && face != GLenum(GL_FRONT_AND_BACK) || mode != GLenum(GL_POINT) && mode != GLenum(GL_LINE) && mode != GLenum(GL_FILL) {
-		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
-		}
-		return
-	}
-	if mode == GLenum(GL_POINT) {
-		if face == GLenum(GL_FRONT) {
+	switch mode {
+	case GL_POINT:
+		switch face {
+		case GL_FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_point
-		} else if face == GLenum(GL_BACK) {
+		case GL_BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_point
-		} else {
+		case GL_FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_point
 			c.Draw_triangle_back = draw_triangle_point
+		default:
+			if c.Error == 0 {
+				c.Error = GLenum(GL_INVALID_ENUM)
+			}
+			return
 		}
-	} else if mode == GLenum(GL_LINE) {
-		if face == GLenum(GL_FRONT) {
+	case GL_LINE:
+		switch face {
+		case GL_FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_line
-		} else if face == GLenum(GL_BACK) {
+		case GL_BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_line
-		} else {
+		case GL_FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_line
 			c.Draw_triangle_back = draw_triangle_line
+		default:
+			if c.Error == 0 {
+				c.Error = GLenum(GL_INVALID_ENUM)
+			}
+			return
 		}
-	} else {
-		if face == GLenum(GL_FRONT) {
+	case GL_FILL:
+		switch face {
+		case GL_FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_fill
-		} else if face == GLenum(GL_BACK) {
+		case GL_BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_fill
-		} else {
+		case GL_FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_fill
 
 			c.Draw_triangle_back = draw_triangle_fill
+		default:
+			if c.Error == 0 {
+				c.Error = GLenum(GL_INVALID_ENUM)
+			}
+			return
 		}
+	default:
+		if c.Error == 0 {
+			c.Error = GLenum(GL_INVALID_ENUM)
+		}
+		return
 	}
+
 }
 func PointSize(size GLfloat) {
 	if float64(size) <= 0.0 {
@@ -4003,15 +3921,10 @@ func BlendEquation(mode GLenum) {
 	c.Blend_equation = mode
 }
 func BlendColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
-	for {
-		c.Blend_color.X = clampf_01(float32(red))
-		c.Blend_color.Y = clampf_01(float32(green))
-		c.Blend_color.Z = clampf_01(float32(blue))
-		c.Blend_color.W = clampf_01(float32(alpha))
-		if true {
-			break
-		}
-	}
+	c.Blend_color.X = clampf_01(float32(red))
+	c.Blend_color.Y = clampf_01(float32(green))
+	c.Blend_color.Z = clampf_01(float32(blue))
+	c.Blend_color.W = clampf_01(float32(alpha))
 }
 func LogicOp(opcode GLenum) {
 	if opcode < GLenum(GL_CLEAR) || opcode > GLenum(GL_INVERT) {
