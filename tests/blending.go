@@ -73,16 +73,16 @@ func blend_test(_ *testing.T) {
 
 	var triangle pgl.GLuint
 	pgl.GenBuffers(1, &triangle)
-	pgl.BindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
-	pgl.BufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(points)), unsafe.Pointer(&points[0]), pgl.GL_STATIC_DRAW)
+	pgl.BindBuffer(pgl.ARRAY_BUFFER, triangle)
+	pgl.BufferData(pgl.ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(points)), unsafe.Pointer(&points[0]), pgl.STATIC_DRAW)
 	pgl.EnableVertexAttribArray(0)
-	pgl.VertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
+	pgl.VertexAttribPointer(0, 3, pgl.FLOAT, pgl.FALSE, 0, 0)
 
 	var myshader = pgl.NewProgram(func(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 		builtins.Gl_Position = *(*pgl.Vec4)(vertex_attribs)
 	}, func(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 		builtins.Gl_FragColor = uniforms.(*blend_uniforms).v_color
-	}, 0, nil, pgl.GL_FALSE)
+	}, 0, nil, pgl.FALSE)
 	pgl.UseProgram(myshader)
 
 	pgl.SetUniform(&the_uniforms)
@@ -91,30 +91,30 @@ func blend_test(_ *testing.T) {
 
 	pgl.ClearColor(1, 1, 1, 1)
 
-	pgl.Clear(pgl.GL_COLOR_BUFFER_BIT)
+	pgl.Clear(pgl.COLOR_BUFFER_BIT)
 
 	the_uniforms.v_color = Red
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 0, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 0, 4)
 	the_uniforms.v_color = Green
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 4, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 4, 4)
 	the_uniforms.v_color = Blue
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 8, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 8, 4)
 	the_uniforms.v_color = Black
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 12, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 12, 4)
 
-	pgl.Enable(pgl.GL_BLEND)
-	pgl.BlendFunc(pgl.GL_SRC_ALPHA, pgl.GL_ONE_MINUS_SRC_ALPHA)
+	pgl.Enable(pgl.BLEND)
+	pgl.BlendFunc(pgl.SRC_ALPHA, pgl.ONE_MINUS_SRC_ALPHA)
 	the_uniforms.v_color = pgl.Vec4{1, 0, 0, 0.5}
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 16, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 16, 4)
 
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 20, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 20, 4)
 
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 24, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 24, 4)
 
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 28, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 28, 4)
 
-	pgl.DrawArrays(pgl.GL_TRIANGLE_STRIP, 32, 4)
+	pgl.DrawArrays(pgl.TRIANGLE_STRIP, 32, 4)
 
-	pgl.Disable(pgl.GL_BLEND)
+	pgl.Disable(pgl.BLEND)
 
 }

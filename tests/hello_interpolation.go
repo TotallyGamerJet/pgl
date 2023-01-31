@@ -34,12 +34,12 @@ func hello_interpolation(_ *testing.T) {
 
 	var triangle pgl.GLuint
 	pgl.GenBuffers(1, &triangle)
-	pgl.BindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
-	pgl.BufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(points_n_colors)), unsafe.Pointer(&points_n_colors[0]), pgl.GL_STATIC_DRAW)
+	pgl.BindBuffer(pgl.ARRAY_BUFFER, triangle)
+	pgl.BufferData(pgl.ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(points_n_colors)), unsafe.Pointer(&points_n_colors[0]), pgl.STATIC_DRAW)
 	pgl.EnableVertexAttribArray(0)
-	pgl.VertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, pgl.GLsizei(unsafe.Sizeof(float32(0))*6), 0)
+	pgl.VertexAttribPointer(0, 3, pgl.FLOAT, pgl.FALSE, pgl.GLsizei(unsafe.Sizeof(float32(0))*6), 0)
 	pgl.EnableVertexAttribArray(4)
-	pgl.VertexAttribPointer(4, 3, pgl.GL_FLOAT, pgl.GL_FALSE, pgl.GLsizei(unsafe.Sizeof(float32(0))*6), pgl.GLsizei(unsafe.Sizeof(float32(0))*3))
+	pgl.VertexAttribPointer(4, 3, pgl.FLOAT, pgl.FALSE, pgl.GLsizei(unsafe.Sizeof(float32(0))*6), pgl.GLsizei(unsafe.Sizeof(float32(0))*3))
 
 	var myshader = pgl.NewProgram(func(vs_output *float32, vertex_attribs unsafe.Pointer, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 		var v_attribs = unsafe.Slice((*pgl.Vec4)(vertex_attribs), 5)
@@ -48,7 +48,7 @@ func hello_interpolation(_ *testing.T) {
 		builtins.Gl_Position = pgl.Mult_mat4_vec4(uniforms.(*ht_uniforms).mvp_mat, v_attribs[0])
 	}, func(fs_input *float32, builtins *pgl.Shader_Builtins, uniforms interface{}) {
 		builtins.Gl_FragColor = *(*pgl.Vec4)(unsafe.Pointer(fs_input))
-	}, 4, smooth[:], pgl.GL_FALSE)
+	}, 4, smooth[:], pgl.FALSE)
 	pgl.UseProgram(myshader)
 
 	pgl.SetUniform(&the_uniforms)
@@ -57,7 +57,7 @@ func hello_interpolation(_ *testing.T) {
 
 	pgl.ClearColor(0, 0, 0, 1)
 
-	pgl.Clear(pgl.GL_COLOR_BUFFER_BIT)
-	pgl.DrawArrays(pgl.GL_TRIANGLES, 0, 3)
+	pgl.Clear(pgl.COLOR_BUFFER_BIT)
+	pgl.DrawArrays(pgl.TRIANGLES, 0, 3)
 
 }

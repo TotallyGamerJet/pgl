@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/chewxy/math32 v1.10.1
-	github.com/gotranspile/cxgo v0.3.2-0.20211211222444-fd0016b49524
+	github.com/gotranspile/cxgo v0.3.7
 	github.com/veandco/go-sdl2 v0.4.10
 )
 

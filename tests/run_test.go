@@ -91,6 +91,9 @@ func Test_Run(t *testing.T) {
 
 		t.Run(n, func(t2 *testing.T) {
 			f(t2)
+			if glErr := pgl.GetError(); glErr != pgl.NO_ERROR {
+				t.Logf("GL has error: %d", glErr)
+			}
 			open, err := expected.Open("expected_output/" + n + ".png")
 			if err != nil {
 				t2.Error(err)

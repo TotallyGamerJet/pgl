@@ -13,13 +13,13 @@ func NewProgram(vertex_shader vert_func, fragment_shader frag_func, n GLsizei, i
 	if vertex_shader == nil || fragment_shader == nil {
 		return 0
 	}
-	if n > GL_MAX_VERTEX_OUTPUT_COMPONENTS {
+	if n > MAX_VERTEX_OUTPUT_COMPONENTS {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return 0
 	}
-	var tmp glProgram = glProgram{Vertex_shader: vertex_shader, Fragment_shader: fragment_shader, Uniform: nil, Vs_output_size: int64(n), Interpolation: [64]GLenum{}, Fragdepth_or_discard: fragdepth_or_discard, Deleted: GL_FALSE}
+	var tmp glProgram = glProgram{Vertex_shader: vertex_shader, Fragment_shader: fragment_shader, Uniform: nil, Vs_output_size: int64(n), Interpolation: [64]GLenum{}, Fragdepth_or_discard: fragdepth_or_discard, Deleted: FALSE}
 	copy(tmp.Interpolation[:], interpolation)
 	for i := int64(1); uint64(i) < uint64(len(c.Programs)); i++ {
 		if c.Programs[i].Deleted != 0 && i != int64(c.Cur_program) {
@@ -40,8 +40,8 @@ func pglResizeFramebuffer(w uint64, h uint64) []u8 {
 	tmp = make([]u8, w*h*sizeOfFloat32)
 	copy(tmp, c.Zbuf.Buf)
 	if tmp == nil {
-		if c.Error == GLenum(GL_NO_ERROR) {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
+		if c.Error == GLenum(NO_ERROR) {
+			c.Error = GLenum(OUT_OF_MEMORY)
 		}
 		return nil
 	}
@@ -52,8 +52,8 @@ func pglResizeFramebuffer(w uint64, h uint64) []u8 {
 	tmp = make([]u8, w*h*sizeOfU32)
 	copy(tmp, c.Back_buffer.Buf)
 	if tmp == nil {
-		if c.Error == GLenum(GL_NO_ERROR) {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
+		if c.Error == GLenum(NO_ERROR) {
+			c.Error = GLenum(OUT_OF_MEMORY)
 		}
 		return nil
 	}
@@ -85,7 +85,7 @@ func pglDrawFrame() {
 		for x := float32(0.5); x < float32(c.Back_buffer.W); x++ {
 			c.Builtins.Gl_FragCoord.X = x
 			c.Builtins.Gl_FragCoord.Y = y
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			frag_shader(nil, &c.Builtins, c.Programs[c.Cur_program].Uniform)
 			if c.Builtins.Discard == 0 {
 				draw_pixel(c.Builtins.Gl_FragColor, int64(x), int64(y))
@@ -95,22 +95,22 @@ func pglDrawFrame() {
 }
 
 func pglBufferData(target GLenum, size GLsizei, data []u8, usage GLenum) {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target != GLenum(ARRAY_BUFFER) && target != GLenum(ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_ARRAY_BUFFER)
+	target -= GLenum(ARRAY_BUFFER)
 	if c.Bound_buffers[target] == 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
+			c.Error = GLenum(INVALID_OPERATION)
 		}
 		return
 	}
 	if data == nil {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -120,49 +120,49 @@ func pglBufferData(target GLenum, size GLsizei, data []u8, usage GLenum) {
 	c.Buffers[c.Bound_buffers[target]].Data = data
 	c.Buffers[c.Bound_buffers[target]].User_owned = true
 	c.Buffers[c.Bound_buffers[target]].Size = size
-	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target == GLenum(ELEMENT_ARRAY_BUFFER) {
 		c.Vertex_arrays[c.Cur_vertex_array].Element_buffer = c.Bound_buffers[target]
 	}
 }
 
 func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data []u8) {
-	if target != GLenum(GL_TEXTURE_1D) {
+	if target != GLenum(TEXTURE_1D) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	if data == nil {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 	c.Textures[cur_tex].W = uint64(width)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		return
 	}
 	var components int64
 	_ = components
 	switch format {
-	case GL_RED:
+	case RED:
 		components = 1
-	case GL_RG:
+	case RG:
 		components = 2
-	case GL_RGB, GL_BGR:
+	case RGB, BGR:
 		components = 3
-	case GL_RGBA, GL_BGRA:
+	case RGBA, BGRA:
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -173,54 +173,54 @@ func pglTexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		panic("len(data) != width")
 	}
 	c.Textures[cur_tex].Data = data
-	c.Textures[cur_tex].User_owned = GL_TRUE
+	c.Textures[cur_tex].User_owned = TRUE
 }
 
 func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data []u8) {
-	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+	if target != GLenum(TEXTURE_2D) && target != GLenum(TEXTURE_RECTANGLE) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Z) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	if data == nil {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	var components int64
 	_ = components
 	switch format {
-	case GL_RED:
+	case RED:
 		components = 1
-	case GL_RG:
+	case RG:
 		components = 2
-	case GL_RGB, GL_BGR:
+	case RGB, BGR:
 		components = 3
-	case GL_RGBA, GL_BGRA:
+	case RGBA, BGRA:
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	var cur_tex int64
-	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
-		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	if target == GLenum(TEXTURE_2D) || target == GLenum(TEXTURE_RECTANGLE) {
+		cur_tex = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 		c.Textures[cur_tex].W = uint64(width)
 		c.Textures[cur_tex].H = uint64(height)
 		if c.Textures[cur_tex].User_owned == 0 {
@@ -230,51 +230,51 @@ func pglTexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 			panic("len(data) != width*height")
 		}
 		c.Textures[cur_tex].Data = data
-		c.Textures[cur_tex].User_owned = GL_TRUE
+		c.Textures[cur_tex].User_owned = TRUE
 	} else {
 	}
 }
 
 func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data []u8) {
-	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
+	if target != GLenum(TEXTURE_3D) && target != GLenum(TEXTURE_2D_ARRAY) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	if data == nil {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 	c.Textures[cur_tex].W = uint64(width)
 	c.Textures[cur_tex].H = uint64(height)
 	c.Textures[cur_tex].D = uint64(depth)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		return
 	}
 	var components int64
 	_ = components
 	switch format {
-	case GL_RED:
+	case RED:
 		components = 1
-	case GL_RG:
+	case RG:
 		components = 2
-	case GL_RGB, GL_BGR:
+	case RGB, BGR:
 		components = 3
-	case GL_RGBA, GL_BGRA:
+	case RGBA, BGRA:
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -285,12 +285,12 @@ func pglTexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsiz
 		panic("w*h*d != len(data)")
 	}
 	c.Textures[cur_tex].Data = data
-	c.Textures[cur_tex].User_owned = GL_TRUE
+	c.Textures[cur_tex].User_owned = TRUE
 }
 
 func pglGetBufferData(buffer GLuint) []u8 {
 	if !(buffer != 0 && uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == false) {
-		c.Error = GLenum(GL_INVALID_OPERATION)
+		c.Error = GLenum(INVALID_OPERATION)
 		return nil
 	}
 	return c.Buffers[buffer].Data
@@ -298,7 +298,7 @@ func pglGetBufferData(buffer GLuint) []u8 {
 
 func pglGetTextureData(texture GLuint) []u8 {
 	if !(uint64(texture) < uint64(len(c.Textures)) && c.Textures[texture].Deleted == 0) {
-		c.Error = GLenum(GL_INVALID_OPERATION)
+		c.Error = GLenum(INVALID_OPERATION)
 
 	}
 	return c.Textures[texture].Data

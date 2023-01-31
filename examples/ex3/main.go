@@ -70,19 +70,19 @@ func main() {
 
 	var triangle pgl.GLuint
 	pgl.GenBuffers(1, &triangle)
-	pgl.BindBuffer(pgl.GL_ARRAY_BUFFER, triangle)
-	pgl.BufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(float32(0)))*pgl.GLsizei(len(points)), unsafe.Pointer(&points[0]), pgl.GL_STATIC_DRAW)
+	pgl.BindBuffer(pgl.ARRAY_BUFFER, triangle)
+	pgl.BufferData(pgl.ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(float32(0)))*pgl.GLsizei(len(points)), unsafe.Pointer(&points[0]), pgl.STATIC_DRAW)
 	pgl.EnableVertexAttribArray(0)
-	pgl.VertexAttribPointer(0, 3, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
+	pgl.VertexAttribPointer(0, 3, pgl.FLOAT, pgl.FALSE, 0, 0)
 
 	var colors pgl.GLuint
 	pgl.GenBuffers(1, &colors)
-	pgl.BindBuffer(pgl.GL_ARRAY_BUFFER, colors)
-	pgl.BufferData(pgl.GL_ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(float32(0))*12), unsafe.Pointer(&color_array[0]), pgl.GL_STATIC_DRAW)
+	pgl.BindBuffer(pgl.ARRAY_BUFFER, colors)
+	pgl.BufferData(pgl.ARRAY_BUFFER, pgl.GLsizei(unsafe.Sizeof(float32(0))*12), unsafe.Pointer(&color_array[0]), pgl.STATIC_DRAW)
 	pgl.EnableVertexAttribArray(4)
-	pgl.VertexAttribPointer(4, 4, pgl.GL_FLOAT, pgl.GL_FALSE, 0, 0)
+	pgl.VertexAttribPointer(4, 4, pgl.FLOAT, pgl.FALSE, 0, 0)
 
-	var myshader = pgl.NewProgram(smooth_vs, smooth_fs, 4, smooth[:], pgl.GL_FALSE)
+	var myshader = pgl.NewProgram(smooth_vs, smooth_fs, 4, smooth[:], pgl.FALSE)
 	pgl.UseProgram(myshader)
 
 	pgl.SetUniform(&the_uniforms)
@@ -130,7 +130,7 @@ func main() {
 			counter = 0
 		}
 
-		pgl.Clear(pgl.GL_COLOR_BUFFER_BIT)
+		pgl.Clear(pgl.COLOR_BUFFER_BIT)
 
 		var y_axis = pgl.Vec3{0, 1, 0}
 		pgl.Load_rotation_mat4(&rot_mat, y_axis, pgl.DEG_TO_RAD(30)*frame_time)
@@ -139,7 +139,7 @@ func main() {
 		save_rot = tmp_mat
 		pgl.Mult_mat4_mat4(&the_uniforms.mvp_mat, vp_mat, save_rot)
 
-		pgl.DrawArrays(pgl.GL_TRIANGLES, 0, 3)
+		pgl.DrawArrays(pgl.TRIANGLES, 0, 3)
 
 		tex.Update(nil, unsafe.Slice((*byte)(unsafe.Pointer(&bbufpix[0])), int(HEIGHT*WIDTH*unsafe.Sizeof(pgl.U32(0)))), int(WIDTH*unsafe.Sizeof(pgl.U32(0))))
 		//Render the scene

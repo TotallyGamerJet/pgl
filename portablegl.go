@@ -1,4 +1,5 @@
-/* Package pgl is a cpu implementation of OpenGL 3.3ish written entirely in Go
+/*
+	Package pgl is a cpu implementation of OpenGL 3.3ish written entirely in Go
 
 MIT License
 Copyright (c) 2011-2022 Robert Winkler
@@ -14,20 +15,22 @@ CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFT
 IN THE SOFTWARE.
 Clipping code copyright (c) Fabrice Bellard from TinyGL
 https://bellard.org/TinyGL/
- (C) 1997-1998 Fabrice Bellard
-  This software is provided 'as-is', without any express or implied
-  warranty.  In no event will the authors be held liable for any damages
-  arising from the use of this software.
-  Permission is granted to anyone to use this software for any purpose,
-  including commercial applications, and to alter it and redistribute it
-  freely, subject to the following restrictions:
-  1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product and its documentation
-     *is* required.
-  2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
-  3. This notice may not be removed or altered from any source distribution.
+
+	(C) 1997-1998 Fabrice Bellard
+	 This software is provided 'as-is', without any express or implied
+	 warranty.  In no event will the authors be held liable for any damages
+	 arising from the use of this software.
+	 Permission is granted to anyone to use this software for any purpose,
+	 including commercial applications, and to alter it and redistribute it
+	 freely, subject to the following restrictions:
+	 1. The origin of this software must not be misrepresented; you must not
+	    claim that you wrote the original software. If you use this software
+	    in a product, an acknowledgment in the product and its documentation
+	    *is* required.
+	 2. Altered source versions must be plainly marked as such, and must not be
+	    misrepresented as being the original software.
+	 3. This notice may not be removed or altered from any source distribution.
+
 If you redistribute modified sources, I would appreciate that you
 include in the files history information documenting your changes.
 */
@@ -35,7 +38,6 @@ package pgl
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/chewxy/math32"
 	"github.com/gotranspile/cxgo/runtime/cmath"
 	"math"
@@ -46,12 +48,12 @@ const RM_PI = 3.14159265358979323846
 const RM_2PI = 2.0 * RM_PI
 const PI_DIV_180 = 0.017453292519943296
 const INV_PI_DIV_180 = 57.2957795130823229
-const GL_FALSE = 0
-const GL_TRUE = 1
+const FALSE = 0
+const TRUE = 1
 const MAX_VERTICES = 500000
-const GL_MAX_VERTEX_ATTRIBS = 16
-const GL_MAX_VERTEX_OUTPUT_COMPONENTS = 64
-const GL_MAX_DRAW_BUFFERS = 8
+const MAX_VERTEX_ATTRIBS = 16
+const MAX_VERTEX_OUTPUT_COMPONENTS = 64
+const MAX_DRAW_BUFFERS = 8
 const CLIP_EPSILON = 1e-5
 
 type GLuint uint32
@@ -72,241 +74,241 @@ type GLdouble float64
 type GLboolean uint8
 
 const (
-	GL_NO_ERROR                      = 0
-	GL_INVALID_ENUM                  = 1
-	GL_INVALID_VALUE                 = 2
-	GL_INVALID_OPERATION             = 3
-	GL_INVALID_FRAMEBUFFER_OPERATION = 4
-	GL_OUT_OF_MEMORY                 = 5
-	GL_ARRAY_BUFFER                  = 6
-	GL_COPY_READ_BUFFER              = 7
-	GL_COPY_WRITE_BUFFER             = 8
-	GL_ELEMENT_ARRAY_BUFFER          = 9
-	GL_PIXEL_PACK_BUFFER             = 10
-	GL_PIXEL_UNPACK_BUFFER           = 11
-	GL_TEXTURE_BUFFER                = 12
-	GL_TRANSFORM_FEEDBACK_BUFFER     = 13
-	GL_UNIFORM_BUFFER                = 14
-	GL_NUM_BUFFER_TYPES              = 15
-	GL_STREAM_DRAW                   = 16
-	GL_STREAM_READ                   = 17
-	GL_STREAM_COPY                   = 18
-	GL_STATIC_DRAW                   = 19
-	GL_STATIC_READ                   = 20
-	GL_STATIC_COPY                   = 21
-	GL_DYNAMIC_DRAW                  = 22
-	GL_DYNAMIC_READ                  = 23
-	GL_DYNAMIC_COPY                  = 24
-	GL_READ_ONLY                     = 25
-	GL_WRITE_ONLY                    = 26
-	GL_READ_WRITE                    = 27
-	GL_POINT                         = 28
-	GL_LINE                          = 29
-	GL_FILL                          = 30
-	GL_POINTS                        = 31
-	GL_LINES                         = 32
-	GL_LINE_STRIP                    = 33
-	GL_LINE_LOOP                     = 34
-	GL_TRIANGLES                     = 35
-	GL_TRIANGLE_STRIP                = 36
-	GL_TRIANGLE_FAN                  = 37
-	GL_LINE_STRIP_AJACENCY           = 38
-	GL_LINES_AJACENCY                = 39
-	GL_TRIANGLES_AJACENCY            = 40
-	GL_TRIANGLE_STRIP_AJACENCY       = 41
-	GL_LESS                          = 42
-	GL_LEQUAL                        = 43
-	GL_GREATER                       = 44
-	GL_GEQUAL                        = 45
-	GL_EQUAL                         = 46
-	GL_NOTEQUAL                      = 47
-	GL_ALWAYS                        = 48
-	GL_NEVER                         = 49
-	GL_ZERO                          = 50
-	GL_ONE                           = 51
-	GL_SRC_COLOR                     = 52
-	GL_ONE_MINUS_SRC_COLOR           = 53
-	GL_DST_COLOR                     = 54
-	GL_ONE_MINUS_DST_COLOR           = 55
-	GL_SRC_ALPHA                     = 56
-	GL_ONE_MINUS_SRC_ALPHA           = 57
-	GL_DST_ALPHA                     = 58
-	GL_ONE_MINUS_DST_ALPHA           = 59
-	GL_CONSTANT_COLOR                = 60
-	GL_ONE_MINUS_CONSTANT_COLOR      = 61
-	GL_CONSTANT_ALPHA                = 62
-	GL_ONE_MINUS_CONSTANT_ALPHA      = 63
-	GL_SRC_ALPHA_SATURATE            = 64
-	NUM_BLEND_FUNCS                  = 65
-	GL_SRC1_COLOR                    = 66
-	GL_ONE_MINUS_SRC1_COLOR          = 67
-	GL_SRC1_ALPHA                    = 68
-	GL_ONE_MINUS_SRC1_ALPHA          = 69
-	GL_FUNC_ADD                      = 70
-	GL_FUNC_SUBTRACT                 = 71
-	GL_FUNC_REVERSE_SUBTRACT         = 72
-	GL_MIN                           = 73
-	GL_MAX                           = 74
-	NUM_BLEND_EQUATIONS              = 75
-	GL_TEXTURE_UNBOUND               = 76
-	GL_TEXTURE_1D                    = 77
-	GL_TEXTURE_2D                    = 78
-	GL_TEXTURE_3D                    = 79
-	GL_TEXTURE_1D_ARRAY              = 80
-	GL_TEXTURE_2D_ARRAY              = 81
-	GL_TEXTURE_RECTANGLE             = 82
-	GL_TEXTURE_CUBE_MAP              = 83
-	GL_NUM_TEXTURE_TYPES             = 84
-	GL_TEXTURE_CUBE_MAP_POSITIVE_X   = 85
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_X   = 86
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Y   = 87
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Y   = 88
-	GL_TEXTURE_CUBE_MAP_POSITIVE_Z   = 89
-	GL_TEXTURE_CUBE_MAP_NEGATIVE_Z   = 90
-	GL_TEXTURE_BASE_LEVEL            = 91
-	GL_TEXTURE_BORDER_COLOR          = 92
-	GL_TEXTURE_COMPARE_FUNC          = 93
-	GL_TEXTURE_COMPARE_MODE          = 94
-	GL_TEXTURE_LOD_BIAS              = 95
-	GL_TEXTURE_MIN_FILTER            = 96
-	GL_TEXTURE_MAG_FILTER            = 97
-	GL_TEXTURE_MIN_LOD               = 98
-	GL_TEXTURE_MAX_LOD               = 99
-	GL_TEXTURE_MAX_LEVEL             = 100
-	GL_TEXTURE_SWIZZLE_R             = 101
-	GL_TEXTURE_SWIZZLE_G             = 102
-	GL_TEXTURE_SWIZZLE_B             = 103
-	GL_TEXTURE_SWIZZLE_A             = 104
-	GL_TEXTURE_SWIZZLE_RGBA          = 105
-	GL_TEXTURE_WRAP_S                = 106
-	GL_TEXTURE_WRAP_T                = 107
-	GL_TEXTURE_WRAP_R                = 108
-	GL_REPEAT                        = 109
-	GL_CLAMP_TO_EDGE                 = 110
-	GL_CLAMP_TO_BORDER               = 111
-	GL_MIRRORED_REPEAT               = 112
-	GL_NEAREST                       = 113
-	GL_LINEAR                        = 114
-	GL_NEAREST_MIPMAP_NEAREST        = 115
-	GL_NEAREST_MIPMAP_LINEAR         = 116
-	GL_LINEAR_MIPMAP_NEAREST         = 117
-	GL_LINEAR_MIPMAP_LINEAR          = 118
-	GL_RED                           = 119
-	GL_RG                            = 120
-	GL_RGB                           = 121
-	GL_BGR                           = 122
-	GL_RGBA                          = 123
-	GL_BGRA                          = 124
-	GL_COMPRESSED_RED                = 125
-	GL_COMPRESSED_RG                 = 126
-	GL_COMPRESSED_RGB                = math.MaxInt8
-	GL_COMPRESSED_RGBA               = 128
-	GL_UNPACK_ALIGNMENT              = 129
-	GL_PACK_ALIGNMENT                = 130
-	GL_TEXTURE0                      = 131
-	GL_TEXTURE1                      = 132
-	GL_TEXTURE2                      = 133
-	GL_TEXTURE3                      = 134
-	GL_TEXTURE4                      = 135
-	GL_TEXTURE5                      = 136
-	GL_TEXTURE6                      = 137
-	GL_TEXTURE7                      = 138
-	GL_CULL_FACE                     = 139
-	GL_DEPTH_TEST                    = 140
-	GL_DEPTH_CLAMP                   = 141
-	GL_LINE_SMOOTH                   = 142
-	GL_BLEND                         = 143
-	GL_COLOR_LOGIC_OP                = 144
-	GL_POLYGON_OFFSET_FILL           = 145
-	GL_SCISSOR_TEST                  = 146
-	GL_STENCIL_TEST                  = 147
-	GL_FIRST_VERTEX_CONVENTION       = 148
-	GL_LAST_VERTEX_CONVENTION        = 149
-	GL_POINT_SPRITE_COORD_ORIGIN     = 150
-	GL_UPPER_LEFT                    = 151
-	GL_LOWER_LEFT                    = 152
-	GL_FRONT                         = 153
-	GL_BACK                          = 154
-	GL_FRONT_AND_BACK                = 155
-	GL_CCW                           = 156
-	GL_CW                            = 157
-	GL_CLEAR                         = 158
-	GL_SET                           = 159
-	GL_COPY                          = 160
-	GL_COPY_INVERTED                 = 161
-	GL_NOOP                          = 162
-	GL_AND                           = 163
-	GL_NAND                          = 164
-	GL_OR                            = 165
-	GL_NOR                           = 166
-	GL_XOR                           = 167
-	GL_EQUIV                         = 168
-	GL_AND_REVERSE                   = 169
-	GL_AND_INVERTED                  = 170
-	GL_OR_REVERSE                    = 171
-	GL_OR_INVERTED                   = 172
-	GL_INVERT                        = 173
-	GL_KEEP                          = 174
-	GL_REPLACE                       = 175
-	GL_INCR                          = 176
-	GL_INCR_WRAP                     = 177
-	GL_DECR                          = 178
-	GL_DECR_WRAP                     = 179
-	GL_UNSIGNED_BYTE                 = 180
-	GL_BYTE                          = 181
-	GL_BITMAP                        = 182
-	GL_UNSIGNED_SHORT                = 183
-	GL_SHORT                         = 184
-	GL_UNSIGNED_INT                  = 185
-	GL_INT                           = 186
-	GL_FLOAT                         = 187
-	GL_VENDOR                        = 188
-	GL_RENDERER                      = 189
-	GL_VERSION                       = 190
-	GL_SHADING_LANGUAGE_VERSION      = 191
-	GL_POLYGON_OFFSET_FACTOR         = 192
-	GL_POLYGON_OFFSET_UNITS          = 193
-	GL_POINT_SIZE                    = 194
-	GL_DEPTH_CLEAR_VALUE             = 195
-	GL_DEPTH_RANGE                   = 196
-	GL_STENCIL_WRITE_MASK            = 197
-	GL_STENCIL_REF                   = 198
-	GL_STENCIL_VALUE_MASK            = 199
-	GL_STENCIL_FUNC                  = 200
-	GL_STENCIL_FAIL                  = 201
-	GL_STENCIL_PASS_DEPTH_FAIL       = 202
-	GL_STENCIL_PASS_DEPTH_PASS       = 203
-	GL_STENCIL_BACK_WRITE_MASK       = 204
-	GL_STENCIL_BACK_REF              = 205
-	GL_STENCIL_BACK_VALUE_MASK       = 206
-	GL_STENCIL_BACK_FUNC             = 207
-	GL_STENCIL_BACK_FAIL             = 208
-	GL_STENCIL_BACK_PASS_DEPTH_FAIL  = 209
-	GL_STENCIL_BACK_PASS_DEPTH_PASS  = 210
-	GL_LOGIC_OP_MODE                 = 211
-	GL_BLEND_SRC_RGB                 = 212
-	GL_BLEND_SRC_ALPHA               = 213
-	GL_BLEND_DST_RGB                 = 214
-	GL_BLEND_DST_ALPHA               = 215
-	GL_BLEND_EQUATION_RGB            = 216
-	GL_BLEND_EQUATION_ALPHA          = 217
-	GL_CULL_FACE_MODE                = 218
-	GL_FRONT_FACE                    = 219
-	GL_DEPTH_FUNC                    = 220
-	GL_PROVOKING_VERTEX              = 221
-	GL_POLYGON_MODE                  = 222
-	GL_COMPUTE_SHADER                = 223
-	GL_VERTEX_SHADER                 = 224
-	GL_TESS_CONTROL_SHADER           = 225
-	GL_TESS_EVALUATION_SHADER        = 226
-	GL_GEOMETRY_SHADER               = 227
-	GL_FRAGMENT_SHADER               = 228
-	GL_INFO_LOG_LENGTH               = 229
-	GL_COMPILE_STATUS                = 230
-	GL_LINK_STATUS                   = 231
-	GL_COLOR_BUFFER_BIT              = 1 << 10
-	GL_DEPTH_BUFFER_BIT              = 1 << 11
-	GL_STENCIL_BUFFER_BIT            = 1 << 12
+	NO_ERROR                      = 0
+	INVALID_ENUM                  = 1
+	INVALID_VALUE                 = 2
+	INVALID_OPERATION             = 3
+	INVALID_FRAMEBUFFER_OPERATION = 4
+	OUT_OF_MEMORY                 = 5
+	ARRAY_BUFFER                  = 6
+	COPY_READ_BUFFER              = 7
+	COPY_WRITE_BUFFER             = 8
+	ELEMENT_ARRAY_BUFFER          = 9
+	PIXEL_PACK_BUFFER             = 10
+	PIXEL_UNPACK_BUFFER           = 11
+	TEXTURE_BUFFER                = 12
+	TRANSFORM_FEEDBACK_BUFFER     = 13
+	UNIFORM_BUFFER                = 14
+	NUM_BUFFER_TYPES              = 15
+	STREAM_DRAW                   = 16
+	STREAM_READ                   = 17
+	STREAM_COPY                   = 18
+	STATIC_DRAW                   = 19
+	STATIC_READ                   = 20
+	STATIC_COPY                   = 21
+	DYNAMIC_DRAW                  = 22
+	DYNAMIC_READ                  = 23
+	DYNAMIC_COPY                  = 24
+	READ_ONLY                     = 25
+	WRITE_ONLY                    = 26
+	READ_WRITE                    = 27
+	POINT                         = 28
+	LINE                          = 29
+	FILL                          = 30
+	POINTS                        = 31
+	LINES                         = 32
+	LINE_STRIP                    = 33
+	LINE_LOOP                     = 34
+	TRIANGLES                     = 35
+	TRIANGLE_STRIP                = 36
+	TRIANGLE_FAN                  = 37
+	LINE_STRIP_AJACENCY           = 38
+	LINES_AJACENCY                = 39
+	TRIANGLES_AJACENCY            = 40
+	TRIANGLE_STRIP_AJACENCY       = 41
+	LESS                          = 42
+	LEQUAL                        = 43
+	GREATER                       = 44
+	GEQUAL                        = 45
+	EQUAL                         = 46
+	NOTEQUAL                      = 47
+	ALWAYS                        = 48
+	NEVER                         = 49
+	ZERO                          = 50
+	ONE                           = 51
+	SRC_COLOR                     = 52
+	ONE_MINUS_SRC_COLOR           = 53
+	DST_COLOR                     = 54
+	ONE_MINUS_DST_COLOR           = 55
+	SRC_ALPHA                     = 56
+	ONE_MINUS_SRC_ALPHA           = 57
+	DST_ALPHA                     = 58
+	ONE_MINUS_DST_ALPHA           = 59
+	CONSTANT_COLOR                = 60
+	ONE_MINUS_CONSTANT_COLOR      = 61
+	CONSTANT_ALPHA                = 62
+	ONE_MINUS_CONSTANT_ALPHA      = 63
+	SRC_ALPHA_SATURATE            = 64
+	NUM_BLEND_FUNCS               = 65
+	SRC1_COLOR                    = 66
+	ONE_MINUS_SRC1_COLOR          = 67
+	SRC1_ALPHA                    = 68
+	ONE_MINUS_SRC1_ALPHA          = 69
+	FUNC_ADD                      = 70
+	FUNC_SUBTRACT                 = 71
+	FUNC_REVERSE_SUBTRACT         = 72
+	MIN                           = 73
+	MAX                           = 74
+	NUM_BLEND_EQUATIONS           = 75
+	TEXTURE_UNBOUND               = 76
+	TEXTURE_1D                    = 77
+	TEXTURE_2D                    = 78
+	TEXTURE_3D                    = 79
+	TEXTURE_1D_ARRAY              = 80
+	TEXTURE_2D_ARRAY              = 81
+	TEXTURE_RECTANGLE             = 82
+	TEXTURE_CUBE_MAP              = 83
+	NUM_TEXTURE_TYPES             = 84
+	TEXTURE_CUBE_MAP_POSITIVE_X   = 85
+	TEXTURE_CUBE_MAP_NEGATIVE_X   = 86
+	TEXTURE_CUBE_MAP_POSITIVE_Y   = 87
+	TEXTURE_CUBE_MAP_NEGATIVE_Y   = 88
+	TEXTURE_CUBE_MAP_POSITIVE_Z   = 89
+	TEXTURE_CUBE_MAP_NEGATIVE_Z   = 90
+	TEXTURE_BASE_LEVEL            = 91
+	TEXTURE_BORDER_COLOR          = 92
+	TEXTURE_COMPARE_FUNC          = 93
+	TEXTURE_COMPARE_MODE          = 94
+	TEXTURE_LOD_BIAS              = 95
+	TEXTURE_MIN_FILTER            = 96
+	TEXTURE_MAG_FILTER            = 97
+	TEXTURE_MIN_LOD               = 98
+	TEXTURE_MAX_LOD               = 99
+	TEXTURE_MAX_LEVEL             = 100
+	TEXTURE_SWIZZLE_R             = 101
+	TEXTURE_SWIZZLE_G             = 102
+	TEXTURE_SWIZZLE_B             = 103
+	TEXTURE_SWIZZLE_A             = 104
+	TEXTURE_SWIZZLE_RGBA          = 105
+	TEXTURE_WRAP_S                = 106
+	TEXTURE_WRAP_T                = 107
+	TEXTURE_WRAP_R                = 108
+	REPEAT                        = 109
+	CLAMP_TO_EDGE                 = 110
+	CLAMP_TO_BORDER               = 111
+	MIRRORED_REPEAT               = 112
+	NEAREST                       = 113
+	LINEAR                        = 114
+	NEAREST_MIPMAP_NEAREST        = 115
+	NEAREST_MIPMAP_LINEAR         = 116
+	LINEAR_MIPMAP_NEAREST         = 117
+	LINEAR_MIPMAP_LINEAR          = 118
+	RED                           = 119
+	RG                            = 120
+	RGB                           = 121
+	BGR                           = 122
+	RGBA                          = 123
+	BGRA                          = 124
+	COMPRESSED_RED                = 125
+	COMPRESSED_RG                 = 126
+	COMPRESSED_RGB                = math.MaxInt8
+	COMPRESSED_RGBA               = 128
+	UNPACK_ALIGNMENT              = 129
+	PACK_ALIGNMENT                = 130
+	TEXTURE0                      = 131
+	TEXTURE1                      = 132
+	TEXTURE2                      = 133
+	TEXTURE3                      = 134
+	TEXTURE4                      = 135
+	TEXTURE5                      = 136
+	TEXTURE6                      = 137
+	TEXTURE7                      = 138
+	CULL_FACE                     = 139
+	DEPTH_TEST                    = 140
+	DEPTH_CLAMP                   = 141
+	LINE_SMOOTH                   = 142
+	BLEND                         = 143
+	COLOR_LOGIC_OP                = 144
+	POLYGON_OFFSET_FILL           = 145
+	SCISSOR_TEST                  = 146
+	STENCIL_TEST                  = 147
+	FIRST_VERTEX_CONVENTION       = 148
+	LAST_VERTEX_CONVENTION        = 149
+	POINT_SPRITE_COORD_ORIGIN     = 150
+	UPPER_LEFT                    = 151
+	LOWER_LEFT                    = 152
+	FRONT                         = 153
+	BACK                          = 154
+	FRONT_AND_BACK                = 155
+	CCW                           = 156
+	CW                            = 157
+	CLEAR                         = 158
+	SET                           = 159
+	COPY                          = 160
+	COPY_INVERTED                 = 161
+	NOOP                          = 162
+	AND                           = 163
+	NAND                          = 164
+	OR                            = 165
+	NOR                           = 166
+	XOR                           = 167
+	EQUIV                         = 168
+	AND_REVERSE                   = 169
+	AND_INVERTED                  = 170
+	OR_REVERSE                    = 171
+	OR_INVERTED                   = 172
+	INVERT                        = 173
+	KEEP                          = 174
+	REPLACE                       = 175
+	INCR                          = 176
+	INCR_WRAP                     = 177
+	DECR                          = 178
+	DECR_WRAP                     = 179
+	UNSIGNED_BYTE                 = 180
+	BYTE                          = 181
+	BITMAP                        = 182
+	UNSIGNED_SHORT                = 183
+	SHORT                         = 184
+	UNSIGNED_INT                  = 185
+	INT                           = 186
+	FLOAT                         = 187
+	VENDOR                        = 188
+	RENDERER                      = 189
+	VERSION                       = 190
+	SHADING_LANGUAGE_VERSION      = 191
+	POLYGON_OFFSET_FACTOR         = 192
+	POLYGON_OFFSET_UNITS          = 193
+	POINT_SIZE                    = 194
+	DEPTH_CLEAR_VALUE             = 195
+	DEPTH_RANGE                   = 196
+	STENCIL_WRITE_MASK            = 197
+	STENCIL_REF                   = 198
+	STENCIL_VALUE_MASK            = 199
+	STENCIL_FUNC                  = 200
+	STENCIL_FAIL                  = 201
+	STENCIL_PASS_DEPTH_FAIL       = 202
+	STENCIL_PASS_DEPTH_PASS       = 203
+	STENCIL_BACK_WRITE_MASK       = 204
+	STENCIL_BACK_REF              = 205
+	STENCIL_BACK_VALUE_MASK       = 206
+	STENCIL_BACK_FUNC             = 207
+	STENCIL_BACK_FAIL             = 208
+	STENCIL_BACK_PASS_DEPTH_FAIL  = 209
+	STENCIL_BACK_PASS_DEPTH_PASS  = 210
+	LOGIC_OP_MODE                 = 211
+	BLEND_SRC_RGB                 = 212
+	BLEND_SRC_ALPHA               = 213
+	BLEND_DST_RGB                 = 214
+	BLEND_DST_ALPHA               = 215
+	BLEND_EQUATION_RGB            = 216
+	BLEND_EQUATION_ALPHA          = 217
+	CULL_FACE_MODE                = 218
+	FRONT_FACE                    = 219
+	DEPTH_FUNC                    = 220
+	PROVOKING_VERTEX              = 221
+	POLYGON_MODE                  = 222
+	COMPUTE_SHADER                = 223
+	VERTEX_SHADER                 = 224
+	TESS_CONTROL_SHADER           = 225
+	TESS_EVALUATION_SHADER        = 226
+	GEOMETRY_SHADER               = 227
+	FRAGMENT_SHADER               = 228
+	INFO_LOG_LENGTH               = 229
+	COMPILE_STATUS                = 230
+	LINK_STATUS                   = 231
+	COLOR_BUFFER_BIT              = 1 << 10
+	DEPTH_BUFFER_BIT              = 1 << 11
+	STENCIL_BUFFER_BIT            = 1 << 12
 )
 const (
 	SMOOTH = iota
@@ -336,7 +338,7 @@ type glProgram struct {
 	Fragment_shader      frag_func
 	Uniform              interface{}
 	Vs_output_size       int64
-	Interpolation        [GL_MAX_VERTEX_OUTPUT_COMPONENTS]GLenum
+	Interpolation        [MAX_VERTEX_OUTPUT_COMPONENTS]GLenum
 	Fragdepth_or_discard GLboolean
 	Deleted              GLboolean
 }
@@ -358,7 +360,7 @@ type glVertex_Attrib struct {
 	Divisor    GLuint
 }
 type glVertex_Array struct {
-	Vertex_attribs [GL_MAX_VERTEX_ATTRIBS]glVertex_Attrib
+	Vertex_attribs [MAX_VERTEX_ATTRIBS]glVertex_Attrib
 	Element_buffer GLuint
 	Deleted        bool
 }
@@ -414,10 +416,10 @@ type GlContext struct {
 	Cur_texture2D          GLuint
 	Cur_program            GLuint
 	Error                  GLenum
-	Vertex_attribs_vs      [GL_MAX_VERTEX_ATTRIBS]Vec4
+	Vertex_attribs_vs      [MAX_VERTEX_ATTRIBS]Vec4
 	Builtins               Shader_Builtins
 	Vs_output              Vertex_Shader_output
-	Fs_input               [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
+	Fs_input               [MAX_VERTEX_OUTPUT_COMPONENTS]float32
 	Depth_test             GLboolean
 	Line_smooth            GLboolean
 	Cull_face              GLboolean
@@ -748,7 +750,7 @@ func is_front_facing(v0 *glVertex, v1 *glVertex, v2 *glVertex) int64 {
 		p2      = vec4_to_vec3h(v2.Screen_space)
 	)
 	normal = cross_product(sub_vec3s(p1, p0), sub_vec3s(p2, p0))
-	if c.Front_face == GLenum(GL_CW) {
+	if c.Front_face == GLenum(CW) {
 		normal = negate_vec3(normal)
 	}
 	if Dot_vec3s(normal, tmpvec3) <= 0 {
@@ -801,11 +803,11 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 		tmpvec4     Vec4
 		buf_pos     []u8
 		vec4_init   = Vec4{0.0, 0.0, 0.0, 1.0}
-		enabled     [GL_MAX_VERTEX_ATTRIBS]int64
+		enabled     [MAX_VERTEX_ATTRIBS]int64
 	)
 	var v = c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[:]
 	var elem_buffer = c.Vertex_arrays[c.Cur_vertex_array].Element_buffer
-	for i, j = 0, 0; i < GL_MAX_VERTEX_ATTRIBS; i++ {
+	for i, j = 0, 0; i < MAX_VERTEX_ATTRIBS; i++ {
 		c.Vertex_attribs_vs[i] = vec4_init
 		if v[i].Enabled {
 			if v[i].Divisor == 0 {
@@ -853,11 +855,11 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 			ushort_array []GLushort = unsafe.Slice((*GLushort)(unsafe.Pointer(&c.Buffers[elem_buffer].Data[0])), first+GLint(count))
 			ubyte_array  []GLubyte  = unsafe.Slice((*GLubyte)(unsafe.Pointer(&c.Buffers[elem_buffer].Data[0])), first+GLint(count))
 		)
-		if c.Buffers[elem_buffer].Type == GLenum(GL_UNSIGNED_BYTE) {
+		if c.Buffers[elem_buffer].Type == GLenum(UNSIGNED_BYTE) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
 				do_vertex(v, enabled[:], num_enabled, uint64(ubyte_array[i]), vert)
 			}
-		} else if c.Buffers[elem_buffer].Type == GLenum(GL_UNSIGNED_SHORT) {
+		} else if c.Buffers[elem_buffer].Type == GLenum(UNSIGNED_SHORT) {
 			for vert, i = 0, uint64(0); i < uint64(first+GLint(count)); vert, i = vert+1, i+1 {
 				do_vertex(v, enabled[:], num_enabled, uint64(ushort_array[i]), vert)
 			}
@@ -870,7 +872,7 @@ func vertex_stage(first GLint, count GLsizei, instance_id GLsizei, base_instance
 }
 func draw_point(vert *glVertex) {
 	var (
-		fs_input [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
+		fs_input [MAX_VERTEX_OUTPUT_COMPONENTS]float32
 		point    Vec3 = vec4_to_vec3h(vert.Screen_space)
 	)
 	point.Z = float32((float64(point.Z)-(-1.0))/(1.0-(-1.0))*float64(c.Depth_range_far-c.Depth_range_near) + float64(c.Depth_range_near))
@@ -882,7 +884,7 @@ func draw_point(vert *glVertex) {
 	var y float32 = float32(float64(point.Y) + 0.5)
 	var p_size float32 = float32(c.Point_size)
 	var origin float32
-	if c.Point_spr_origin == GLenum(GL_UPPER_LEFT) {
+	if c.Point_spr_origin == GLenum(UPPER_LEFT) {
 		origin = -1.0
 	} else {
 		origin = 1.0
@@ -908,7 +910,7 @@ func draw_point(vert *glVertex) {
 			c.Builtins.Gl_FragCoord.Z = point.Z
 			c.Builtins.Gl_FragCoord.W = 1 / vert.Screen_space.W
 
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			c.Builtins.Gl_FragDepth = point.Z
 			c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 			if c.Builtins.Discard == 0 {
@@ -927,7 +929,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 		panic("assert failed")
 	}
 	vertex_stage(first, count, instance, base_instance, use_elements)
-	if mode == GLenum(GL_POINTS) {
+	if mode == GLenum(POINTS) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)); i, vert = i+1, vert+1 {
 			if c.Glverts[vert].Clip_code != 0 {
 				continue
@@ -935,7 +937,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			c.Glverts[vert].Screen_space = Mult_mat4_vec4(c.Vp_mat, c.Glverts[vert].Clip_space)
 			draw_point((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))))
 		}
-	} else if mode == GLenum(GL_LINES) {
+	} else if mode == GLenum(LINES) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
 			i += 2
 			return func() uint64 {
@@ -945,7 +947,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 		}() {
 			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
-	} else if mode == GLenum(GL_LINE_STRIP) {
+	} else if mode == GLenum(LINE_STRIP) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
 			i++
 			return func() uint64 {
@@ -957,7 +959,7 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 		}() {
 			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
-	} else if mode == GLenum(GL_LINE_LOOP) {
+	} else if mode == GLenum(LINE_LOOP) {
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-1); func() uint64 {
 			i++
 			return func() uint64 {
@@ -970,8 +972,8 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(vert+1))))
 		}
 		draw_line_clip((*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*uintptr(count-1))), (*glVertex)(unsafe.Add(unsafe.Pointer(&c.Glverts[0]), unsafe.Sizeof(glVertex{})*0)))
-	} else if mode == GLenum(GL_TRIANGLES) {
-		if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
+	} else if mode == GLenum(TRIANGLES) {
+		if c.Provoking_vert == GLenum(LAST_VERTEX_CONVENTION) {
 			provoke = 2
 		} else {
 			provoke = 0
@@ -979,13 +981,13 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 		for vert, i = 0, uint64(first); i < uint64(first+GLint(count)-2); i, vert = i+3, vert+3 {
 			draw_triangle(&c.Glverts[vert], &c.Glverts[vert+1], &c.Glverts[vert+2], vert+uint64(provoke))
 		}
-	} else if mode == GLenum(GL_TRIANGLE_STRIP) {
+	} else if mode == GLenum(TRIANGLE_STRIP) {
 		var (
 			a      uint64 = 0
 			b      uint64 = 1
 			toggle uint64 = 0
 		)
-		if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
+		if c.Provoking_vert == GLenum(LAST_VERTEX_CONVENTION) {
 			provoke = 0
 		} else {
 			provoke = -2
@@ -999,8 +1001,8 @@ func run_pipeline(mode GLenum, first GLint, count GLsizei, instance GLsizei, bas
 			}
 			toggle = uint64(boolToInt(toggle == 0))
 		}
-	} else if mode == GLenum(GL_TRIANGLE_FAN) {
-		if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
+	} else if mode == GLenum(TRIANGLE_FAN) {
+		if c.Provoking_vert == GLenum(LAST_VERTEX_CONVENTION) {
 			provoke = 0
 		} else {
 			provoke = -1
@@ -1015,21 +1017,21 @@ func depthtest(zval float32, zbufval float32) int64 {
 		return 0
 	}
 	switch c.Depth_func {
-	case GL_LESS:
+	case LESS:
 		return int64(boolToInt(zval < zbufval))
-	case GL_LEQUAL:
+	case LEQUAL:
 		return int64(boolToInt(zval <= zbufval))
-	case GL_GREATER:
+	case GREATER:
 		return int64(boolToInt(zval > zbufval))
-	case GL_GEQUAL:
+	case GEQUAL:
 		return int64(boolToInt(zval >= zbufval))
-	case GL_EQUAL:
+	case EQUAL:
 		return int64(boolToInt(zval == zbufval))
-	case GL_NOTEQUAL:
+	case NOTEQUAL:
 		return int64(boolToInt(zval != zbufval))
-	case GL_ALWAYS:
+	case ALWAYS:
 		return 1
-	case GL_NEVER:
+	case NEVER:
 		return 0
 	}
 	return 0
@@ -1049,7 +1051,7 @@ func setup_fs_input(t float32, v1_out *float32, v2_out *float32, wa float32, wb 
 			c.Fs_input[i] = *(*float32)(unsafe.Add(unsafe.Pointer(vs_output), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(i))))
 		}
 	}
-	c.Builtins.Discard = GL_FALSE
+	c.Builtins.Discard = FALSE
 }
 func clip_line(denom float32, num float32, tmin *float32, tmax *float32) int64 {
 	var t float32
@@ -1096,10 +1098,10 @@ func draw_line_clip(v1 *glVertex, v2 *glVertex) {
 	cc2 = v2.Clip_code
 	p1 = v1.Clip_space
 	p2 = v2.Clip_space
-	var v1_out [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
-	var v2_out [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
+	var v1_out [MAX_VERTEX_OUTPUT_COMPONENTS]float32
+	var v2_out [MAX_VERTEX_OUTPUT_COMPONENTS]float32
 	var provoke uint64
-	if c.Provoking_vert == GLenum(GL_LAST_VERTEX_CONVENTION) {
+	if c.Provoking_vert == GLenum(LAST_VERTEX_CONVENTION) {
 		provoke = uint64((int64(uintptr(unsafe.Pointer(v2)) - uintptr(unsafe.Pointer(&c.Glverts[0])))) / int64(unsafe.Sizeof(glVertex{})))
 	} else {
 		provoke = uint64((int64(uintptr(unsafe.Pointer(v1)) - uintptr(unsafe.Pointer(&c.Glverts[0])))) / int64(unsafe.Sizeof(glVertex{})))
@@ -1221,7 +1223,7 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			c.Builtins.Gl_FragCoord.Y = y
 			c.Builtins.Gl_FragCoord.Z = z
 			c.Builtins.Gl_FragCoord.W = 1 / w
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
@@ -1252,7 +1254,7 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			c.Builtins.Gl_FragCoord.Z = z
 			c.Builtins.Gl_FragCoord.W = 1 / w
 
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
@@ -1283,7 +1285,7 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			c.Builtins.Gl_FragCoord.Z = z
 			c.Builtins.Gl_FragCoord.W = 1 / w
 
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
@@ -1314,7 +1316,7 @@ func draw_line_shader(v1 Vec4, v2 Vec4, v1_out *float32, v2_out *float32, provok
 			c.Builtins.Gl_FragCoord.Z = z
 			c.Builtins.Gl_FragCoord.W = 1 / w
 
-			c.Builtins.Discard = GL_FALSE
+			c.Builtins.Discard = FALSE
 			c.Builtins.Gl_FragDepth = z
 			setup_fs_input(t, v1_out, v2_out, w1, w2, provoke)
 			fragment_shader(&c.Fs_input[0], &c.Builtins, uniform)
@@ -1620,13 +1622,13 @@ func draw_triangle_final(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 	v2.Screen_space = Mult_mat4_vec4(c.Vp_mat, v2.Clip_space)
 	front_facing = is_front_facing(v0, v1, v2)
 	if c.Cull_face != 0 {
-		if c.Cull_mode == GLenum(GL_FRONT_AND_BACK) {
+		if c.Cull_mode == GLenum(FRONT_AND_BACK) {
 			return
 		}
-		if c.Cull_mode == GLenum(GL_BACK) && front_facing == 0 {
+		if c.Cull_mode == GLenum(BACK) && front_facing == 0 {
 			return
 		}
-		if c.Cull_mode == GLenum(GL_FRONT) && front_facing != 0 {
+		if c.Cull_mode == GLenum(FRONT) && front_facing != 0 {
 			return
 		}
 	}
@@ -1811,8 +1813,8 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 		tmp2          glVertex
 		q             [3]*glVertex
 		tt            float32
-		tmp1_out      [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
-		tmp2_out      [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
+		tmp1_out      [MAX_VERTEX_OUTPUT_COMPONENTS]float32
+		tmp2_out      [MAX_VERTEX_OUTPUT_COMPONENTS]float32
 	)
 	tmp1.Vs_out = tmp1_out[:]
 	tmp2.Vs_out = tmp2_out[:]
@@ -1831,7 +1833,7 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 			clip_bit++
 		}
 		if clip_bit == 6 {
-			fmt.Printf("Clipping error:\n")
+			println("Clipping error:")
 			print_vec4(v0.Clip_space, "\n")
 			print_vec4(v1.Clip_space, "\n")
 			print_vec4(v2.Clip_space, "\n")
@@ -1891,7 +1893,7 @@ func draw_triangle_clip(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 }
 func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64) {
 	var (
-		fs_input [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
+		fs_input [MAX_VERTEX_OUTPUT_COMPONENTS]float32
 		point    Vec3
 		vert     [3]*glVertex = [3]*glVertex{v0, v1, v2}
 	)
@@ -1911,7 +1913,7 @@ func draw_triangle_point(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint6
 				fs_input[j] = *(*float32)(unsafe.Add(unsafe.Pointer(&c.Vs_output.Output_buf[0]), unsafe.Sizeof(float32(0))*uintptr(provoke*uint64(c.Vs_output.Size)+uint64(j))))
 			}
 		}
-		c.Builtins.Discard = GL_FALSE
+		c.Builtins.Discard = FALSE
 		c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 		if c.Builtins.Discard == 0 {
 			draw_pixel(c.Builtins.Gl_FragColor, int64(point.X), int64(point.Y))
@@ -2000,22 +2002,22 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 	} else {
 		y_max = y_max
 	}
-	var l01 Line = make_Line(hp0.X, hp0.Y, hp1.X, hp1.Y)
-	var l12 Line = make_Line(hp1.X, hp1.Y, hp2.X, hp2.Y)
-	var l20 Line = make_Line(hp2.X, hp2.Y, hp0.X, hp0.Y)
+	var l01 = make_Line(hp0.X, hp0.Y, hp1.X, hp1.Y)
+	var l12 = make_Line(hp1.X, hp1.Y, hp2.X, hp2.Y)
+	var l20 = make_Line(hp2.X, hp2.Y, hp0.X, hp0.Y)
 	var alpha float32
 	var beta float32
 	var gamma float32
 	var tmp float32
 	var tmp2 float32
 	var z float32
-	var fs_input [GL_MAX_VERTEX_OUTPUT_COMPONENTS]float32
-	var perspective [GL_MAX_VERTEX_OUTPUT_COMPONENTS * 3]float32
+	var fs_input [MAX_VERTEX_OUTPUT_COMPONENTS]float32
+	var perspective [MAX_VERTEX_OUTPUT_COMPONENTS * 3]float32
 	var vs_output = &c.Vs_output.Output_buf[0]
 	for i := int64(0); i < c.Vs_output.Size; i++ {
 		perspective[i] = v0.Vs_out[i] / p0.W
-		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] = v1.Vs_out[i] / p1.W
-		perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i] = v2.Vs_out[i] / p2.W
+		perspective[MAX_VERTEX_OUTPUT_COMPONENTS+i] = v1.Vs_out[i] / p1.W
+		perspective[MAX_VERTEX_OUTPUT_COMPONENTS*2+i] = v2.Vs_out[i] / p2.W
 	}
 	var inv_w0 float32 = 1 / p0.W
 	var inv_w1 float32 = 1 / p1.W
@@ -2036,7 +2038,7 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 					z += poly_offset
 					for i := int64(0); i < c.Vs_output.Size; i++ {
 						if c.Vs_output.Interpolation[i] == GLenum(SMOOTH) {
-							tmp = alpha*perspective[i] + beta*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS+i] + gamma*perspective[GL_MAX_VERTEX_OUTPUT_COMPONENTS*2+i]
+							tmp = alpha*perspective[i] + beta*perspective[MAX_VERTEX_OUTPUT_COMPONENTS+i] + gamma*perspective[MAX_VERTEX_OUTPUT_COMPONENTS*2+i]
 							fs_input[i] = tmp / tmp2
 						} else if c.Vs_output.Interpolation[i] == GLenum(NOPERSPECTIVE) {
 							fs_input[i] = alpha*v0.Vs_out[i] + beta*v1.Vs_out[i] + gamma*v2.Vs_out[i]
@@ -2048,7 +2050,7 @@ func draw_triangle_fill(v0 *glVertex, v1 *glVertex, v2 *glVertex, provoke uint64
 					c.Builtins.Gl_FragCoord.Y = y
 					c.Builtins.Gl_FragCoord.Z = z
 					c.Builtins.Gl_FragCoord.W = tmp2
-					c.Builtins.Discard = GL_FALSE
+					c.Builtins.Discard = FALSE
 					c.Builtins.Gl_FragDepth = z
 					c.Programs[c.Cur_program].Fragment_shader(&fs_input[0], &c.Builtins, c.Programs[c.Cur_program].Uniform)
 					if c.Builtins.Discard == 0 {
@@ -2072,154 +2074,154 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 	var Cs Vec4
 	var Cd Vec4
 	switch c.Blend_sfactor {
-	case GL_ZERO:
+	case ZERO:
 		Cs.X = 0
 		Cs.Y = 0
 		Cs.Z = 0
 		Cs.W = 0
-	case GL_ONE:
+	case ONE:
 		Cs.X = 1
 		Cs.Y = 1
 		Cs.Z = 1
 		Cs.W = 1
-	case GL_SRC_COLOR:
+	case SRC_COLOR:
 		Cs = src
-	case GL_ONE_MINUS_SRC_COLOR:
+	case ONE_MINUS_SRC_COLOR:
 		Cs.X = 1 - src.X
 		Cs.Y = 1 - src.Y
 		Cs.Z = 1 - src.Z
 		Cs.W = 1 - src.W
-	case GL_DST_COLOR:
+	case DST_COLOR:
 		Cs = dst
-	case GL_ONE_MINUS_DST_COLOR:
+	case ONE_MINUS_DST_COLOR:
 		Cs.X = 1 - dst.X
 		Cs.Y = 1 - dst.Y
 		Cs.Z = 1 - dst.Z
 		Cs.W = 1 - dst.W
-	case GL_SRC_ALPHA:
+	case SRC_ALPHA:
 		Cs.X = src.W
 		Cs.Y = src.W
 		Cs.Z = src.W
 		Cs.W = src.W
-	case GL_ONE_MINUS_SRC_ALPHA:
+	case ONE_MINUS_SRC_ALPHA:
 		Cs.X = 1 - src.W
 		Cs.Y = 1 - src.W
 		Cs.Z = 1 - src.W
 		Cs.W = 1 - src.W
-	case GL_DST_ALPHA:
+	case DST_ALPHA:
 		Cs.X = dst.W
 		Cs.Y = dst.W
 		Cs.Z = dst.W
 		Cs.W = dst.W
-	case GL_ONE_MINUS_DST_ALPHA:
+	case ONE_MINUS_DST_ALPHA:
 		Cs.X = 1 - dst.W
 		Cs.Y = 1 - dst.W
 		Cs.Z = 1 - dst.W
 		Cs.W = 1 - dst.W
-	case GL_CONSTANT_COLOR:
+	case CONSTANT_COLOR:
 		Cs = *cnst
-	case GL_ONE_MINUS_CONSTANT_COLOR:
+	case ONE_MINUS_CONSTANT_COLOR:
 		Cs.X = 1 - cnst.X
 		Cs.Y = 1 - cnst.Y
 		Cs.Z = 1 - cnst.Z
 		Cs.W = 1 - cnst.W
-	case GL_CONSTANT_ALPHA:
+	case CONSTANT_ALPHA:
 		Cs.X = cnst.W
 		Cs.Y = cnst.W
 		Cs.Z = cnst.W
 		Cs.W = cnst.W
-	case GL_ONE_MINUS_CONSTANT_ALPHA:
+	case ONE_MINUS_CONSTANT_ALPHA:
 		Cs.X = 1 - cnst.W
 		Cs.Y = 1 - cnst.W
 		Cs.Z = 1 - cnst.W
 		Cs.W = 1 - cnst.W
-	case GL_SRC_ALPHA_SATURATE:
+	case SRC_ALPHA_SATURATE:
 		Cs.X = i
 		Cs.Y = i
 		Cs.Z = i
 		Cs.W = 1
 	default:
-		fmt.Printf("error unrecognized blend_sfactor!\n")
+		print("error unrecognized blend_sfactor!\n")
 	}
 	switch c.Blend_dfactor {
-	case GL_ZERO:
+	case ZERO:
 		Cd.X = 0
 		Cd.Y = 0
 		Cd.Z = 0
 		Cd.W = 0
-	case GL_ONE:
+	case ONE:
 		Cd.X = 1
 		Cd.Y = 1
 		Cd.Z = 1
 		Cd.W = 1
-	case GL_SRC_COLOR:
+	case SRC_COLOR:
 		Cd = src
-	case GL_ONE_MINUS_SRC_COLOR:
+	case ONE_MINUS_SRC_COLOR:
 		Cd.X = 1 - src.X
 		Cd.Y = 1 - src.Y
 		Cd.Z = 1 - src.Z
 		Cd.W = 1 - src.W
-	case GL_DST_COLOR:
+	case DST_COLOR:
 		Cd = dst
-	case GL_ONE_MINUS_DST_COLOR:
+	case ONE_MINUS_DST_COLOR:
 		Cd.X = 1 - dst.X
 		Cd.Y = 1 - dst.Y
 		Cd.Z = 1 - dst.Z
 		Cd.W = 1 - dst.W
-	case GL_SRC_ALPHA:
+	case SRC_ALPHA:
 		Cd.X = src.W
 		Cd.Y = src.W
 		Cd.Z = src.W
 		Cd.W = src.W
-	case GL_ONE_MINUS_SRC_ALPHA:
+	case ONE_MINUS_SRC_ALPHA:
 		Cd.X = 1 - src.W
 		Cd.Y = 1 - src.W
 		Cd.Z = 1 - src.W
 		Cd.W = 1 - src.W
-	case GL_DST_ALPHA:
+	case DST_ALPHA:
 		Cd.X = dst.W
 		Cd.Y = dst.W
 		Cd.Z = dst.W
 		Cd.W = dst.W
-	case GL_ONE_MINUS_DST_ALPHA:
+	case ONE_MINUS_DST_ALPHA:
 		Cd.X = 1 - dst.W
 		Cd.Y = 1 - dst.W
 		Cd.Z = 1 - dst.W
 		Cd.W = 1 - dst.W
-	case GL_CONSTANT_COLOR:
+	case CONSTANT_COLOR:
 		Cd = *cnst
-	case GL_ONE_MINUS_CONSTANT_COLOR:
+	case ONE_MINUS_CONSTANT_COLOR:
 		Cd.X = 1 - cnst.X
 		Cd.Y = 1 - cnst.Y
 		Cd.Z = 1 - cnst.Z
 		Cd.W = 1 - cnst.W
-	case GL_CONSTANT_ALPHA:
+	case CONSTANT_ALPHA:
 		Cd.X = cnst.W
 		Cd.Y = cnst.W
 		Cd.Z = cnst.W
 		Cd.W = cnst.W
-	case GL_ONE_MINUS_CONSTANT_ALPHA:
+	case ONE_MINUS_CONSTANT_ALPHA:
 		Cd.X = 1 - cnst.W
 		Cd.Y = 1 - cnst.W
 		Cd.Z = 1 - cnst.W
 		Cd.W = 1 - cnst.W
-	case GL_SRC_ALPHA_SATURATE:
+	case SRC_ALPHA_SATURATE:
 		Cd.X = i
 		Cd.Y = i
 		Cd.Z = i
 		Cd.W = 1
 	default:
-		fmt.Printf("error unrecognized blend_dfactor!\n")
+		print("error unrecognized blend_dfactor!\n")
 	}
 	var result Vec4
 	switch c.Blend_equation {
-	case GL_FUNC_ADD:
+	case FUNC_ADD:
 		result = add_vec4s(mult_vec4s(Cs, src), mult_vec4s(Cd, dst))
-	case GL_FUNC_SUBTRACT:
+	case FUNC_SUBTRACT:
 		result = sub_vec4s(mult_vec4s(Cs, src), mult_vec4s(Cd, dst))
-	case GL_FUNC_REVERSE_SUBTRACT:
+	case FUNC_REVERSE_SUBTRACT:
 		result = sub_vec4s(mult_vec4s(Cd, dst), mult_vec4s(Cs, src))
-	case GL_MIN:
+	case MIN:
 		if src.X < dst.X {
 			result.X = src.X
 		} else {
@@ -2240,7 +2242,7 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 		} else {
 			result.W = dst.W
 		}
-	case GL_MAX:
+	case MAX:
 		if src.X > dst.X {
 			result.X = src.X
 		} else {
@@ -2262,46 +2264,46 @@ func blend_pixel(src Vec4, dst Vec4) Color {
 			result.W = dst.W
 		}
 	default:
-		fmt.Printf("error unrecognized blend_equation!\n")
+		print("error unrecognized blend_equation!\n")
 	}
 	return vec4_to_Color(result)
 }
 func logic_ops_pixel(s Color, d Color) Color {
 	switch c.Logic_func {
-	case GL_CLEAR:
+	case CLEAR:
 		return make_Color(0, 0, 0, 0)
-	case GL_SET:
+	case SET:
 		return make_Color(math.MaxUint8, math.MaxUint8, math.MaxUint8, math.MaxUint8)
-	case GL_COPY:
+	case COPY:
 		return s
-	case GL_COPY_INVERTED:
+	case COPY_INVERTED:
 		return make_Color(^s.R, ^s.G, ^s.B, ^s.A)
-	case GL_NOOP:
+	case NOOP:
 		return d
-	case GL_INVERT:
+	case INVERT:
 		return make_Color(^d.R, ^d.G, ^d.B, ^d.A)
-	case GL_AND:
+	case AND:
 		return make_Color(s.R&d.R, s.G&d.G, s.B&d.B, s.A&d.A)
-	case GL_NAND:
+	case NAND:
 		return make_Color(^(s.R & d.R), ^(s.G & d.G), ^(s.B & d.B), ^(s.A & d.A))
-	case GL_OR:
+	case OR:
 		return make_Color(s.R|d.R, s.G|d.G, s.B|d.B, s.A|d.A)
-	case GL_NOR:
+	case NOR:
 		return make_Color(^(s.R | d.R), ^(s.G | d.G), ^(s.B | d.B), ^(s.A | d.A))
-	case GL_XOR:
+	case XOR:
 		return make_Color(s.R^d.R, s.G^d.G, s.B^d.B, s.A^d.A)
-	case GL_EQUIV:
+	case EQUIV:
 		return make_Color(^(s.R ^ d.R), ^(s.G ^ d.G), ^(s.B ^ d.B), ^(s.A ^ d.A))
-	case GL_AND_REVERSE:
+	case AND_REVERSE:
 		return make_Color(s.R & ^d.R, s.G & ^d.G, s.B & ^d.B, s.A & ^d.A)
-	case GL_AND_INVERTED:
+	case AND_INVERTED:
 		return make_Color(^s.R&d.R, ^s.G&d.G, ^s.B&d.B, ^s.A&d.A)
-	case GL_OR_REVERSE:
+	case OR_REVERSE:
 		return make_Color(s.R|^d.R, s.G|^d.G, s.B|^d.B, s.A|^d.A)
-	case GL_OR_INVERTED:
+	case OR_INVERTED:
 		return make_Color(^s.R|d.R, ^s.G|d.G, ^s.B|d.B, ^s.A|d.A)
 	default:
-		fmt.Println(("Unrecognized logic op!, defaulting to GL_COPY"))
+		println("Unrecognized logic op!, defaulting to COPY")
 		return s
 	}
 }
@@ -2321,24 +2323,24 @@ func stencil_test(stencil u8) int64 {
 		mask = int64(c.Stencil_valuemask_back)
 	}
 	switch func_ {
-	case GL_NEVER:
+	case NEVER:
 		return 0
-	case GL_LESS:
+	case LESS:
 		return int64(boolToInt((ref & mask) < (int64(stencil) & mask)))
-	case GL_LEQUAL:
+	case LEQUAL:
 		return int64(boolToInt((ref & mask) <= (int64(stencil) & mask)))
-	case GL_GREATER:
+	case GREATER:
 		return int64(boolToInt((ref & mask) > (int64(stencil) & mask)))
-	case GL_GEQUAL:
+	case GEQUAL:
 		return int64(boolToInt((ref & mask) >= (int64(stencil) & mask)))
-	case GL_EQUAL:
+	case EQUAL:
 		return int64(boolToInt((ref & mask) == (int64(stencil) & mask)))
-	case GL_NOTEQUAL:
+	case NOTEQUAL:
 		return int64(boolToInt((ref & mask) != (int64(stencil) & mask)))
-	case GL_ALWAYS:
+	case ALWAYS:
 		return 1
 	default:
-		fmt.Println(("Error: unrecognized stencil function!"))
+		println(("Error: unrecognized stencil function!"))
 		return 0
 	}
 }
@@ -2367,25 +2369,25 @@ func stencil_op(stencil int64, depth int64, dest *u8) {
 	}
 	var val u8 = *dest
 	switch op {
-	case GL_KEEP:
+	case KEEP:
 		return
-	case GL_ZERO:
+	case ZERO:
 		val = 0
-	case GL_REPLACE:
+	case REPLACE:
 		val = u8(int8(ref))
-	case GL_INCR:
+	case INCR:
 		if val < math.MaxUint8 {
 			val++
 		}
-	case GL_INCR_WRAP:
+	case INCR_WRAP:
 		val++
-	case GL_DECR:
+	case DECR:
 		if val > 0 {
 			val--
 		}
-	case GL_DECR_WRAP:
+	case DECR_WRAP:
 		val--
-	case GL_INVERT:
+	case INVERT:
 		val = ^val
 	}
 	*dest = u8(int8(int64(val) & mask))
@@ -2450,7 +2452,7 @@ func default_fs(_ *float32, builtins *Shader_Builtins, _ interface{}) {
 }
 func init_glVertex_Array(v *glVertex_Array) {
 	v.Deleted = false
-	for i := int64(0); i < GL_MAX_VERTEX_ATTRIBS; i++ {
+	for i := int64(0); i < MAX_VERTEX_ATTRIBS; i++ {
 		init_glVertex_Attrib(&v.Vertex_attribs[i])
 	}
 }
@@ -2542,42 +2544,42 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Depth_range_near = GLfloat(0.0)
 	context.Depth_range_far = GLfloat(1.0)
 	make_viewport_matrix(&context.Vp_mat, 0, 0, uint64(w), uint64(h), 1)
-	context.Provoking_vert = GLenum(GL_LAST_VERTEX_CONVENTION)
-	context.Cull_mode = GLenum(GL_BACK)
-	context.Cull_face = GL_FALSE
-	context.Front_face = GLenum(GL_CCW)
-	context.Depth_test = GL_FALSE
-	context.Fragdepth_or_discard = GL_FALSE
-	context.Depth_clamp = GL_FALSE
-	context.Depth_mask = GL_TRUE
-	context.Blend = GL_FALSE
-	context.Logic_ops = GL_FALSE
-	context.Poly_offset = GL_FALSE
-	context.Scissor_test = GL_FALSE
-	context.Stencil_test = GL_FALSE
+	context.Provoking_vert = GLenum(LAST_VERTEX_CONVENTION)
+	context.Cull_mode = GLenum(BACK)
+	context.Cull_face = FALSE
+	context.Front_face = GLenum(CCW)
+	context.Depth_test = FALSE
+	context.Fragdepth_or_discard = FALSE
+	context.Depth_clamp = FALSE
+	context.Depth_mask = TRUE
+	context.Blend = FALSE
+	context.Logic_ops = FALSE
+	context.Poly_offset = FALSE
+	context.Scissor_test = FALSE
+	context.Stencil_test = FALSE
 	context.Stencil_writemask = math.MaxUint32
 	context.Stencil_writemask_back = math.MaxUint32
 	context.Stencil_ref = 0
 	context.Stencil_ref_back = 0
 	context.Stencil_valuemask = math.MaxUint32
 	context.Stencil_valuemask_back = math.MaxUint32
-	context.Stencil_func = GLenum(GL_ALWAYS)
-	context.Stencil_func_back = GLenum(GL_ALWAYS)
-	context.Stencil_sfail = GLenum(GL_KEEP)
-	context.Stencil_dpfail = GLenum(GL_KEEP)
-	context.Stencil_dppass = GLenum(GL_KEEP)
-	context.Stencil_sfail_back = GLenum(GL_KEEP)
-	context.Stencil_dpfail_back = GLenum(GL_KEEP)
-	context.Stencil_dppass_back = GLenum(GL_KEEP)
-	context.Logic_func = GLenum(GL_COPY)
-	context.Blend_sfactor = GLenum(GL_ONE)
-	context.Blend_dfactor = GLenum(GL_ZERO)
-	context.Blend_equation = GLenum(GL_FUNC_ADD)
-	context.Depth_func = GLenum(GL_LESS)
-	context.Line_smooth = GL_FALSE
-	context.Poly_mode_front = GLenum(GL_FILL)
-	context.Poly_mode_back = GLenum(GL_FILL)
-	context.Point_spr_origin = GLenum(GL_UPPER_LEFT)
+	context.Stencil_func = GLenum(ALWAYS)
+	context.Stencil_func_back = GLenum(ALWAYS)
+	context.Stencil_sfail = GLenum(KEEP)
+	context.Stencil_dpfail = GLenum(KEEP)
+	context.Stencil_dppass = GLenum(KEEP)
+	context.Stencil_sfail_back = GLenum(KEEP)
+	context.Stencil_dpfail_back = GLenum(KEEP)
+	context.Stencil_dppass_back = GLenum(KEEP)
+	context.Logic_func = GLenum(COPY)
+	context.Blend_sfactor = GLenum(ONE)
+	context.Blend_dfactor = GLenum(ZERO)
+	context.Blend_equation = GLenum(FUNC_ADD)
+	context.Depth_func = GLenum(LESS)
+	context.Line_smooth = FALSE
+	context.Poly_mode_front = GLenum(FILL)
+	context.Poly_mode_back = GLenum(FILL)
+	context.Point_spr_origin = GLenum(UPPER_LEFT)
 	context.Poly_factor = GLfloat(0.0)
 	context.Poly_units = GLfloat(0.0)
 	context.Scissor_lx = 0
@@ -2588,8 +2590,8 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	context.Pack_alignment = 4
 	context.Draw_triangle_front = draw_triangle_fill
 	context.Draw_triangle_back = draw_triangle_fill
-	context.Error = GLenum(GL_NO_ERROR)
-	var tmp_prog glProgram = glProgram{Vertex_shader: default_vs, Fragment_shader: default_fs, Uniform: nil, Vs_output_size: GL_FALSE}
+	context.Error = GLenum(NO_ERROR)
+	var tmp_prog glProgram = glProgram{Vertex_shader: default_vs, Fragment_shader: default_fs, Uniform: nil, Vs_output_size: FALSE}
 	context.Programs = append(context.Programs, tmp_prog)
 	context.Cur_program = 0
 	var tmp_va glVertex_Array
@@ -2600,10 +2602,10 @@ func Init_glContext(context *GlContext, back *[]U32, w int64, h int64, bitdepth 
 	tmp_buf.User_owned = true
 	tmp_buf.Deleted = false
 	var tmp_tex glTexture
-	tmp_tex.User_owned = GL_TRUE
-	tmp_tex.Deleted = GL_FALSE
-	tmp_tex.Format = GLenum(GL_RGBA)
-	tmp_tex.Type = GLenum(GL_TEXTURE_UNBOUND)
+	tmp_tex.User_owned = TRUE
+	tmp_tex.Deleted = FALSE
+	tmp_tex.Format = GLenum(RGBA)
+	tmp_tex.Type = GLenum(TEXTURE_UNBOUND)
 	tmp_tex.Data = nil
 	tmp_tex.W = 0
 	tmp_tex.H = 0
@@ -2621,13 +2623,13 @@ func Free_glContext(context *GlContext) {
 	}
 	for i = 0; uint64(i) < uint64(len(context.Buffers)); i++ {
 		if context.Buffers[i].User_owned == false {
-			fmt.Printf("freeing buffer %d\n", i)
+			println("freeing buffer", i)
 			context.Buffers[i].Data = nil
 		}
 	}
 	for i = 0; uint64(i) < uint64(len(context.Textures)); i++ {
 		if (context.Textures[i]).User_owned == 0 {
-			fmt.Printf("freeing texture %d\n", i)
+			println("freeing texture", i)
 			(context.Textures[i]).Data = nil
 		}
 	}
@@ -2644,24 +2646,24 @@ func Set_glContext(context *GlContext) {
 
 func GetString(name GLenum) *GLubyte {
 	switch name {
-	case GL_VENDOR:
+	case VENDOR:
 		return &[]GLubyte("Robert Winkler\x00")[0]
-	case GL_RENDERER:
+	case RENDERER:
 		return &[]GLubyte("PortableGL\x00")[0]
-	case GL_VERSION:
+	case VERSION:
 		return &[]GLubyte("OpenGL 3.x-ish PortableGL 0.94\x00")[0]
-	case GL_SHADING_LANGUAGE_VERSION:
+	case SHADING_LANGUAGE_VERSION:
 		return &[]GLubyte("Go\x00")[0]
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return nil
 	}
 }
 func GetError() GLenum {
 	var err GLenum = c.Error
-	c.Error = GLenum(GL_NO_ERROR)
+	c.Error = GLenum(NO_ERROR)
 	return err
 }
 func GenVertexArrays(n GLsizei, arrays *GLuint) {
@@ -2734,15 +2736,15 @@ func DeleteBuffers(n GLsizei, buffers *GLuint) {
 func GenTextures(n GLsizei, textures *GLuint) {
 	t := unsafe.Slice(textures, n)
 	var tmp glTexture
-	tmp.Mag_filter = GLenum(GL_LINEAR)
-	tmp.Min_filter = GLenum(GL_LINEAR)
-	tmp.Wrap_s = GLenum(GL_REPEAT)
-	tmp.Wrap_t = GLenum(GL_REPEAT)
+	tmp.Mag_filter = GLenum(LINEAR)
+	tmp.Min_filter = GLenum(LINEAR)
+	tmp.Wrap_s = GLenum(REPEAT)
+	tmp.Wrap_t = GLenum(REPEAT)
 	tmp.Data = nil
-	tmp.Deleted = GL_FALSE
-	tmp.User_owned = GL_TRUE
-	tmp.Format = GLenum(GL_RGBA)
-	tmp.Type = GLenum(GL_TEXTURE_UNBOUND)
+	tmp.Deleted = FALSE
+	tmp.User_owned = TRUE
+	tmp.Format = GLenum(RGBA)
+	tmp.Type = GLenum(TEXTURE_UNBOUND)
 	tmp.W = 0
 	tmp.H = 0
 	tmp.D = 0
@@ -2773,49 +2775,49 @@ func DeleteTextures(n GLsizei, textures *GLuint) {
 		if (c.Textures[t[i]]).User_owned == 0 {
 			(c.Textures[t[i]]).Data = nil
 		}
-		(c.Textures[t[i]]).Deleted = GL_TRUE
+		(c.Textures[t[i]]).Deleted = TRUE
 	}
 }
 func BindVertexArray(array GLuint) {
 	if uint64(array) < uint64(len(c.Vertex_arrays)) && c.Vertex_arrays[array].Deleted == false {
 		c.Cur_vertex_array = array
 	} else if c.Error == 0 {
-		c.Error = GLenum(GL_INVALID_OPERATION)
+		c.Error = GLenum(INVALID_OPERATION)
 	}
 }
 func BindBuffer(target GLenum, buffer GLuint) {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target != GLenum(ARRAY_BUFFER) && target != GLenum(ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_ARRAY_BUFFER)
+	target -= GLenum(ARRAY_BUFFER)
 	if uint64(buffer) < uint64(len(c.Buffers)) && c.Buffers[buffer].Deleted == false {
 		c.Bound_buffers[target] = buffer
 		c.Buffers[buffer].Type = target
 	} else if c.Error == 0 {
-		c.Error = GLenum(GL_INVALID_OPERATION)
+		c.Error = GLenum(INVALID_OPERATION)
 	}
 }
 func BufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target != GLenum(ARRAY_BUFFER) && target != GLenum(ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_ARRAY_BUFFER)
+	target -= GLenum(ARRAY_BUFFER)
 	if c.Bound_buffers[target] == 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
+			c.Error = GLenum(INVALID_OPERATION)
 		}
 		return
 	}
 	c.Buffers[c.Bound_buffers[target]].Data = nil
 	if (c.Buffers[c.Bound_buffers[target]]).Data = make([]u8, size); c.Buffers[c.Bound_buffers[target]].Data == nil {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_OUT_OF_MEMORY)
+			c.Error = GLenum(OUT_OF_MEMORY)
 		}
 		return
 	}
@@ -2824,121 +2826,121 @@ func BufferData(target GLenum, size GLsizei, data unsafe.Pointer, usage GLenum) 
 	}
 	c.Buffers[c.Bound_buffers[target]].User_owned = false
 	c.Buffers[c.Bound_buffers[target]].Size = size
-	if target == GLenum(GL_ELEMENT_ARRAY_BUFFER-GL_ARRAY_BUFFER) {
+	if target == GLenum(ELEMENT_ARRAY_BUFFER-ARRAY_BUFFER) {
 		(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer = c.Bound_buffers[target]
 	}
 }
 func BufferSubData(target GLenum, offset GLsizei, size GLsizei, data unsafe.Pointer) {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target != GLenum(ARRAY_BUFFER) && target != GLenum(ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_ARRAY_BUFFER)
+	target -= GLenum(ARRAY_BUFFER)
 	if c.Bound_buffers[target] == 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
+			c.Error = GLenum(INVALID_OPERATION)
 		}
 		return
 	}
 	if offset+size > (c.Buffers[c.Bound_buffers[target]]).Size {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	copy(c.Buffers[c.Bound_buffers[target]].Data[offset:], unsafe.Slice((*u8)(data), size))
 }
 func BindTexture(target GLenum, texture GLuint) {
-	if target < GLenum(GL_TEXTURE_1D) || target >= GLenum(GL_NUM_TEXTURE_TYPES) {
+	if target < GLenum(TEXTURE_1D) || target >= GLenum(NUM_TEXTURE_TYPES) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	target -= GLenum(GL_TEXTURE_UNBOUND + 1)
+	target -= GLenum(TEXTURE_UNBOUND + 1)
 	if uint64(texture) < uint64(len(c.Textures)) && (c.Textures[texture]).Deleted == 0 {
-		if (c.Textures[texture]).Type == GLenum(GL_TEXTURE_UNBOUND) {
+		if (c.Textures[texture]).Type == GLenum(TEXTURE_UNBOUND) {
 			c.Bound_textures[target] = texture
 			(c.Textures[texture]).Type = target
 		} else if (c.Textures[texture]).Type == target {
 			c.Bound_textures[target] = texture
 		} else if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
+			c.Error = GLenum(INVALID_OPERATION)
 		}
 	} else if c.Error == 0 {
-		c.Error = GLenum(GL_INVALID_VALUE)
+		c.Error = GLenum(INVALID_VALUE)
 	}
 }
 func TexParameteri(target GLenum, pname GLenum, param GLint) {
 	switch target {
-	case GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, GL_TEXTURE_2D_ARRAY, GL_TEXTURE_RECTANGLE, GL_TEXTURE_CUBE_MAP:
-		target -= GLenum(GL_TEXTURE_UNBOUND + 1)
+	case TEXTURE_1D, TEXTURE_2D, TEXTURE_3D, TEXTURE_2D_ARRAY, TEXTURE_RECTANGLE, TEXTURE_CUBE_MAP:
+		target -= GLenum(TEXTURE_UNBOUND + 1)
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	switch pname {
-	case GLenum(GL_TEXTURE_MIN_FILTER):
-		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR && int64(param) != GL_NEAREST_MIPMAP_NEAREST && int64(param) != GL_NEAREST_MIPMAP_LINEAR && int64(param) != GL_LINEAR_MIPMAP_NEAREST && int64(param) != GL_LINEAR_MIPMAP_LINEAR {
+	case GLenum(TEXTURE_MIN_FILTER):
+		if int64(param) != NEAREST && int64(param) != LINEAR && int64(param) != NEAREST_MIPMAP_NEAREST && int64(param) != NEAREST_MIPMAP_LINEAR && int64(param) != LINEAR_MIPMAP_NEAREST && int64(param) != LINEAR_MIPMAP_LINEAR {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
-		if int64(param) == GL_NEAREST_MIPMAP_NEAREST || int64(param) == GL_NEAREST_MIPMAP_LINEAR {
-			param = GLint(GL_NEAREST)
+		if int64(param) == NEAREST_MIPMAP_NEAREST || int64(param) == NEAREST_MIPMAP_LINEAR {
+			param = GLint(NEAREST)
 		}
-		if int64(param) == GL_LINEAR_MIPMAP_NEAREST || int64(param) == GL_LINEAR_MIPMAP_LINEAR {
-			param = GLint(GL_LINEAR)
+		if int64(param) == LINEAR_MIPMAP_NEAREST || int64(param) == LINEAR_MIPMAP_LINEAR {
+			param = GLint(LINEAR)
 		}
 		c.Textures[c.Bound_textures[target]].Min_filter = GLenum(param)
-	case GLenum(GL_TEXTURE_MAG_FILTER):
-		if int64(param) != GL_NEAREST && int64(param) != GL_LINEAR {
+	case GLenum(TEXTURE_MAG_FILTER):
+		if int64(param) != NEAREST && int64(param) != LINEAR {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
 		c.Textures[c.Bound_textures[target]].Mag_filter = GLenum(param)
-	case GLenum(GL_TEXTURE_WRAP_S):
-		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
+	case GLenum(TEXTURE_WRAP_S):
+		if int64(param) != REPEAT && int64(param) != CLAMP_TO_EDGE && int64(param) != CLAMP_TO_BORDER && int64(param) != MIRRORED_REPEAT {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
 		c.Textures[c.Bound_textures[target]].Wrap_s = GLenum(param)
-	case GLenum(GL_TEXTURE_WRAP_T):
-		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
+	case GLenum(TEXTURE_WRAP_T):
+		if int64(param) != REPEAT && int64(param) != CLAMP_TO_EDGE && int64(param) != CLAMP_TO_BORDER && int64(param) != MIRRORED_REPEAT {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
 		c.Textures[c.Bound_textures[target]].Wrap_t = GLenum(param)
-	case GLenum(GL_TEXTURE_WRAP_R):
-		if int64(param) != GL_REPEAT && int64(param) != GL_CLAMP_TO_EDGE && int64(param) != GL_CLAMP_TO_BORDER && int64(param) != GL_MIRRORED_REPEAT {
+	case GLenum(TEXTURE_WRAP_R):
+		if int64(param) != REPEAT && int64(param) != CLAMP_TO_EDGE && int64(param) != CLAMP_TO_BORDER && int64(param) != MIRRORED_REPEAT {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
 		c.Textures[c.Bound_textures[target]].Wrap_r = GLenum(param)
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 }
 func PixelStorei(pname GLenum, param GLint) {
-	if pname != GLenum(GL_UNPACK_ALIGNMENT) && pname != GLenum(GL_PACK_ALIGNMENT) {
+	if pname != GLenum(UNPACK_ALIGNMENT) && pname != GLenum(PACK_ALIGNMENT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -2947,55 +2949,55 @@ func PixelStorei(pname GLenum, param GLint) {
 	// all good here
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	if pname == GLenum(GL_UNPACK_ALIGNMENT) {
+	if pname == GLenum(UNPACK_ALIGNMENT) {
 		c.Unpack_alignment = param
-	} else if pname == GLenum(GL_PACK_ALIGNMENT) {
+	} else if pname == GLenum(PACK_ALIGNMENT) {
 		c.Pack_alignment = param
 	}
 }
 func GenerateMipmap(target GLenum) {
-	if target != GLenum(GL_TEXTURE_1D) && target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_CUBE_MAP) {
+	if target != GLenum(TEXTURE_1D) && target != GLenum(TEXTURE_2D) && target != GLenum(TEXTURE_3D) && target != GLenum(TEXTURE_CUBE_MAP) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 }
 func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_1D) {
+	if target != GLenum(TEXTURE_1D) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 	(c.Textures[cur_tex]).W = uint64(width)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		return
 	}
 	var components int64
 	switch format {
-	case GL_RED:
+	case RED:
 		components = 1
-	case GL_RG:
+	case RG:
 		components = 2
-	case GL_RGB, GL_BGR:
+	case RGB, BGR:
 		components = 3
-	case GL_RGBA, GL_BGRA:
+	case RGBA, BGRA:
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3004,40 +3006,40 @@ func TexImage1D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	if data != nil {
 		copy(texdata, unsafe.Slice((*u8)(data), uintptr(width)*unsafe.Sizeof(U32(0))))
 	}
-	c.Textures[cur_tex].User_owned = GL_FALSE
+	c.Textures[cur_tex].User_owned = FALSE
 }
 func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_RECTANGLE) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+	if target != GLenum(TEXTURE_2D) && target != GLenum(TEXTURE_RECTANGLE) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Z) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	var components int64
 	switch format {
-	case GLenum(GL_RED):
+	case GLenum(RED):
 		components = 1
-	case GLenum(GL_RG):
+	case GLenum(RG):
 		components = 2
-	case GLenum(GL_RGB), GLenum(GL_BGR):
+	case GLenum(RGB), GLenum(BGR):
 		components = 3
-	case GLenum(GL_RGBA), GLenum(GL_BGRA):
+	case GLenum(RGBA), GLenum(BGRA):
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3050,8 +3052,8 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 	} else {
 		padded_row_len = byte_width + int64(c.Unpack_alignment) - padding_needed
 	}
-	if target == GLenum(GL_TEXTURE_2D) || target == GLenum(GL_TEXTURE_RECTANGLE) {
-		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	if target == GLenum(TEXTURE_2D) || target == GLenum(TEXTURE_RECTANGLE) {
+		cur_tex = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 		c.Textures[cur_tex].W = uint64(width)
 		c.Textures[cur_tex].H = uint64(height)
 		c.Textures[cur_tex].Data = make([]u8, int64(height)*byte_width)
@@ -3064,15 +3066,15 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 			}
 		}
-		(c.Textures[cur_tex]).User_owned = GL_FALSE
+		(c.Textures[cur_tex]).User_owned = FALSE
 	} else {
-		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
+		cur_tex = int64(c.Bound_textures[TEXTURE_CUBE_MAP-TEXTURE_UNBOUND-1])
 		if (c.Textures[cur_tex]).W == 0 {
 			(c.Textures[cur_tex]).Data = nil
 		}
 		if width != height {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_VALUE)
+				c.Error = GLenum(INVALID_VALUE)
 			}
 			return
 		}
@@ -3086,17 +3088,17 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				return &(*p)[0]
 			}()) == nil {
 				if c.Error == 0 {
-					c.Error = GLenum(GL_OUT_OF_MEMORY)
+					c.Error = GLenum(OUT_OF_MEMORY)
 				}
 				return
 			}
 		} else if (c.Textures[cur_tex]).W != uint64(width) {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_VALUE)
+				c.Error = GLenum(INVALID_VALUE)
 			}
 			return
 		}
-		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
+		target -= GLenum(TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = int64(height) * byte_width
 		var texdata = (c.Textures[cur_tex]).Data
 		if data != nil {
@@ -3108,42 +3110,42 @@ func TexImage2D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 				}
 			}
 		}
-		c.Textures[cur_tex].User_owned = GL_FALSE
+		c.Textures[cur_tex].User_owned = FALSE
 	}
 }
 func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei, height GLsizei, depth GLsizei, border GLint, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
+	if target != GLenum(TEXTURE_3D) && target != GLenum(TEXTURE_2D_ARRAY) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if border != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 	c.Textures[cur_tex].W = uint64(width)
 	c.Textures[cur_tex].H = uint64(height)
 	c.Textures[cur_tex].D = uint64(depth)
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		return
 	}
 	var components int64
 	switch format {
-	case GLenum(GL_RED):
+	case GLenum(RED):
 		components = 1
-	case GLenum(GL_RG):
+	case GLenum(RG):
 		components = 2
-	case GLenum(GL_RGB), GLenum(GL_BGR):
+	case GLenum(RGB), GLenum(BGR):
 		components = 3
-	case GLenum(GL_RGBA), GLenum(GL_BGRA):
+	case GLenum(RGBA), GLenum(BGRA):
 		components = 4
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3166,31 +3168,31 @@ func TexImage3D(target GLenum, level GLint, internalFormat GLint, width GLsizei,
 			}
 		}
 	}
-	c.Textures[cur_tex].User_owned = GL_FALSE
+	c.Textures[cur_tex].User_owned = FALSE
 }
 func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_1D) {
+	if target != GLenum(TEXTURE_1D) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if format != GLenum(GL_RGBA) {
+	if format != GLenum(RGBA) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3198,32 +3200,32 @@ func TexSubImage1D(target GLenum, level GLint, xoffset GLint, width GLsizei, for
 	copy(texdata[unsafe.Sizeof(U32(0))*uintptr(xoffset):], unsafe.Slice((*u8)(data), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 }
 func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, width GLsizei, height GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_2D) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z) {
+	if target != GLenum(TEXTURE_2D) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_X) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Y) && target != GLenum(TEXTURE_CUBE_MAP_POSITIVE_Z) && target != GLenum(TEXTURE_CUBE_MAP_NEGATIVE_Z) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if format != GLenum(GL_RGBA) {
+	if format != GLenum(RGBA) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	var cur_tex int64
 	var d *U32 = (*U32)(data)
-	if target == GLenum(GL_TEXTURE_2D) {
-		cur_tex = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
+	if target == GLenum(TEXTURE_2D) {
+		cur_tex = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
 		var texdata = (c.Textures[cur_tex]).Data
 		if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures[cur_tex]).H {
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_VALUE)
+				c.Error = GLenum(INVALID_VALUE)
 			}
 			return
 		}
@@ -3232,10 +3234,10 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 			copy(texdata[unsafe.Sizeof(U32(0))*uintptr((int64(yoffset)+i)*w+int64(xoffset)):], unsafe.Slice((*u8)(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width)))))), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
 		}
 	} else {
-		cur_tex = int64(c.Bound_textures[GL_TEXTURE_CUBE_MAP-GL_TEXTURE_UNBOUND-1])
+		cur_tex = int64(c.Bound_textures[TEXTURE_CUBE_MAP-TEXTURE_UNBOUND-1])
 		var texdata = c.Textures[cur_tex].Data
 		var w int64 = int64((c.Textures[cur_tex]).W)
-		target -= GLenum(GL_TEXTURE_CUBE_MAP_POSITIVE_X)
+		target -= GLenum(TEXTURE_CUBE_MAP_POSITIVE_X)
 		var p int64 = w * w
 		for i := int64(0); i < int64(height); i++ {
 			copy(texdata[unsafe.Sizeof(U32(0))*uintptr(p*int64(target)+(int64(yoffset)+i)*w+int64(xoffset)):], unsafe.Slice((*u8)(unsafe.Pointer((*U32)(unsafe.Add(unsafe.Pointer(d), unsafe.Sizeof(U32(0))*uintptr(i*int64(width)))))), int(uintptr(width)*unsafe.Sizeof(U32(0)))))
@@ -3243,28 +3245,28 @@ func TexSubImage2D(target GLenum, level GLint, xoffset GLint, yoffset GLint, wid
 	}
 }
 func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zoffset GLint, width GLsizei, height GLsizei, depth GLsizei, format GLenum, type_ GLenum, data unsafe.Pointer) {
-	if target != GLenum(GL_TEXTURE_3D) && target != GLenum(GL_TEXTURE_2D_ARRAY) {
+	if target != GLenum(TEXTURE_3D) && target != GLenum(TEXTURE_2D_ARRAY) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(GL_TEXTURE_UNBOUND)-1])
-	if type_ != GLenum(GL_UNSIGNED_BYTE) {
+	var cur_tex int64 = int64(c.Bound_textures[target-GLenum(TEXTURE_UNBOUND)-1])
+	if type_ != GLenum(UNSIGNED_BYTE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if format != GLenum(GL_RGBA) {
+	if format != GLenum(RGBA) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if xoffset < 0 || uint64(xoffset+GLint(width)) > (c.Textures[cur_tex]).W || yoffset < 0 || uint64(yoffset+GLint(height)) > (c.Textures[cur_tex]).H || zoffset < 0 || uint64(zoffset+GLint(depth)) > (c.Textures[cur_tex]).D {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3280,15 +3282,15 @@ func TexSubImage3D(target GLenum, level GLint, xoffset GLint, yoffset GLint, zof
 	}
 }
 func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLboolean, stride GLsizei, offset GLsizei) {
-	if index >= GL_MAX_VERTEX_ATTRIBS || size < 1 || size > 4 || c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER] == 0 && offset != 0 {
+	if index >= MAX_VERTEX_ATTRIBS || size < 1 || size > 4 || c.Bound_buffers[ARRAY_BUFFER-ARRAY_BUFFER] == 0 && offset != 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_OPERATION)
+			c.Error = GLenum(INVALID_OPERATION)
 		}
 		return
 	}
-	if type_ != GLenum(GL_FLOAT) {
+	if type_ != GLenum(FLOAT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3302,7 +3304,7 @@ func VertexAttribPointer(index GLuint, size GLint, type_ GLenum, normalized GLbo
 	}
 	v.Offset = offset
 	v.Normalized = normalized != 0
-	v.Buf = uint64(c.Bound_buffers[GL_ARRAY_BUFFER-GL_ARRAY_BUFFER])
+	v.Buf = uint64(c.Bound_buffers[ARRAY_BUFFER-ARRAY_BUFFER])
 }
 func EnableVertexAttribArray(index GLuint) {
 	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = true
@@ -3311,9 +3313,9 @@ func DisableVertexAttribArray(index GLuint) {
 	c.Vertex_arrays[c.Cur_vertex_array].Vertex_attribs[index].Enabled = false
 }
 func VertexAttribDivisor(index GLuint, divisor GLuint) {
-	if index >= GL_MAX_VERTEX_ATTRIBS {
+	if index >= MAX_VERTEX_ATTRIBS {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3341,39 +3343,39 @@ func get_vertex_attrib_array(v *glVertex_Attrib, i GLsizei) Vec4 {
 	return tmpvec4
 }
 func DrawArrays(mode GLenum, first GLint, count GLsizei) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	if count == 0 {
 		return
 	}
-	run_pipeline(mode, first, count, 0, 0, GL_FALSE)
+	run_pipeline(mode, first, count, 0, 0, FALSE)
 }
 func DrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) && type_ != GLenum(GL_UNSIGNED_SHORT) && type_ != GLenum(GL_UNSIGNED_INT) {
+	if type_ != GLenum(UNSIGNED_BYTE) && type_ != GLenum(UNSIGNED_SHORT) && type_ != GLenum(UNSIGNED_INT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3381,18 +3383,18 @@ func DrawElements(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei) {
 		return
 	}
 	(c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer]).Type = type_
-	run_pipeline(mode, GLint(offset), count, 0, 0, GL_TRUE)
+	run_pipeline(mode, GLint(offset), count, 0, 0, TRUE)
 }
 func DrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount GLsizei) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 || instancecount < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3400,19 +3402,19 @@ func DrawArraysInstanced(mode GLenum, first GLint, count GLsizei, instancecount 
 		return
 	}
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
-		run_pipeline(mode, first, count, GLsizei(uint32(instance)), 0, GL_FALSE)
+		run_pipeline(mode, first, count, GLsizei(uint32(instance)), 0, FALSE)
 	}
 }
 func DrawArraysInstancedBaseInstance(mode GLenum, first GLint, count GLsizei, instancecount GLsizei, baseinstance GLuint) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 || instancecount < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3420,25 +3422,25 @@ func DrawArraysInstancedBaseInstance(mode GLenum, first GLint, count GLsizei, in
 		return
 	}
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
-		run_pipeline(mode, first, count, GLsizei(uint32(instance)), baseinstance, GL_FALSE)
+		run_pipeline(mode, first, count, GLsizei(uint32(instance)), baseinstance, FALSE)
 	}
 }
 func DrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) && type_ != GLenum(GL_UNSIGNED_SHORT) && type_ != GLenum(GL_UNSIGNED_INT) {
+	if type_ != GLenum(UNSIGNED_BYTE) && type_ != GLenum(UNSIGNED_SHORT) && type_ != GLenum(UNSIGNED_INT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 || instancecount < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3447,25 +3449,25 @@ func DrawElementsInstanced(mode GLenum, count GLsizei, type_ GLenum, offset GLsi
 	}
 	c.Buffers[c.Vertex_arrays[c.Cur_vertex_array].Element_buffer].Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
-		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, GL_TRUE)
+		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), 0, TRUE)
 	}
 }
 func DrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenum, offset GLsizei, instancecount GLsizei, baseinstance GLuint) {
-	if mode < GLenum(GL_POINTS) || mode > GLenum(GL_TRIANGLE_FAN) {
+	if mode < GLenum(POINTS) || mode > GLenum(TRIANGLE_FAN) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if type_ != GLenum(GL_UNSIGNED_BYTE) && type_ != GLenum(GL_UNSIGNED_SHORT) && type_ != GLenum(GL_UNSIGNED_INT) {
+	if type_ != GLenum(UNSIGNED_BYTE) && type_ != GLenum(UNSIGNED_SHORT) && type_ != GLenum(UNSIGNED_INT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	if count < 0 || instancecount < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3474,13 +3476,13 @@ func DrawElementsInstancedBaseInstance(mode GLenum, count GLsizei, type_ GLenum,
 	}
 	c.Buffers[(c.Vertex_arrays[c.Cur_vertex_array]).Element_buffer].Type = type_
 	for instance := uint64(0); instance < uint64(instancecount); instance++ {
-		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, GL_TRUE)
+		run_pipeline(mode, GLint(offset), count, GLsizei(uint32(instance)), baseinstance, TRUE)
 	}
 }
 func Viewport(x int64, y int64, width GLsizei, height GLsizei) {
 	if width < 0 || height < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3502,9 +3504,9 @@ func ClearDepth(depth GLclampf) {
 	c.Clear_depth = GLfloat(clampf_01(float32(depth)))
 }
 func DepthFunc(func_ GLenum) {
-	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
+	if func_ < GLenum(LESS) || func_ > GLenum(NEVER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3518,15 +3520,15 @@ func DepthMask(flag GLboolean) {
 	c.Depth_mask = flag
 }
 func Clear(mask GLbitfield) {
-	if (mask & GLbitfield(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT)) == 0 {
+	if (mask & GLbitfield(COLOR_BUFFER_BIT|DEPTH_BUFFER_BIT|STENCIL_BUFFER_BIT)) == 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
-		fmt.Printf("failed to clear\n")
+		println("failed to clear")
 		return
 	}
 	var col Color = c.Clear_color
-	if mask&GLbitfield(GL_COLOR_BUFFER_BIT) != 0 {
+	if mask&GLbitfield(COLOR_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Back_buffer.W*c.Back_buffer.H; i++ {
 				*(*U32)(unsafe.Add(unsafe.Pointer((*U32)(unsafe.Pointer(&c.Back_buffer.Buf[0]))), unsafe.Sizeof(U32(0))*uintptr(i))) = U32(col.A)<<c.Ashift | U32(col.R)<<c.Rshift | U32(col.G)<<c.Gshift | U32(col.B)<<c.Bshift
@@ -3539,7 +3541,7 @@ func Clear(mask GLbitfield) {
 			}
 		}
 	}
-	if mask&GLbitfield(GL_DEPTH_BUFFER_BIT) != 0 {
+	if mask&GLbitfield(DEPTH_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Zbuf.W*c.Zbuf.H; i++ {
 				*(*float32)(unsafe.Add(unsafe.Pointer((*float32)(unsafe.Pointer(&c.Zbuf.Buf[0]))), unsafe.Sizeof(float32(0))*uintptr(i))) = float32(c.Clear_depth)
@@ -3552,7 +3554,7 @@ func Clear(mask GLbitfield) {
 			}
 		}
 	}
-	if mask&GLbitfield(GL_STENCIL_BUFFER_BIT) != 0 {
+	if mask&GLbitfield(STENCIL_BUFFER_BIT) != 0 {
 		if c.Scissor_test == 0 {
 			for i := int64(0); uint64(i) < c.Stencil_buf.W*c.Stencil_buf.H; i++ {
 				*(*u8)(unsafe.Add(unsafe.Pointer(&c.Stencil_buf.Buf[0]), i)) = u8(int8(c.Clear_stencil))
@@ -3568,262 +3570,262 @@ func Clear(mask GLbitfield) {
 }
 func Enable(cap_ GLenum) {
 	switch cap_ {
-	case GL_CULL_FACE:
-		c.Cull_face = GL_TRUE
-	case GL_DEPTH_TEST:
-		c.Depth_test = GL_TRUE
-	case GL_DEPTH_CLAMP:
-		c.Depth_clamp = GL_TRUE
-	case GL_LINE_SMOOTH:
-	case GL_BLEND:
-		c.Blend = GL_TRUE
-	case GL_COLOR_LOGIC_OP:
-		c.Logic_ops = GL_TRUE
-	case GL_POLYGON_OFFSET_FILL:
-		c.Poly_offset = GL_TRUE
-	case GL_SCISSOR_TEST:
-		c.Scissor_test = GL_TRUE
-	case GL_STENCIL_TEST:
-		c.Stencil_test = GL_TRUE
+	case CULL_FACE:
+		c.Cull_face = TRUE
+	case DEPTH_TEST:
+		c.Depth_test = TRUE
+	case DEPTH_CLAMP:
+		c.Depth_clamp = TRUE
+	case LINE_SMOOTH:
+	case BLEND:
+		c.Blend = TRUE
+	case COLOR_LOGIC_OP:
+		c.Logic_ops = TRUE
+	case POLYGON_OFFSET_FILL:
+		c.Poly_offset = TRUE
+	case SCISSOR_TEST:
+		c.Scissor_test = TRUE
+	case STENCIL_TEST:
+		c.Stencil_test = TRUE
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
 }
 func Disable(cap_ GLenum) {
 	switch cap_ {
-	case GL_CULL_FACE:
-		c.Cull_face = GL_FALSE
-	case GL_DEPTH_TEST:
-		c.Depth_test = GL_FALSE
-	case GL_DEPTH_CLAMP:
-		c.Depth_clamp = GL_FALSE
-	case GL_LINE_SMOOTH:
-		c.Line_smooth = GL_FALSE
-	case GL_BLEND:
-		c.Blend = GL_FALSE
-	case GL_COLOR_LOGIC_OP:
-		c.Logic_ops = GL_FALSE
-	case GL_POLYGON_OFFSET_FILL:
-		c.Poly_offset = GL_FALSE
-	case GL_SCISSOR_TEST:
-		c.Scissor_test = GL_FALSE
-	case GL_STENCIL_TEST:
-		c.Stencil_test = GL_FALSE
+	case CULL_FACE:
+		c.Cull_face = FALSE
+	case DEPTH_TEST:
+		c.Depth_test = FALSE
+	case DEPTH_CLAMP:
+		c.Depth_clamp = FALSE
+	case LINE_SMOOTH:
+		c.Line_smooth = FALSE
+	case BLEND:
+		c.Blend = FALSE
+	case COLOR_LOGIC_OP:
+		c.Logic_ops = FALSE
+	case POLYGON_OFFSET_FILL:
+		c.Poly_offset = FALSE
+	case SCISSOR_TEST:
+		c.Scissor_test = FALSE
+	case STENCIL_TEST:
+		c.Stencil_test = FALSE
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
 }
 func IsEnabled(cap_ GLenum) GLboolean {
 	switch cap_ {
-	case GL_DEPTH_TEST:
+	case DEPTH_TEST:
 		return c.Depth_test
-	case GL_LINE_SMOOTH:
+	case LINE_SMOOTH:
 		return c.Line_smooth
-	case GL_CULL_FACE:
+	case CULL_FACE:
 		return c.Cull_face
-	case GL_DEPTH_CLAMP:
+	case DEPTH_CLAMP:
 		return c.Depth_clamp
-	case GL_BLEND:
+	case BLEND:
 		return c.Blend
-	case GL_COLOR_LOGIC_OP:
+	case COLOR_LOGIC_OP:
 		return c.Logic_ops
-	case GL_POLYGON_OFFSET_FILL:
+	case POLYGON_OFFSET_FILL:
 		return c.Poly_offset
-	case GL_SCISSOR_TEST:
+	case SCISSOR_TEST:
 		return c.Scissor_test
-	case GL_STENCIL_TEST:
+	case STENCIL_TEST:
 		return c.Stencil_test
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
-	return GL_FALSE
+	return FALSE
 }
 func GetBooleanv(pname GLenum, params *GLboolean) {
 	switch pname {
-	case GL_DEPTH_TEST:
+	case DEPTH_TEST:
 		*params = c.Depth_test
-	case GL_LINE_SMOOTH:
+	case LINE_SMOOTH:
 		*params = c.Line_smooth
-	case GL_CULL_FACE:
+	case CULL_FACE:
 		*params = c.Cull_face
-	case GL_DEPTH_CLAMP:
+	case DEPTH_CLAMP:
 		*params = c.Depth_clamp
-	case GL_BLEND:
+	case BLEND:
 		*params = c.Blend
-	case GL_COLOR_LOGIC_OP:
+	case COLOR_LOGIC_OP:
 		*params = c.Logic_ops
-	case GL_POLYGON_OFFSET_FILL:
+	case POLYGON_OFFSET_FILL:
 		*params = c.Poly_offset
-	case GL_SCISSOR_TEST:
+	case SCISSOR_TEST:
 		*params = c.Scissor_test
-	case GL_STENCIL_TEST:
+	case STENCIL_TEST:
 		*params = c.Stencil_test
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
 }
 func GetFloatv(pname GLenum, params *GLfloat) {
 	switch pname {
-	case GL_POLYGON_OFFSET_FACTOR:
+	case POLYGON_OFFSET_FACTOR:
 		*params = c.Poly_factor
-	case GL_POLYGON_OFFSET_UNITS:
+	case POLYGON_OFFSET_UNITS:
 		*params = c.Poly_units
-	case GL_POINT_SIZE:
+	case POINT_SIZE:
 		*params = c.Point_size
-	case GL_DEPTH_CLEAR_VALUE:
+	case DEPTH_CLEAR_VALUE:
 		*params = c.Clear_depth
-	case GL_DEPTH_RANGE:
+	case DEPTH_RANGE:
 		*(*GLfloat)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLfloat(0))*0)) = c.Depth_range_near
 		*(*GLfloat)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLfloat(0))*1)) = c.Depth_range_near
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
 }
 func GetIntegerv(pname GLenum, params *GLint) {
 	switch pname {
-	case GL_STENCIL_WRITE_MASK:
+	case STENCIL_WRITE_MASK:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_writemask)
-	case GL_STENCIL_REF:
+	case STENCIL_REF:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = c.Stencil_ref
-	case GL_STENCIL_VALUE_MASK:
+	case STENCIL_VALUE_MASK:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_valuemask)
-	case GL_STENCIL_FUNC:
+	case STENCIL_FUNC:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_func)
-	case GL_STENCIL_FAIL:
+	case STENCIL_FAIL:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_sfail)
-	case GL_STENCIL_PASS_DEPTH_FAIL:
+	case STENCIL_PASS_DEPTH_FAIL:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_dpfail)
-	case GL_STENCIL_PASS_DEPTH_PASS:
+	case STENCIL_PASS_DEPTH_PASS:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_dppass)
-	case GL_STENCIL_BACK_WRITE_MASK:
+	case STENCIL_BACK_WRITE_MASK:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_writemask_back)
-	case GL_STENCIL_BACK_REF:
+	case STENCIL_BACK_REF:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = c.Stencil_ref_back
-	case GL_STENCIL_BACK_VALUE_MASK:
+	case STENCIL_BACK_VALUE_MASK:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_valuemask_back)
-	case GL_STENCIL_BACK_FUNC:
+	case STENCIL_BACK_FUNC:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_func_back)
-	case GL_STENCIL_BACK_FAIL:
+	case STENCIL_BACK_FAIL:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_sfail_back)
-	case GL_STENCIL_BACK_PASS_DEPTH_FAIL:
+	case STENCIL_BACK_PASS_DEPTH_FAIL:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_dpfail_back)
-	case GL_STENCIL_BACK_PASS_DEPTH_PASS:
+	case STENCIL_BACK_PASS_DEPTH_PASS:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Stencil_dppass_back)
-	case GL_LOGIC_OP_MODE:
+	case LOGIC_OP_MODE:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Logic_func)
-	case GL_BLEND_SRC_RGB:
+	case BLEND_SRC_RGB:
 		fallthrough
-	case GL_BLEND_SRC_ALPHA:
+	case BLEND_SRC_ALPHA:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Blend_sfactor)
-	case GL_BLEND_DST_RGB:
+	case BLEND_DST_RGB:
 		fallthrough
-	case GL_BLEND_DST_ALPHA:
+	case BLEND_DST_ALPHA:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Blend_dfactor)
-	case GL_BLEND_EQUATION_RGB:
+	case BLEND_EQUATION_RGB:
 		fallthrough
-	case GL_BLEND_EQUATION_ALPHA:
+	case BLEND_EQUATION_ALPHA:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Blend_equation)
-	case GL_CULL_FACE_MODE:
+	case CULL_FACE_MODE:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Cull_mode)
-	case GL_FRONT_FACE:
+	case FRONT_FACE:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Front_face)
-	case GL_DEPTH_FUNC:
+	case DEPTH_FUNC:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Depth_func)
-	case GL_POINT_SPRITE_COORD_ORIGIN:
+	case POINT_SPRITE_COORD_ORIGIN:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Point_spr_origin)
 		fallthrough
-	case GL_PROVOKING_VERTEX:
+	case PROVOKING_VERTEX:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Provoking_vert)
-	case GL_POLYGON_MODE:
+	case POLYGON_MODE:
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*0)) = GLint(c.Poly_mode_front)
 		*(*GLint)(unsafe.Add(unsafe.Pointer(params), unsafe.Sizeof(GLint(0))*1)) = GLint(c.Poly_mode_back)
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 	}
 }
 func CullFace(mode GLenum) {
 	switch mode {
-	case GL_FRONT, GL_BACK, GL_FRONT_AND_BACK:
+	case FRONT, BACK, FRONT_AND_BACK:
 		c.Cull_mode = mode
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 }
 func FrontFace(mode GLenum) {
 	switch mode {
-	case GL_CCW, GL_CW:
+	case CCW, CW:
 		c.Front_face = mode
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 }
 func PolygonMode(face GLenum, mode GLenum) {
 	switch mode {
-	case GL_POINT:
+	case POINT:
 		switch face {
-		case GL_FRONT:
+		case FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_point
-		case GL_BACK:
+		case BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_point
-		case GL_FRONT_AND_BACK:
+		case FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_point
 			c.Draw_triangle_back = draw_triangle_point
 		default:
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
-	case GL_LINE:
+	case LINE:
 		switch face {
-		case GL_FRONT:
+		case FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_line
-		case GL_BACK:
+		case BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_line
-		case GL_FRONT_AND_BACK:
+		case FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_line
 			c.Draw_triangle_back = draw_triangle_line
 		default:
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
-	case GL_FILL:
+	case FILL:
 		switch face {
-		case GL_FRONT:
+		case FRONT:
 			c.Poly_mode_front = mode
 			c.Draw_triangle_front = draw_triangle_fill
-		case GL_BACK:
+		case BACK:
 			c.Poly_mode_back = mode
 			c.Draw_triangle_back = draw_triangle_fill
-		case GL_FRONT_AND_BACK:
+		case FRONT_AND_BACK:
 			c.Poly_mode_front = mode
 			c.Poly_mode_back = mode
 			c.Draw_triangle_front = draw_triangle_fill
@@ -3831,13 +3833,13 @@ func PolygonMode(face GLenum, mode GLenum) {
 			c.Draw_triangle_back = draw_triangle_fill
 		default:
 			if c.Error == 0 {
-				c.Error = GLenum(GL_INVALID_ENUM)
+				c.Error = GLenum(INVALID_ENUM)
 			}
 			return
 		}
 	default:
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3846,25 +3848,25 @@ func PolygonMode(face GLenum, mode GLenum) {
 func PointSize(size GLfloat) {
 	if float64(size) <= 0.0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
 	c.Point_size = size
 }
 func PointParameteri(pname GLenum, param GLint) {
-	if pname != GLenum(GL_POINT_SPRITE_COORD_ORIGIN) || int64(param) != GL_LOWER_LEFT && int64(param) != GL_UPPER_LEFT {
+	if pname != GLenum(POINT_SPRITE_COORD_ORIGIN) || int64(param) != LOWER_LEFT && int64(param) != UPPER_LEFT {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
 	c.Point_spr_origin = GLenum(param)
 }
 func ProvokingVertex(provokeMode GLenum) {
-	if provokeMode != GLenum(GL_FIRST_VERTEX_CONVENTION) && provokeMode != GLenum(GL_LAST_VERTEX_CONVENTION) {
+	if provokeMode != GLenum(FIRST_VERTEX_CONVENTION) && provokeMode != GLenum(LAST_VERTEX_CONVENTION) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3877,16 +3879,16 @@ func DeleteProgram(program GLuint) {
 	}
 	if uint64(program) >= uint64(len(c.Programs)) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
-	c.Programs[program].Deleted = GL_TRUE
+	c.Programs[program].Deleted = TRUE
 }
 func UseProgram(program GLuint) {
 	if uint64(program) >= uint64(len(c.Programs)) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3902,9 +3904,9 @@ func UseProgram(program GLuint) {
 }
 
 func BlendFunc(sfactor GLenum, dfactor GLenum) {
-	if sfactor < GLenum(GL_ZERO) || sfactor >= GLenum(NUM_BLEND_FUNCS) || dfactor < GLenum(GL_ZERO) || dfactor >= GLenum(NUM_BLEND_FUNCS) {
+	if sfactor < GLenum(ZERO) || sfactor >= GLenum(NUM_BLEND_FUNCS) || dfactor < GLenum(ZERO) || dfactor >= GLenum(NUM_BLEND_FUNCS) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3912,9 +3914,9 @@ func BlendFunc(sfactor GLenum, dfactor GLenum) {
 	c.Blend_dfactor = dfactor
 }
 func BlendEquation(mode GLenum) {
-	if mode < GLenum(GL_FUNC_ADD) || mode >= GLenum(NUM_BLEND_EQUATIONS) {
+	if mode < GLenum(FUNC_ADD) || mode >= GLenum(NUM_BLEND_EQUATIONS) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3927,9 +3929,9 @@ func BlendColor(red GLclampf, green GLclampf, blue GLclampf, alpha GLclampf) {
 	c.Blend_color.W = clampf_01(float32(alpha))
 }
 func LogicOp(opcode GLenum) {
-	if opcode < GLenum(GL_CLEAR) || opcode > GLenum(GL_INVERT) {
+	if opcode < GLenum(CLEAR) || opcode > GLenum(INVERT) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3942,7 +3944,7 @@ func PolygonOffset(factor GLfloat, units GLfloat) {
 func Scissor(x GLint, y GLint, width GLsizei, height GLsizei) {
 	if width < 0 || height < 0 {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_VALUE)
+			c.Error = GLenum(INVALID_VALUE)
 		}
 		return
 	}
@@ -3952,9 +3954,9 @@ func Scissor(x GLint, y GLint, width GLsizei, height GLsizei) {
 	c.Scissor_uy = GLsizei(y + GLint(height))
 }
 func StencilFunc(func_ GLenum, ref GLint, mask GLuint) {
-	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
+	if func_ < GLenum(LESS) || func_ > GLenum(NEVER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3972,19 +3974,19 @@ func StencilFunc(func_ GLenum, ref GLint, mask GLuint) {
 	c.Stencil_valuemask_back = mask
 }
 func StencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
-	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
+	if face < GLenum(FRONT) || face > GLenum(FRONT_AND_BACK) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if face == GLenum(GL_FRONT_AND_BACK) {
+	if face == GLenum(FRONT_AND_BACK) {
 		StencilFunc(func_, ref, mask)
 		return
 	}
-	if func_ < GLenum(GL_LESS) || func_ > GLenum(GL_NEVER) {
+	if func_ < GLenum(LESS) || func_ > GLenum(NEVER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -3994,7 +3996,7 @@ func StencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
 	if ref < 0 {
 		ref = 0
 	}
-	if face == GLenum(GL_FRONT) {
+	if face == GLenum(FRONT) {
 		c.Stencil_func = func_
 		c.Stencil_ref = ref
 		c.Stencil_valuemask = mask
@@ -4005,9 +4007,9 @@ func StencilFuncSeparate(face GLenum, func_ GLenum, ref GLint, mask GLuint) {
 	}
 }
 func StencilOp(sfail GLenum, dpfail GLenum, dppass GLenum) {
-	if (sfail < GLenum(GL_INVERT) || sfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dpfail < GLenum(GL_INVERT) || dpfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dppass < GLenum(GL_INVERT) || dppass > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) {
+	if (sfail < GLenum(INVERT) || sfail > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) || (dpfail < GLenum(INVERT) || dpfail > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) || (dppass < GLenum(INVERT) || dppass > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
@@ -4019,23 +4021,23 @@ func StencilOp(sfail GLenum, dpfail GLenum, dppass GLenum) {
 	c.Stencil_dppass_back = dppass
 }
 func StencilOpSeparate(face GLenum, sfail GLenum, dpfail GLenum, dppass GLenum) {
-	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
+	if face < GLenum(FRONT) || face > GLenum(FRONT_AND_BACK) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if face == GLenum(GL_FRONT_AND_BACK) {
+	if face == GLenum(FRONT_AND_BACK) {
 		StencilOp(sfail, dpfail, dppass)
 		return
 	}
-	if (sfail < GLenum(GL_INVERT) || sfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dpfail < GLenum(GL_INVERT) || dpfail > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) || (dppass < GLenum(GL_INVERT) || dppass > GLenum(GL_DECR_WRAP)) && sfail != GLenum(GL_ZERO) {
+	if (sfail < GLenum(INVERT) || sfail > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) || (dpfail < GLenum(INVERT) || dpfail > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) || (dppass < GLenum(INVERT) || dppass > GLenum(DECR_WRAP)) && sfail != GLenum(ZERO) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if face == GLenum(GL_FRONT) {
+	if face == GLenum(FRONT) {
 		c.Stencil_sfail = sfail
 		c.Stencil_dpfail = dpfail
 		c.Stencil_dppass = dppass
@@ -4053,43 +4055,43 @@ func StencilMask(mask GLuint) {
 	c.Stencil_writemask_back = mask
 }
 func StencilMaskSeparate(face GLenum, mask GLuint) {
-	if face < GLenum(GL_FRONT) || face > GLenum(GL_FRONT_AND_BACK) {
+	if face < GLenum(FRONT) || face > GLenum(FRONT_AND_BACK) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return
 	}
-	if face == GLenum(GL_FRONT_AND_BACK) {
+	if face == GLenum(FRONT_AND_BACK) {
 		StencilMask(mask)
 		return
 	}
-	if face == GLenum(GL_FRONT) {
+	if face == GLenum(FRONT) {
 		c.Stencil_writemask = mask
 	} else {
 		c.Stencil_writemask_back = mask
 	}
 }
 func MapBuffer(target GLenum, access GLenum) unsafe.Pointer {
-	if target != GLenum(GL_ARRAY_BUFFER) && target != GLenum(GL_ELEMENT_ARRAY_BUFFER) {
+	if target != GLenum(ARRAY_BUFFER) && target != GLenum(ELEMENT_ARRAY_BUFFER) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return nil
 	}
-	if access != GLenum(GL_READ_ONLY) && access != GLenum(GL_WRITE_ONLY) && access != GLenum(GL_READ_WRITE) {
+	if access != GLenum(READ_ONLY) && access != GLenum(WRITE_ONLY) && access != GLenum(READ_WRITE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return nil
 	}
-	target -= GLenum(GL_ARRAY_BUFFER)
+	target -= GLenum(ARRAY_BUFFER)
 	var data = pglGetBufferData(c.Bound_buffers[target])
 	return unsafe.Pointer(&data[0])
 }
 func MapNamedBuffer(buffer GLuint, access GLenum) unsafe.Pointer {
-	if access != GLenum(GL_READ_ONLY) && access != GLenum(GL_WRITE_ONLY) && access != GLenum(GL_READ_WRITE) {
+	if access != GLenum(READ_ONLY) && access != GLenum(WRITE_ONLY) && access != GLenum(READ_WRITE) {
 		if c.Error == 0 {
-			c.Error = GLenum(GL_INVALID_ENUM)
+			c.Error = GLenum(INVALID_ENUM)
 		}
 		return nil
 	}
@@ -4133,10 +4135,10 @@ func GetAttribLocation(program GLuint, name *byte) GLint {
 	return 0
 }
 func UnmapBuffer(target GLenum) GLboolean {
-	return GL_TRUE
+	return TRUE
 }
 func UnmapNamedBuffer(buffer GLuint) GLboolean {
-	return GL_TRUE
+	return TRUE
 }
 func LineWidth(width GLfloat) {
 }
@@ -4244,17 +4246,17 @@ func wrap(i int64, size int64, mode GLenum) int64 {
 	)
 	_ = tmp2
 	switch mode {
-	case GL_REPEAT:
+	case REPEAT:
 		tmp = i - size*(i/size)
 		if tmp < 0 {
 			tmp = size + tmp
 		}
 		return tmp
-	case GL_CLAMP_TO_BORDER:
+	case CLAMP_TO_BORDER:
 		fallthrough
-	case GL_CLAMP_TO_EDGE:
+	case CLAMP_TO_EDGE:
 		return clampi(i, 0, size-1)
-	case GL_MIRRORED_REPEAT:
+	case MIRRORED_REPEAT:
 		if i < 0 {
 			i = -i
 		}
@@ -4280,7 +4282,7 @@ func texture1D(tex GLuint, x float32) Vec4 {
 		w       float64    = float64(t.W) - EPSILON
 		xw      float64    = float64(x) * w
 	)
-	if t.Mag_filter == GLenum(GL_NEAREST) {
+	if t.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), int64(t.W), t.Wrap_s)
 		return Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(i0))))
 	} else {
@@ -4314,7 +4316,7 @@ func texture2D(tex GLuint, x float32, y float32) Vec4 {
 		xw      float64    = float64(x) * dw
 		yh      float64    = float64(y) * dh
 	)
-	if t.Mag_filter == GLenum(GL_NEAREST) {
+	if t.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, t.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, t.Wrap_t)
 		return Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
@@ -4367,7 +4369,7 @@ func texture3D(tex GLuint, x float32, y float32, z float32) Vec4 {
 		yh      float64    = float64(y) * dh
 		zd      float64    = float64(z) * dd
 	)
-	if t.Mag_filter == GLenum(GL_NEAREST) {
+	if t.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, t.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, t.Wrap_t)
 		k0 = wrap(int64(math.Floor(zd)), d, t.Wrap_r)
@@ -4434,7 +4436,7 @@ func texture2DArray(tex GLuint, x float32, y float32, z int64) Vec4 {
 		xw      float64    = float64(x) * dw
 		yh      float64    = float64(y) * dh
 	)
-	if t.Mag_filter == GLenum(GL_NEAREST) {
+	if t.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, t.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, t.Wrap_t)
 		return Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(z*plane+j0*w+i0))))
@@ -4479,7 +4481,7 @@ func texture_rect(tex GLuint, x float32, y float32) Vec4 {
 		xw      float64    = float64(x)
 		yh      float64    = float64(y)
 	)
-	if t.Mag_filter == GLenum(GL_NEAREST) {
+	if t.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, t.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, t.Wrap_t)
 		return Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(j0*w+i0))))
@@ -4596,7 +4598,7 @@ func texture_cubemap(texture GLuint, x float32, y float32, z float32) Vec4 {
 	var plane int64 = w * w
 	var xw float64 = float64(x) * dw
 	var yh float64 = float64(y) * dh
-	if tex.Mag_filter == GLenum(GL_NEAREST) {
+	if tex.Mag_filter == GLenum(NEAREST) {
 		i0 = wrap(int64(math.Floor(xw)), w, tex.Wrap_s)
 		j0 = wrap(int64(math.Floor(yh)), h, tex.Wrap_t)
 		var tmpvec4 Vec4 = Color_to_vec4(*(*Color)(unsafe.Add(unsafe.Pointer(texdata), unsafe.Sizeof(Color{})*uintptr(p*plane+j0*w+i0))))
